@@ -4,9 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Блокнот Шефа</title>
-    <!-- Подключаем Telegram Web App SDK -->
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <!-- Подключаем Supabase JS Client -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         :root {
@@ -28,7 +26,7 @@
             box-sizing: border-box;
         }
 
-        h2, h3 { margin-top: 0; }
+        h2, h3, h4 { margin-top: 0; }
 
         .header {
             display: flex;
@@ -155,14 +153,14 @@
 
     <!-- Уведомление о черновике -->
     <div id="draftNotification" class="card" style="display: none; border-color: var(--button-color);">
-        <p style="margin: 0 0 10px 0; font-size: 14px;">📦 Найден несохраненный черновик рецепта.</p>
+        <p style="margin: 0 0 10px 0; font-size: 14px;">📦 Обнаружен несохраненный черновик рецепта.</p>
         <div class="actions-row">
             <button class="primary" onclick="restoreDraft()" style="margin-top: 0;">Восстановить</button>
             <button class="secondary" onclick="discardDraft()" style="margin-top: 0;">Удалить</button>
         </div>
     </div>
 
-    <!-- Кнопки управления списком -->
+    <!-- Кнопки управления -->
     <div style="margin-bottom: 16px; display: flex; gap: 10px; flex-wrap: wrap;">
         <button class="primary" onclick="openConstructor()" style="flex: 1;">+ Новая техкарта</button>
         <button class="secondary" onclick="loadDemoRecipes()">📥 Загрузить демо</button>
@@ -176,11 +174,24 @@
     <!-- Конструктор / Редактор рецепта -->
     <div id="recipeConstructor" class="card" style="display: none;">
         <h3>Создание техкарты</h3>
-        <input type="text" id="recipeTitle" placeholder="Название блюда (например, Борщ классический)" oninput="saveDraftLocally()">
-        <input type="text" id="recipeCategory" placeholder="Категория (Супы, Горячее, Заготовки)" oninput="saveDraftLocally()">
+        <input type="text" id="recipeTitle" placeholder="Название блюда (например, Оссобуко)" oninput="saveDraftLocally()">
+        
+        <!-- Выверенные категории по сырью -->
+        <select id="recipeCategory" onchange="saveDraftLocally()">
+            <option value="" disabled selected>Выберите категорию...</option>
+            <option value="Холодные блюда и закуски">Холодные блюда и закуски</option>
+            <option value="Супы">Супы</option>
+            <option value="Мясо и птица">Мясо и птица</option>
+            <option value="Рыба и морепродукты">Рыба и морепродукты</option>
+            <option value="Овощи и грибы">Овощи и грибы</option>
+            <option value="Крупы, макароны и бобовые">Крупы, макароны и бобовые</option>
+            <option value="Соусы, маринады и заправки">Соусы, маринады и заправки</option>
+            <option value="Полуфабрикаты и заготовки">Полуфабрикаты и заготовки</option>
+            <option value="Выпечка и десерты">Выпечка и десерты</option>
+            <option value="Напитки">Напитки</option>
+        </select>
         
         <label style="font-size: 12px; color: var(--hint-color);" id="portionsLabel">Базовых порций: <span id="portionsValue">4</span></label>
-        <!-- Динамическое поле порций (инпут для Pro, ползунок для Дом) -->
         <div id="portionsContainer">
             <input type="range" id="recipePortionsRange" min="1" max="20" value="4" oninput="updatePortionsVal(this.value); saveDraftLocally()">
         </div>
@@ -199,19 +210,17 @@
     </div>
 
     <script>
-        // Инициализация Telegram WebApp
         const tg = window.Telegram.WebApp;
         tg.expand();
 
         const userId = tg.initDataUnsafe?.user?.id ? String(tg.initDataUnsafe.user.id) : 'demo_user_123';
         let currentMode = 'simple';
 
-        // Настройки Supabase
+        // Ваши точные данные подключения к Supabase
         const SUPABASE_URL = 'https://fxvporgpgpxudzlbauty.supabase.co';
-        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ4dnBvcmdwZ3B4dWR6bGJhdXR5Iiwicm9sZSI6ImFub24iLCJpYXQiOjQ3NTQwNzQ2ODN9.hWz737eB_g2u6mBvK6-2g7zY8h7B7g7h8J7K7L7M7N7'; // Замените при необходимости на ваш публичный ключ
+        const SUPABASE_KEY = 'sb_publishable_kcUT9hJ_k8e-2sj0j8BbAA_QvG8Wc-p';
         const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-        // Переключение режимов Дом / Pro
         function setMode(mode) {
             currentMode = mode;
             document.getElementById('btnSimple').classList.toggle('active', mode === 'simple');
@@ -221,7 +230,7 @@
             const currentVal = document.getElementById('recipePortionsRange')?.value || document.getElementById('recipePortionsInput')?.value || 4;
             
             if (mode === 'pro') {
-                container.innerHTML = `<input type="number" id="recipePortionsInput" value="${currentVal}" min="1" max="10000" oninput="saveDraftLocally()">`;
+                container.innerHTML = `<input type="number" id="recipePortionsInput" value="${currentVal}" min="1" max="10000" placeholder="Количество порций" oninput="saveDraftLocally()">`;
                 document.getElementById('portionsLabel').style.display = 'none';
             } else {
                 container.innerHTML = `<input type="range" id="recipePortionsRange" min="1" max="20" value="${currentVal > 20 ? 20 : currentVal}" oninput="updatePortionsVal(this.value); saveDraftLocally()">`;
@@ -242,7 +251,6 @@
             }
         }
 
-        // Локальное автосохранение черновиков
         window.addEventListener('DOMContentLoaded', () => {
             const savedDraft = localStorage.getItem('chef_recipe_draft');
             if (savedDraft) {
@@ -300,13 +308,12 @@
             document.getElementById('draftNotification').style.display = 'none';
         }
 
-        // Конструктор
         function openConstructor() {
             document.getElementById('recipeConstructor').style.display = 'block';
             document.getElementById('recipeTitle').value = '';
-            document.getElementById('recipeCategory').value = '';
+            document.getElementById('recipeCategory').selectedIndex = 0;
             document.getElementById('recipeSteps').value = '';
-            document.getElementById('ingredientsList.innerHTML') = '';
+            document.getElementById('ingredientsList').innerHTML = '';
             addIngredientRow();
         }
 
@@ -349,7 +356,6 @@
             return items;
         }
 
-        // Загрузка рецептов из Supabase
         async function fetchRecipes() {
             const container = document.getElementById('recipesContainer');
             try {
@@ -384,10 +390,9 @@
             }
         }
 
-        // Сохранение рецепта в Supabase
         async function saveRecipe() {
             const title = document.getElementById('recipeTitle').value.trim();
-            const category = document.getElementById('recipeCategory').value.trim();
+            const category = document.getElementById('recipeCategory').value;
             const base_portions = getPortionsCount();
             const steps = document.getElementById('recipeSteps').value.trim();
             const ingredients = getIngredientsFromDOM();
@@ -398,7 +403,6 @@
             }
 
             try {
-                // 1. Сохраняем рецепт в таблицу recipes
                 const { data: recipeData, error: recipeError } = await supabase
                     .from('recipes')
                     .insert([{ user_id: userId, title, category, base_portions, steps }])
@@ -409,7 +413,6 @@
 
                 const recipeId = recipeData.id;
 
-                // 2. Сохраняем ингредиенты в таблицу ingredients
                 if (ingredients.length > 0) {
                     const ingRows = ingredients.map(ing => ({
                         recipe_id: recipeId,
@@ -433,7 +436,6 @@
             }
         }
 
-        // Удаление рецепта
         async function deleteRecipe(id) {
             if (!confirm('Точно удалить этот рецепт?')) return;
             try {
@@ -446,12 +448,11 @@
             }
         }
 
-        // Загрузка демо-рецептов для тестирования
         async function loadDemoRecipes() {
             try {
                 const demos = [
                     { title: 'Борщ классический (Демо)', category: 'Супы', base_portions: 4, steps: 'Отварить бульон, пассеровать овощи, соединить и проварить.' },
-                    { title: 'Оссобуко по-милански (Демо)', category: 'Горячее', base_portions: 2, steps: 'Обжарить телятину, тушить с овощами и белым вином.' }
+                    { title: 'Оссобуко по-милански (Демо)', category: 'Мясо и птица', base_portions: 2, steps: 'Обжарить телятину, тушить с овощами и белым вином.' }
                 ];
 
                 for (let d of demos) {
