@@ -1,44 +1,169 @@
-<style>
-    /* Стили для названий ингредиентов: черный текст на белом фоне */
-    .ingredient-name-input, .ingredient-row input {
-        color: #000000 !important;
-        background-color: #ffffff !important;
-    }
-    
-    /* Контейнер для метода готовки и температуры на одной строке */
-    .cooking-row {
-        display: flex;
-        gap: 10px;
-        align-items: center;
-        margin-top: 6px;
-    }
-    .cooking-row select, .cooking-row input[type="number"] {
-        padding: 6px;
-        border-radius: 4px;
-        border: 1px solid #ccc;
-    }
-    .cooking-row input[type="number"] {
-        width: 90px;
-    }
-</style>
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Блокнот Шефа — Альфа</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        :root {
+            --bg-color: #121212;
+            --surface-color: #1e1e1e;
+            --primary-color: #ff9800;
+            --text-color: #e0e0e0;
+            --text-muted: #aaaaaa;
+            --border-color: #333333;
+        }
 
-<!-- Пример разметки шага с методом готовки и температурой -->
-<div class="step-item">
-    <textarea placeholder="Описание шага приготовления..."></textarea>
-    <div class="cooking-row">
-        <select class="cooking-method-select">
-            <option value="" disabled selected>Выберите метод...</option>
-            <option value="бланшировать">бланшировать</option>
-            <option value="варить">варить</option>
-            <option value="тушить">тушить</option>
-            <option value="пар">пар</option>
-            <option value="жар/пар">жар/пар</option>
-            <option value="жар">жар</option>
-            <option value="жарить">жарить</option>
-            <option value="фритюр">фритюр</option>
-            <option value="колеровать">колеровать</option>
-            <option value="гриль">гриль</option>
-        </select>
-        <input type="number" min="-18" max="300" placeholder="°C (-18..300)" title="Температура в градусах Цельсия от -18 до 300">
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 12px;
+            box-sizing: border-box;
+        }
+
+        h2, h3 {
+            margin-top: 0;
+            color: var(--primary-color);
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .card {
+            background-color: var(--surface-color);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 16px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 6px;
+            font-size: 14px;
+            color: var(--text-muted);
+        }
+
+        input, select, textarea {
+            width: 100%;
+            padding: 8px 12px;
+            margin-bottom: 12px;
+            background-color: #2c2c2c;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            color: var(--text-color);
+            box-sizing: border-box;
+        }
+
+        /* Пожелание: наименования ингредиентов — черный текст на белом фоне */
+        .ingredient-name-input, input.ingredient-name-input {
+            color: #000000 !important;
+            background-color: #ffffff !important;
+        }
+
+        /* Блок метода готовки и температуры на одной строке */
+        .cooking-row {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        .cooking-row select {
+            flex: 2;
+            margin-bottom: 0;
+        }
+        .cooking-row input[type="number"] {
+            flex: 1;
+            margin-bottom: 0;
+        }
+
+        button {
+            background-color: var(--primary-color);
+            color: #000;
+            border: none;
+            padding: 10px 16px;
+            border-radius: 4px;
+            font-weight: bold;
+            cursor: pointer;
+            width: 100%;
+        }
+
+        button:active {
+            opacity: 0.8;
+        }
+
+        .step-item {
+            background: #252525;
+            padding: 10px;
+            border-radius: 6px;
+            margin-bottom: 10px;
+            border: 1px solid var(--border-color);
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h2>👨‍🍳 Блокнот Шефа (Альфа)</h2>
+        
+        <div class="card">
+            <h3>Создание / Редактирование техкарты</h3>
+            
+            <label>Название блюда</label>
+            <input type="text" id="recipeTitle" placeholder="Введите название...">
+
+            <label>Категория</label>
+            <select id="recipeCategory">
+                <option value="Супы">Супы</option>
+                <option value="Горячие блюда">Горячие блюда</option>
+                <option value="Холодные закуски">Холодные закуски</option>
+                <option value="Десерты">Десерты</option>
+            </select>
+
+            <label>Ингредиенты (наименование — черный текст на белом фоне)</label>
+            <div class="ingredient-row">
+                <input type="text" class="ingredient-name-input" placeholder="Название ингредиента...">
+            </div>
+
+            <label>Шаги приготовления (метод готовки и температура -18..300°C)</label>
+            <div class="step-item">
+                <textarea placeholder="Описание шага..."></textarea>
+                <div class="cooking-row">
+                    <select class="cooking-method-select">
+                        <option value="" disabled selected>Выберите метод...</option>
+                        <option value="бланшировать">бланшировать</option>
+                        <option value="варить">варить</option>
+                        <option value="тушить">тушить</option>
+                        <option value="пар">пар</option>
+                        <option value="жар/пар">жар/пар</option>
+                        <option value="жар">жар</option>
+                        <option value="жарить">жарить</option>
+                        <option value="фритюр">фритюр</option>
+                        <option value="колеровать">колеровать</option>
+                        <option value="гриль">гриль</option>
+                    </select>
+                    <input type="number" min="-18" max="300" placeholder="°C (-18..300)" title="Температура от -18 до 300 °C">
+                </div>
+            </div>
+
+            <button onclick="alert('Техкарта сохранена!')">Сохранить техкарту</button>
+        </div>
     </div>
-</div>
+
+    <script>
+        // Инициализация Telegram WebApp
+        window.addEventListener('load', () => {
+            const tg = window.Telegram?.WebApp;
+            if (tg) {
+                tg.expand();
+            }
+        });
+    </script>
+</body>
+</html>
