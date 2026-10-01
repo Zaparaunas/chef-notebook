@@ -3,8 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Блокнот Шефа • Telegram Mini App</title>
+    <title>Блокнот Шефа</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         :root {
             --tg-bg: var(--tg-theme-bg-color, #0f1215);
@@ -30,7 +31,6 @@
             margin: 0 auto;
         }
 
-        /* Шапка */
         .header {
             display: flex;
             justify-content: space-between;
@@ -57,14 +57,8 @@
             font-size: 13px;
             font-weight: 600;
             cursor: pointer;
-            transition: all 0.2s ease;
         }
 
-        .mode-btn:active {
-            transform: scale(0.95);
-        }
-
-        /* Карточка рецепта */
         .recipe-card {
             background: var(--tg-card-bg);
             border-radius: 16px;
@@ -79,7 +73,6 @@
             margin-bottom: 12px;
         }
 
-        /* Контроллер порций */
         .portions-control {
             margin-bottom: 16px;
             padding-bottom: 14px;
@@ -101,7 +94,6 @@
             cursor: pointer;
         }
 
-        /* Секция ингредиентов */
         .section-title {
             font-size: 12px;
             text-transform: uppercase;
@@ -126,8 +118,6 @@
             border-radius: 10px;
             border: 1px solid var(--tg-border);
             cursor: pointer;
-            user-select: none;
-            transition: opacity 0.2s;
         }
 
         .ingredient-item.checked {
@@ -135,18 +125,11 @@
             text-decoration: line-through;
         }
 
-        .ing-name {
-            font-size: 14px;
-            font-weight: 500;
-        }
-
         .ing-weight {
-            font-size: 14px;
             font-weight: 700;
             color: var(--tg-button);
         }
 
-        /* Специфичные PRO-элементы (скрыты по умолчанию в режиме Дом) */
         .pro-only {
             display: none;
             font-size: 11px;
@@ -158,7 +141,23 @@
             display: block;
         }
 
-        /* Кнопка действия */
+        .admin-panel {
+            background: var(--tg-card-bg);
+            border: 1px solid var(--tg-border);
+            padding: 16px;
+            border-radius: 16px;
+            margin-bottom: 14px;
+        }
+        .admin-panel input, .admin-panel textarea {
+            width: 100%;
+            padding: 8px;
+            margin-bottom: 8px;
+            background: var(--tg-bg);
+            border: 1px solid var(--tg-border);
+            color: var(--tg-text);
+            border-radius: 8px;
+            box-sizing: border-box;
+        }
         .action-btn {
             background: var(--tg-button);
             color: var(--tg-button-text);
@@ -169,127 +168,185 @@
             font-size: 15px;
             font-weight: 600;
             cursor: pointer;
-            margin-top: 10px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
         }
     </style>
 </head>
 <body>
 
     <div class="app-container">
-        <!-- Шапка -->
         <div class="header">
             <div class="header-title">
                 <span>📜</span> Блокнот Шефа
             </div>
-            <button class="mode-btn" id="modeToggleBtn" onclick="toggleMode()">Режим: Дом 🏡</button>
-        </div>
-
-        <!-- Карточка блюда -->
-        <div class="recipe-card">
-            <div class="recipe-name">Оссобуко по-милански</div>
-
-            <!-- Управление порциями -->
-            <div class="portions-control">
-                <div class="portions-info">
-                    <span>Порций:</span>
-                    <span id="portionsValue" style="color: var(--tg-button);">4</span>
-                </div>
-                <input type="range" min="1" max="50" value="4" class="portions-slider" id="portionsSlider" oninput="updatePortions(this.value)">
-            </div>
-
-            <!-- Список ингредиентов -->
-            <div class="section-title">Ингредиенты:</div>
-            <div class="ingredients-list" id="ingredientsList">
-                <!-- Динамически заполняется через JS -->
+            <div style="display: flex; gap: 6px;">
+                <button class="mode-btn" onclick="toggleAdminPanel()">➕ Рецепт</button>
+                <button class="mode-btn" id="modeToggleBtn" onclick="toggleMode()">Дом 🏡</button>
             </div>
         </div>
 
-        <!-- Кнопка действия -->
-        <button class="action-btn" onclick="openTelegramUpload()">
-            <span>➕</span> Загрузить техкарту через Telegram
-        </button>
+        <div class="admin-panel" id="adminPanel" style="display: none;">
+            <div style="font-weight: 700; margin-bottom: 8px;">Добавить новый рецепт</div>
+            <input type="text" id="newTitle" placeholder="Название блюда">
+            <input type="text" id="newCategory" placeholder="Категория (Горячее, Супы...)">
+            <input type="number" id="newPortions" placeholder="Базовые порции" value="4">
+            <textarea id="newSteps" placeholder="Шаги приготовления..."></textarea>
+            <button class="action-btn" onclick="addNewRecipe()">Сохранить в Supabase</button>
+        </div>
+
+        <div id="recipesContainer">
+            <div class="recipe-card">
+                <div class="recipe-name">Загрузка рецептов из базы...</div>
+            </div>
+        </div>
     </div>
 
     <script>
-        // Инициализация Telegram WebApp SDK
         let tg = window.Telegram.WebApp;
         tg.expand();
 
-        // Базовые данные рецепта (рассчитаны на 4 порции)
-        const basePortions = 4;
-        const ingredients = [
-            { name: "Говяжья голяшка", baseAmount: 500, unit: "г", loss: "Потери при зачистке: 15%" },
-            { name: "Вино сухое белое", baseAmount: 100, unit: "мл", loss: "Упаривание: 10%" },
-            { name: "Лук репчатый", baseAmount: 80, unit: "г", loss: "Очистка: 12%" },
-            { name: "Морковь", baseAmount: 60, unit: "г", loss: "Очистка: 15%" },
-            { name: "Бульон мясной", baseAmount: 250, unit: "мл", loss: "Без потерь" }
-        ];
+        // Твои реальные данные подключения
+        const SUPABASE_URL = "https://fxvporgpgpxudzlbauty.supabase.co";
+        const SUPABASE_ANON_KEY = "sb_publishable_kcUT9hJ_k8e-2sj0j8BbAA_QvG8Wc-p";
+        
+        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
         let isProMode = false;
 
-        // Рендер списка ингредиентов
-        function renderIngredients(currentPortions) {
-            const listContainer = document.getElementById('ingredientsList');
-            listContainer.innerHTML = '';
-
-            const factor = currentPortions / basePortions;
-
-            ingredients.forEach((item, index) => {
-                let calculatedAmount = Math.round(item.baseAmount * factor * 10) / 10;
-
-                const row = document.createElement('div');
-                row.className = 'ingredient-item';
-                row.onclick = () => row.classList.toggle('checked');
-
-                row.innerHTML = `
-                    <div class="ing-info">
-                        <div class="ing-name">• ${item.name}</div>
-                        <div class="pro-only">⚖️ Брутто с учетом потерь (${item.loss})</div>
-                    </div>
-                    <div class="ing-weight">${calculatedAmount} ${item.unit}</div>
-                `;
-                listContainer.appendChild(row);
-            });
-        }
-
-        // Обновление при движении ползунка
-        function updatePortions(val) {
-            document.getElementById('portionsValue').innerText = val;
-            renderIngredients(parseInt(val));
-            if (tg.HapticFeedback) {
-                tg.HapticFeedback.selectionChanged();
-            }
-        }
-
-        // Переключение режимов Дом / PRO
         function toggleMode() {
             isProMode = !isProMode;
             document.body.classList.toggle('pro-mode', isProMode);
             const btn = document.getElementById('modeToggleBtn');
+            btn.innerText = isProMode ? "PRO 🔪" : "Дом 🏡";
+            if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('medium');
+        }
+
+        function toggleAdminPanel() {
+            const panel = document.getElementById('adminPanel');
+            panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
+        }
+
+        async function loadRecipes() {
+            const container = document.getElementById('recipesContainer');
             
-            if (isProMode) {
-                btn.innerText = "Режим: PRO 🔪";
-                btn.style.borderColor = "var(--tg-button)";
+            let { data: recipes, error } = await supabaseClient
+                .from('recipes')
+                .select('*');
+
+            if (error || !recipes || recipes.length === 0) {
+                container.innerHTML = `
+                    <div class="recipe-card">
+                        <div class="recipe-name">Оссобуко по-милански (Демо)</div>
+                        <div class="portions-control">
+                            <div class="portions-info">
+                                <span>Порций:</span>
+                                <span id="val-demo" style="color: var(--tg-button);">4</span>
+                            </div>
+                            <input type="range" min="1" max="20" value="4" class="portions-slider" oninput="updatePortions(this, 'ing-demo', 4)">
+                        </div>
+                        <div class="section-title">Ингредиенты:</div>
+                        <div class="ingredients-list" id="ing-demo">
+                            <div class="ingredient-item" onclick="this.classList.toggle('checked')">
+                                <span>Говяжья голяшка</span>
+                                <span class="ing-weight" data-base="500" data-unit="г">500 г</span>
+                            </div>
+                        </div>
+                    </div>`;
+                return;
+            }
+
+            container.innerHTML = '';
+            recipes.forEach((recipe, index) => {
+                container.innerHTML += `
+                    <div class="recipe-card">
+                        <div class="recipe-name">${recipe.title}</div>
+                        <div class="portions-control">
+                            <div class="portions-info">
+                                <span>Порций:</span>
+                                <span id="val-${index}" style="color: var(--tg-button);">${recipe.base_portions || 4}</span>
+                            </div>
+                            <input type="range" min="1" max="30" value="${recipe.base_portions || 4}" class="portions-slider" oninput="updatePortions(this, 'ing-${index}', ${recipe.base_portions || 4}, '${recipe.id}')">
+                        </div>
+                        <div class="section-title">Ингредиенты:</div>
+                        <div class="ingredients-list" id="ing-${index}">
+                            <div class="text-sm text-tg-hint">Загрузка ингредиентов...</div>
+                        </div>
+                        <div class="section-title" style="margin-top: 12px;">Шаги:</div>
+                        <div style="font-size: 14px; color: var(--tg-hint);">${recipe.steps || 'Нет описания'}</div>
+                    </div>`;
+                loadIngredientsForRecipe(recipe.id, `ing-${index}`, recipe.base_portions || 4);
+            });
+        }
+
+        async function loadIngredientsForRecipe(recipeId, containerId, basePortions) {
+            const container = document.getElementById(containerId);
+            let { data: ingredients, error } = await supabaseClient
+                .from('ingredients')
+                .select('*')
+                .eq('recipe_id', recipeId);
+
+            if (error || !ingredients || ingredients.length === 0) {
+                container.innerHTML = `<div class="text-sm text-tg-hint">Нет ингредиентов в базе. Добавь их в Supabase.</div>`;
+                return;
+            }
+
+            container.innerHTML = '';
+            ingredients.forEach(ing => {
+                container.innerHTML += `
+                    <div class="ingredient-item" onclick="this.classList.toggle('checked')">
+                        <div>
+                            <div style="font-size: 14px; font-weight: 500;">• ${ing.name}</div>
+                            <div class="pro-only">⚖️ Брутто: ${ing.gross}г | Нетто: ${ing.net}г (-${ing.loss_percent || 0}%)</div>
+                        </div>
+                        <div class="ing-weight" data-base="${ing.net || ing.gross || 0}" data-unit="${ing.unit || 'г'}">${ing.net || ing.gross || 0} ${ing.unit || 'г'}</div>
+                    </div>`;
+            });
+        }
+
+        function updatePortions(slider, containerId, basePortions) {
+            const val = slider.value;
+            // Находим числовой элемент порций для конкретной карточки
+            const sliderId = slider.id || '';
+            const factor = val / basePortions;
+            
+            const container = document.getElementById(containerId);
+            if (!container) return;
+            const items = container.getElementsByClassName('ingredient-item');
+            
+            Array.from(items).forEach(item => {
+                const weightSpan = item.querySelector('.ing-weight');
+                if (!weightSpan) return;
+                const baseVal = parseFloat(weightSpan.getAttribute('data-base'));
+                const unit = weightSpan.getAttribute('data-unit');
+                const calculated = Math.round(baseVal * factor * 10) / 10;
+                weightSpan.innerText = `${calculated} ${unit}`;
+            });
+        }
+
+        async function addNewRecipe() {
+            const title = document.getElementById('newTitle').value;
+            const category = document.getElementById('newCategory').value;
+            const base_portions = parseInt(document.getElementById('newPortions').value) || 4;
+            const steps = document.getElementById('newSteps').value;
+            
+            if (!title) {
+                alert('Введите название рецепта!');
+                return;
+            }
+
+            const { data, error } = await supabaseClient
+                .from('recipes')
+                .insert([{ title, category, base_portions, steps, user_id: tg.initDataUnsafe?.user?.id || 'web_user' }]);
+
+            if (error) {
+                alert('Ошибка сохранения: ' + error.message);
             } else {
-                btn.innerText = "Режим: Дом 🏡";
-                btn.style.borderColor = "var(--tg-border)";
-            }
-
-            if (tg.HapticFeedback) {
-                tg.HapticFeedback.impactOccurred('medium');
+                alert('Рецепт успешно сохранен в Supabase!');
+                toggleAdminPanel();
+                loadRecipes();
             }
         }
 
-        function openTelegramUpload() {
-            tg.showAlert("Здесь откроется интерфейс загрузки фото техкарты для распознавания ИИ!");
-        }
-
-        // Первичный запуск отрисовки
-        renderIngredients(basePortions);
+        loadRecipes();
     </script>
 </body>
 </html>
