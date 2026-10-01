@@ -4,22 +4,41 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Блокнот Шефа</title>
-    <!-- Подключаем Tailwind CSS для красивого и быстрого интерфейса -->
+    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Подключаем Supabase JS Client -->
+    <!-- Supabase JS Client -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <!-- Telegram Web App SDK -->
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <script>
+        // Настройка Tailwind под цвета Telegram (используем системные переменные или стандартный синий акцент TG)
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        tg: {
+                            bg: 'var(--tg-theme-bg-color, #111827)',
+                            text: 'var(--tg-theme-text-color, #f3f4f6)',
+                            hint: 'var(--tg-theme-hint-color, #9ca3af)',
+                            button: 'var(--tg-theme-button-color, #2481cc)',
+                            buttonText: 'var(--tg-theme-button-text-color, #ffffff)',
+                            secondaryBg: 'var(--tg-theme-secondary-bg-color, #1f2937)'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
 </head>
 <body class="bg-gray-900 text-gray-100 min-h-screen flex flex-col">
 
     <!-- Шапка приложения -->
     <header class="bg-gray-800 border-b border-gray-700 p-4 sticky top-0 z-50 shadow-md">
         <div class="max-w-md mx-auto flex justify-between items-center">
-            <h1 class="text-xl font-bold text-orange-400">🔪 Блокнот Шефа</h1>
+            <h1 class="text-xl font-bold text-blue-400">🔪 Блокнот Шефа</h1>
             <!-- Переключатель Дом / Pro -->
             <div class="flex items-center bg-gray-700 rounded-lg p-1">
-                <button id="modeDom" onclick="setMode('dom')" class="px-3 py-1 rounded-md text-xs font-medium transition bg-orange-500 text-white">Дом</button>
+                <button id="modeDom" onclick="setMode('dom')" class="px-3 py-1 rounded-md text-xs font-medium transition bg-blue-600 text-white">Дом</button>
                 <button id="modePro" onclick="setMode('pro')" class="px-3 py-1 rounded-md text-xs font-medium transition text-gray-300">Pro</button>
             </div>
         </div>
@@ -29,8 +48,8 @@
     <main class="flex-1 max-w-md w-full mx-auto p-4 pb-24">
         
         <!-- Кнопки управления -->
-        <div class="flex gap-2 mb-6">
-            <button onclick="openNewRecipeModal()" class="flex-1 bg-orange-500 hover:bg-orange-600 text-white font-medium py-2.5 px-4 rounded-xl shadow transition flex items-center justify-center gap-2">
+        <div class="flex gap-2 mb-4">
+            <button onclick="openNewRecipeModal()" class="flex-1 bg-blue-600 hover:bg-blue-500 text-white font-medium py-2.5 px-4 rounded-xl shadow transition flex items-center justify-center gap-2">
                 <span>+ Новая техкарта</span>
             </button>
             <button onclick="loadDemoRecipes()" class="bg-gray-700 hover:bg-gray-600 text-gray-300 font-medium py-2.5 px-3 rounded-xl transition text-sm">
@@ -38,8 +57,18 @@
             </button>
         </div>
 
+        <!-- Классификатор (Фильтры по категориям) -->
+        <div id="categoryFilters" class="flex gap-2 overflow-x-auto pb-2 mb-4 scrollbar-none">
+            <button onclick="filterCategory('Все')" class="cat-btn px-3 py-1.5 rounded-xl text-xs font-medium whitespace-nowrap bg-blue-600 text-white transition">Все</button>
+            <button onclick="filterCategory('Основное блюдо')" class="cat-btn px-3 py-1.5 rounded-xl text-xs font-medium whitespace-nowrap bg-gray-800 text-gray-300 border border-gray-700 transition">Основное</button>
+            <button onclick="filterCategory('Супы')" class="cat-btn px-3 py-1.5 rounded-xl text-xs font-medium whitespace-nowrap bg-gray-800 text-gray-300 border border-gray-700 transition">Супы</button>
+            <button onclick="filterCategory('Салаты')" class="cat-btn px-3 py-1.5 rounded-xl text-xs font-medium whitespace-nowrap bg-gray-800 text-gray-300 border border-gray-700 transition">Салаты</button>
+            <button onclick="filterCategory('Соусы')" class="cat-btn px-3 py-1.5 rounded-xl text-xs font-medium whitespace-nowrap bg-gray-800 text-gray-300 border border-gray-700 transition">Соусы</button>
+            <button onclick="filterCategory('Заготовки')" class="cat-btn px-3 py-1.5 rounded-xl text-xs font-medium whitespace-nowrap bg-gray-800 text-gray-300 border border-gray-700 transition">Заготовки</button>
+        </div>
+
         <!-- Статус загрузки / ошибки -->
-        <div id="statusMessage" class="text-center text-gray-400 py-8 text-sm">
+        <div id="statusMessage" class="text-center text-gray-400 py-4 text-xs hidden">
             Загрузка рецептов из облака...
         </div>
 
@@ -53,7 +82,7 @@
     <div id="recipeModal" class="fixed inset-0 bg-black/70 backdrop-blur-sm hidden z-50 flex items-center justify-center p-4">
         <div class="bg-gray-800 border border-gray-700 w-full max-w-md rounded-2xl p-5 shadow-2xl max-h-[90vh] overflow-y-auto">
             <div class="flex justify-between items-center mb-4">
-                <h2 id="modalTitle" class="text-lg font-bold text-orange-400">Новая техкарта</h2>
+                <h2 id="modalTitle" class="text-lg font-bold text-blue-400">Новая техкарта</h2>
                 <button id="deleteBtn" onclick="deleteCurrentRecipe()" class="hidden text-red-400 hover:text-red-300 text-xs font-medium bg-red-950/50 border border-red-900 px-2.5 py-1 rounded-lg transition">Удалить</button>
             </div>
             
@@ -61,12 +90,12 @@
                 <input type="hidden" id="recipeId">
                 <div>
                     <label class="block text-xs font-medium text-gray-400 mb-1">Название блюда</label>
-                    <input type="text" id="recipeTitle" required class="w-full bg-gray-900 border border-gray-700 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-orange-500" placeholder="Например: Оссобуко по-милански">
+                    <input type="text" id="recipeTitle" required class="w-full bg-gray-900 border border-gray-700 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500" placeholder="Например: Оссобуко по-милански">
                 </div>
 
                 <div>
                     <label class="block text-xs font-medium text-gray-400 mb-1">Категория</label>
-                    <select id="recipeCategory" class="w-full bg-gray-900 border border-gray-700 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-orange-500">
+                    <select id="recipeCategory" class="w-full bg-gray-900 border border-gray-700 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500">
                         <option value="Основное блюдо">Основное блюдо</option>
                         <option value="Супы">Супы</option>
                         <option value="Салаты">Салаты</option>
@@ -77,42 +106,42 @@
 
                 <div id="proPortionsContainer" class="hidden">
                     <label class="block text-xs font-medium text-gray-400 mb-1">Базовые порции (Pro)</label>
-                    <input type="number" id="recipeBasePortions" value="1" min="1" class="w-full bg-gray-900 border border-gray-700 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-orange-500">
+                    <input type="number" id="recipeBasePortions" value="1" min="1" class="w-full bg-gray-900 border border-gray-700 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500">
                 </div>
 
                 <div>
                     <label class="block text-xs font-medium text-gray-400 mb-1">Шаги приготовления</label>
-                    <textarea id="recipeSteps" rows="4" class="w-full bg-gray-900 border border-gray-700 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-orange-500" placeholder="Опишите процесс приготовления..."></textarea>
+                    <textarea id="recipeSteps" rows="4" class="w-full bg-gray-900 border border-gray-700 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500" placeholder="Опишите процесс приготовления..."></textarea>
                 </div>
 
                 <div class="flex gap-3 pt-2">
                     <button type="button" onclick="closeModal()" class="flex-1 bg-gray-700 hover:bg-gray-600 text-gray-300 font-medium py-2 rounded-xl transition text-sm">Отмена</button>
-                    <button type="submit" class="flex-1 bg-orange-500 hover:bg-orange-600 text-white font-medium py-2 rounded-xl transition text-sm">Сохранить</button>
+                    <button type="submit" class="flex-1 bg-blue-600 hover:bg-blue-500 text-white font-medium py-2 rounded-xl transition text-sm">Сохранить</button>
                 </div>
             </form>
         </div>
     </div>
 
-    <!-- Скрипт логики и подключения к Supabase -->
+    <!-- Скрипт логики -->
     <script>
-        // Инициализация Telegram WebApp
         const tg = window.Telegram?.WebApp;
         if (tg) {
             tg.expand();
+            // Применяем цвета из темы Telegram, если они доступны
+            if (tg.themeParams && tg.themeParams.button_color) {
+                document.documentElement.style.setProperty('--tg-theme-button-color', tg.themeParams.button_color);
+            }
         }
         const userId = tg?.initDataUnsafe?.user?.id ? String(tg.initDataUnsafe.user.id) : 'test_chef_user';
 
-        // Твои жестко прописанные доступы к Supabase
         const SUPABASE_URL = 'https://fxvporgpgpxudzlbauty.supabase.co';
         const SUPABASE_KEY = 'sb_publishable_kcUT9hJ_k8e-2sj0j8BbAA_QvG8Wc-p';
-
-        // Инициализация клиента Supabase
         const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-        let currentMode = 'dom'; // 'dom' или 'pro'
+        let currentMode = 'dom';
+        let currentCategory = 'Все';
         let recipes = [];
 
-        // Переключение режимов
         function setMode(mode) {
             currentMode = mode;
             const btnDom = document.getElementById('modeDom');
@@ -120,18 +149,31 @@
             const proContainer = document.getElementById('proPortionsContainer');
 
             if (mode === 'dom') {
-                btnDom.className = 'px-3 py-1 rounded-md text-xs font-medium transition bg-orange-500 text-white';
+                btnDom.className = 'px-3 py-1 rounded-md text-xs font-medium transition bg-blue-600 text-white';
                 btnPro.className = 'px-3 py-1 rounded-md text-xs font-medium transition text-gray-300';
                 proContainer.classList.add('hidden');
             } else {
-                btnPro.className = 'px-3 py-1 rounded-md text-xs font-medium transition bg-orange-500 text-white';
+                btnPro.className = 'px-3 py-1 rounded-md text-xs font-medium transition bg-blue-600 text-white';
                 btnDom.className = 'px-3 py-1 rounded-md text-xs font-medium transition text-gray-300';
                 proContainer.classList.remove('hidden');
             }
             renderRecipes();
         }
 
-        // Загрузка рецептов из Supabase
+        function filterCategory(category) {
+            currentCategory = category;
+            
+            document.querySelectorAll('#categoryFilters button').forEach(btn => {
+                if (btn.textContent.trim() === category || (category === 'Все' && btn.textContent.trim() === 'Все')) {
+                    btn.className = 'cat-btn px-3 py-1.5 rounded-xl text-xs font-medium whitespace-nowrap bg-blue-600 text-white transition';
+                } else {
+                    btn.className = 'cat-btn px-3 py-1.5 rounded-xl text-xs font-medium whitespace-nowrap bg-gray-800 text-gray-300 border border-gray-700 transition';
+                }
+            });
+
+            renderRecipes();
+        }
+
         async function fetchRecipes() {
             const statusEl = document.getElementById('statusMessage');
             statusEl.textContent = 'Загрузка рецептов из облака...';
@@ -148,41 +190,46 @@
 
                 recipes = data || [];
                 statusEl.classList.add('hidden');
-                
                 localStorage.setItem('chef_recipes_cache', JSON.stringify(recipes));
                 renderRecipes();
             } catch (err) {
-                console.error('Ошибка загрузки:', err.message);
+                console.error('Ошибка Supabase:', err.message);
                 const cached = localStorage.getItem('chef_recipes_cache');
                 if (cached) {
                     recipes = JSON.parse(cached);
-                    statusEl.textContent = '⚠️ Ошибка сети. Показаны данные из кэша.';
+                    statusEl.textContent = `⚠️ Ошибка базы: ${err.message}. Показан кэш.`;
+                    statusEl.classList.remove('hidden');
                     renderRecipes();
                 } else {
-                    statusEl.textContent = 'Не удалось загрузить рецепты из облака. Проверьте подключение.';
+                    statusEl.textContent = `❌ Ошибка: ${err.message}`;
+                    statusEl.classList.remove('hidden');
                 }
             }
         }
 
-        // Рендер списка рецептов на экране
         function renderRecipes() {
             const listEl = document.getElementById('recipesList');
             listEl.innerHTML = '';
 
-            if (recipes.length === 0) {
-                listEl.innerHTML = '<div class="text-center text-gray-500 py-6 text-sm">Пока нет сохраненных техкарт. Нажми «+ Новая техкарта» или загрузи демо.</div>';
+            let filtered = recipes;
+            if (currentCategory !== 'Все') {
+                filtered = recipes.filter(r => r.category === currentCategory);
+            }
+
+            if (filtered.length === 0) {
+                listEl.innerHTML = '<div class="text-center text-gray-500 py-8 text-sm">В этой категории пока пусто.</div>';
                 return;
             }
 
-            recipes.forEach((recipe) => {
+            filtered.forEach((recipe) => {
                 const card = document.createElement('div');
-                card.className = 'bg-gray-800 border border-gray-700 rounded-2xl p-4 shadow-md hover:border-orange-500/50 transition cursor-pointer';
+                card.className = 'bg-gray-800 border border-gray-700 rounded-2xl p-4 shadow-md hover:border-blue-500/50 transition cursor-pointer';
                 card.onclick = () => openEditRecipeModal(recipe.id);
                 
                 let proDetails = '';
                 if (currentMode === 'pro') {
                     proDetails = `
-                        <div class="mt-3 pt-3 border-t border-gray-700 text-xs text-orange-300 flex justify-between">
+                        <div class="mt-3 pt-3 border-t border-gray-700 text-xs text-blue-300 flex justify-between">
                             <span>Базовые порции: <b>${recipe.base_portions || 1}</b></span>
                             <span class="text-gray-400">ID: ${recipe.id.slice(0, 8)}</span>
                         </div>
@@ -192,7 +239,7 @@
                 card.innerHTML = `
                     <div class="flex justify-between items-start mb-2">
                         <h3 class="font-bold text-base text-white">${escapeHtml(recipe.title)}</h3>
-                        <span class="bg-gray-700 text-orange-400 text-[10px] px-2 py-0.5 rounded-full font-medium">${escapeHtml(recipe.category)}</span>
+                        <span class="bg-gray-700 text-blue-400 text-[10px] px-2 py-0.5 rounded-full font-medium">${escapeHtml(recipe.category)}</span>
                     </div>
                     <p class="text-gray-400 text-xs line-clamp-2 mb-2">${escapeHtml(recipe.steps || 'Без описания шагов')}</p>
                     ${proDetails}
@@ -201,7 +248,6 @@
             });
         }
 
-        // Открытие модального окна для создания нового рецепта
         function openNewRecipeModal() {
             document.getElementById('recipeForm').reset();
             document.getElementById('recipeId').value = '';
@@ -210,7 +256,6 @@
             document.getElementById('recipeModal').classList.remove('hidden');
         }
 
-        // Открытие модального окна для редактирования существующего рецепта
         function openEditRecipeModal(id) {
             const recipe = recipes.find(r => r.id === id);
             if (!recipe) return;
@@ -226,12 +271,10 @@
             document.getElementById('recipeModal').classList.remove('hidden');
         }
 
-        // Закрытие модального окна
         function closeModal() {
             document.getElementById('recipeModal').classList.add('hidden');
         }
 
-        // Сохранение (Создание или Обновление) рецепта в Supabase
         async function saveRecipe(event) {
             event.preventDefault();
             
@@ -256,20 +299,11 @@
                 let data, error;
 
                 if (id) {
-                    // Редактирование существующего
-                    const response = await supabaseClient
-                        .from('recipes')
-                        .update(recipeData)
-                        .eq('id', id)
-                        .select();
+                    const response = await supabaseClient.from('recipes').update(recipeData).eq('id', id).select();
                     data = response.data;
                     error = response.error;
                 } else {
-                    // Создание нового
-                    const response = await supabaseClient
-                        .from('recipes')
-                        .insert([recipeData])
-                        .select();
+                    const response = await supabaseClient.from('recipes').insert([recipeData]).select();
                     data = response.data;
                     error = response.error;
                 }
@@ -290,21 +324,16 @@
                 closeModal();
             } catch (err) {
                 console.error('Ошибка сохранения:', err.message);
-                alert('Не удалось сохранить рецепт в базу: ' + err.message);
+                alert('Не удалось сохранить: ' + err.message);
             }
         }
 
-        // Удаление рецепта
         async function deleteCurrentRecipe() {
             const id = document.getElementById('recipeId').value;
             if (!id || !confirm('Удалить эту техкарту?')) return;
 
             try {
-                const { error } = await supabaseClient
-                    .from('recipes')
-                    .delete()
-                    .eq('id', id);
-
+                const { error } = await supabaseClient.from('recipes').delete().eq('id', id);
                 if (error) throw error;
 
                 recipes = recipes.filter(r => r.id !== id);
@@ -313,27 +342,22 @@
                 closeModal();
             } catch (err) {
                 console.error('Ошибка удаления:', err.message);
-                alert('Не удалось удалить рецепт: ' + err.message);
+                alert('Не удалось удалить: ' + err.message);
             }
         }
 
-        // Загрузка демо-рецепта
         async function loadDemoRecipes() {
             const demoRecipe = {
                 user_id: userId,
                 title: 'Оссобуко по-милански',
                 category: 'Основное блюдо',
                 base_portions: 4,
-                steps: '1. Обжарить говяжью голяшку. 2. Добавить овощи, белое вино и бульон. 3. Тушить на медленном огне 2.5 часа.',
+                steps: '1. Обжарить говяжью голяшку. 2. Добавить овощи, белое вино и бульон. 3. Тушить 2.5 часа.',
                 photo_file_id: ''
             };
 
             try {
-                const { data, error } = await supabaseClient
-                    .from('recipes')
-                    .insert([demoRecipe])
-                    .select();
-
+                const { data, error } = await supabaseClient.from('recipes').insert([demoRecipe]).select();
                 if (error) throw error;
                 if (data) {
                     recipes.unshift(data[0]);
@@ -342,17 +366,15 @@
                 }
             } catch (err) {
                 console.error('Демо ошибка:', err.message);
-                alert('Ошибка загрузки демо: ' + err.message);
+                alert('Ошибка демо: ' + err.message);
             }
         }
 
-        // Экранирование для безопасности текста
         function escapeHtml(text) {
             if (!text) return '';
             return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
         }
 
-        // Запускаем загрузку при старте
         fetchRecipes();
     </script>
 </body>
