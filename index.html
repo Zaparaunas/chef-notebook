@@ -65,6 +65,7 @@
             padding: 16px;
             border: 1px solid var(--tg-border);
             margin-bottom: 14px;
+            position: relative;
         }
 
         .recipe-name {
@@ -148,6 +149,7 @@
             border-radius: 16px;
             margin-bottom: 14px;
         }
+
         .admin-panel input, .admin-panel textarea {
             width: 100%;
             padding: 8px;
@@ -158,6 +160,7 @@
             border-radius: 8px;
             box-sizing: border-box;
         }
+
         .action-btn {
             background: var(--tg-button);
             color: var(--tg-button-text);
@@ -168,6 +171,17 @@
             font-size: 15px;
             font-weight: 600;
             cursor: pointer;
+        }
+
+        .delete-recipe-btn {
+            background: rgba(255, 59, 48, 0.15);
+            color: #ff3b30;
+            border: none;
+            padding: 4px 8px;
+            border-radius: 8px;
+            font-size: 12px;
+            cursor: pointer;
+            float: right;
         }
     </style>
 </head>
@@ -184,13 +198,23 @@
             </div>
         </div>
 
+        <!-- Панель конструктора нового рецепта -->
         <div class="admin-panel" id="adminPanel" style="display: none;">
-            <div style="font-weight: 700; margin-bottom: 8px;">Добавить новый рецепт</div>
-            <input type="text" id="newTitle" placeholder="Название блюда">
+            <div style="font-weight: 700; margin-bottom: 12px; font-size: 16px;">➕ Новая техкарта</div>
+            
+            <input type="text" id="newTitle" placeholder="Название блюда (например, Оссобуко)">
             <input type="text" id="newCategory" placeholder="Категория (Горячее, Супы...)">
             <input type="number" id="newPortions" placeholder="Базовые порции" value="4">
-            <textarea id="newSteps" placeholder="Шаги приготовления..."></textarea>
-            <button class="action-btn" onclick="addNewRecipe()">Сохранить в Supabase</button>
+            
+            <div style="margin: 12px 0 4px 0; font-weight: 600; font-size: 13px; color: var(--tg-hint);">Ингредиенты:</div>
+            <div id="newIngredientsContainer" style="display: flex; flex-direction: column; gap: 6px; margin-bottom: 8px;"></div>
+            <button type="button" class="mode-btn" style="width: 100%; margin-bottom: 12px;" onclick="addIngredientRow()">+ Добавить ингредиент</button>
+
+            <div style="margin: 12px 0 4px 0; font-weight: 600; font-size: 13px; color: var(--tg-hint);">Шаги приготовления:</div>
+            <div id="newStepsContainer" style="display: flex; flex-direction: column; gap: 6px; margin-bottom: 12px;"></div>
+            <button type="button" class="mode-btn" style="width: 100%; margin-bottom: 16px;" onclick="addStepRow()">+ Добавить шаг</button>
+
+            <button class="action-btn" onclick="addNewRecipeWithDetails()">Сохранить техкарту в базу</button>
         </div>
 
         <div id="recipesContainer">
@@ -204,7 +228,6 @@
         let tg = window.Telegram.WebApp;
         tg.expand();
 
-        // Твои реальные данные подключения
         const SUPABASE_URL = "https://fxvporgpgpxudzlbauty.supabase.co";
         const SUPABASE_ANON_KEY = "sb_publishable_kcUT9hJ_k8e-2sj0j8BbAA_QvG8Wc-p";
         
@@ -223,6 +246,32 @@
         function toggleAdminPanel() {
             const panel = document.getElementById('adminPanel');
             panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
+        }
+
+        function addIngredientRow() {
+            const container = document.getElementById('newIngredientsContainer');
+            const row = document.createElement('div');
+            row.style.display = 'flex';
+            row.style.gap = '6px';
+            row.innerHTML = `
+                <input type="text" placeholder="Продукт" class="ing-name-input" style="flex: 2; margin-bottom: 0;">
+                <input type="number" placeholder="Брутто" class="ing-gross-input" style="flex: 1; margin-bottom: 0;">
+                <input type="number" placeholder="Нетто" class="ing-net-input" style="flex: 1; margin-bottom: 0;">
+                <button type="button" class="mode-btn" style="background: rgba(255,59,48,0.2); color: #ff3b30; border: none;" onclick="this.parentElement.remove()">✕</button>
+            `;
+            container.appendChild(row);
+        }
+
+        function addStepRow() {
+            const container = document.getElementById('newStepsContainer');
+            const row = document.createElement('div');
+            row.style.display = 'flex';
+            row.style.gap = '6px';
+            row.innerHTML = `
+                <input type="text" placeholder="Описание шага..." class="step-text-input" style="flex: 1; margin-bottom: 0;">
+                <button type="button" class="mode-btn" style="background: rgba(255,59,48,0.2); color: #ff3b30; border: none;" onclick="this.parentElement.remove()">✕</button>
+            `;
+            container.appendChild(row);
         }
 
         async function loadRecipes() {
@@ -257,27 +306,29 @@
             container.innerHTML = '';
             recipes.forEach((recipe, index) => {
                 container.innerHTML += `
-                    <div class="recipe-card">
+                    <div class="recipe-card" id="card-${recipe.id}">
+                        <button class="delete-recipe-btn" onclick="deleteRecipe('${recipe.id}')">Удалить</button>
                         <div class="recipe-name">${recipe.title}</div>
+                        <div style="font-size: 12px; color: var(--tg-hint); margin-bottom: 10px;">Категория: ${recipe.category || 'Общая'}</div>
                         <div class="portions-control">
                             <div class="portions-info">
                                 <span>Порций:</span>
                                 <span id="val-${index}" style="color: var(--tg-button);">${recipe.base_portions || 4}</span>
                             </div>
-                            <input type="range" min="1" max="30" value="${recipe.base_portions || 4}" class="portions-slider" oninput="updatePortions(this, 'ing-${index}', ${recipe.base_portions || 4}, '${recipe.id}')">
+                            <input type="range" min="1" max="30" value="${recipe.base_portions || 4}" class="portions-slider" oninput="updatePortions(this, 'ing-${index}', ${recipe.base_portions || 4})">
                         </div>
                         <div class="section-title">Ингредиенты:</div>
                         <div class="ingredients-list" id="ing-${index}">
                             <div class="text-sm text-tg-hint">Загрузка ингредиентов...</div>
                         </div>
                         <div class="section-title" style="margin-top: 12px;">Шаги:</div>
-                        <div style="font-size: 14px; color: var(--tg-hint);">${recipe.steps || 'Нет описания'}</div>
+                        <div style="font-size: 14px; color: var(--tg-hint); white-space: pre-line;">${recipe.steps || 'Нет описания'}</div>
                     </div>`;
-                loadIngredientsForRecipe(recipe.id, `ing-${index}`, recipe.base_portions || 4);
+                loadIngredientsForRecipe(recipe.id, `ing-${index}`);
             });
         }
 
-        async function loadIngredientsForRecipe(recipeId, containerId, basePortions) {
+        async function loadIngredientsForRecipe(recipeId, containerId) {
             const container = document.getElementById(containerId);
             let { data: ingredients, error } = await supabaseClient
                 .from('ingredients')
@@ -285,7 +336,7 @@
                 .eq('recipe_id', recipeId);
 
             if (error || !ingredients || ingredients.length === 0) {
-                container.innerHTML = `<div class="text-sm text-tg-hint">Нет ингредиентов в базе. Добавь их в Supabase.</div>`;
+                container.innerHTML = `<div style="font-size: 13px; color: var(--tg-hint);">Нет ингредиентов.</div>`;
                 return;
             }
 
@@ -295,7 +346,7 @@
                     <div class="ingredient-item" onclick="this.classList.toggle('checked')">
                         <div>
                             <div style="font-size: 14px; font-weight: 500;">• ${ing.name}</div>
-                            <div class="pro-only">⚖️ Брутто: ${ing.gross}г | Нетто: ${ing.net}г (-${ing.loss_percent || 0}%)</div>
+                            <div class="pro-only">⚖️ Брутто: ${ing.gross || 0}г | Нетто: ${ing.net || 0}г</div>
                         </div>
                         <div class="ing-weight" data-base="${ing.net || ing.gross || 0}" data-unit="${ing.unit || 'г'}">${ing.net || ing.gross || 0} ${ing.unit || 'г'}</div>
                     </div>`;
@@ -304,10 +355,12 @@
 
         function updatePortions(slider, containerId, basePortions) {
             const val = slider.value;
-            // Находим числовой элемент порций для конкретной карточки
-            const sliderId = slider.id || '';
+            // Обновляем текст с текущим числом порций рядом со слайдером
+            const card = slider.closest('.recipe-card');
+            const valSpan = card.querySelector('.portions-info span[style*="color"]');
+            if (valSpan) valSpan.innerText = val;
+
             const factor = val / basePortions;
-            
             const container = document.getElementById(containerId);
             if (!container) return;
             const items = container.getElementsByClassName('ingredient-item');
@@ -322,26 +375,85 @@
             });
         }
 
-        async function addNewRecipe() {
+        async function addNewRecipeWithDetails() {
             const title = document.getElementById('newTitle').value;
             const category = document.getElementById('newCategory').value;
             const base_portions = parseInt(document.getElementById('newPortions').value) || 4;
-            const steps = document.getElementById('newSteps').value;
             
             if (!title) {
                 alert('Введите название рецепта!');
                 return;
             }
 
-            const { data, error } = await supabaseClient
+            // Собираем шаги
+            const stepInputs = document.querySelectorAll('.step-text-input');
+            let stepsArr = [];
+            stepInputs.forEach((input, index) => {
+                if (input.value.trim()) stepsArr.push(`${index + 1}. ${input.value.trim()}`);
+            });
+            const steps = stepsArr.join('\n');
+
+            // 1. Сохраняем рецепт
+            const { data: recipeData, error: recipeError } = await supabaseClient
                 .from('recipes')
-                .insert([{ title, category, base_portions, steps, user_id: tg.initDataUnsafe?.user?.id || 'web_user' }]);
+                .insert([{ title, category, base_portions, steps, user_id: tg.initDataUnsafe?.user?.id || 'web_user' }])
+                .select()
+                .single();
+
+            if (recipeError) {
+                alert('Ошибка сохранения рецепта: ' + recipeError.message);
+                return;
+            }
+
+            const recipeId = recipeData.id;
+
+            // 2. Сохраняем ингредиенты
+            const ingRows = document.querySelectorAll('#newIngredientsContainer > div');
+            let ingredientsToInsert = [];
+            
+            ingRows.forEach(row => {
+                const name = row.querySelector('.ing-name-input').value;
+                const gross = parseFloat(row.querySelector('.ing-gross-input').value) || 0;
+                const net = parseFloat(row.querySelector('.ing-net-input').value) || gross;
+                
+                if (name) {
+                    ingredientsToInsert.push({
+                        recipe_id: recipeId,
+                        name: name,
+                        gross: gross,
+                        net: net,
+                        unit: 'г'
+                    });
+                }
+            });
+
+            if (ingredientsToInsert.length > 0) {
+                const { error: ingError } = await supabaseClient
+                    .from('ingredients')
+                    .insert(ingredientsToInsert);
+
+                if (ingError) {
+                    alert('Рецепт сохранен, но ошибка с ингредиентами: ' + ingError.message);
+                }
+            }
+
+            alert('Техкарта успешно создана!');
+            toggleAdminPanel();
+            loadRecipes();
+        }
+
+        async function deleteRecipe(recipeId) {
+            if (!confirm('Точно удалить этот рецепт и все его ингредиенты?')) return;
+
+            // Сначала удаляем ингредиенты, привязанные к рецепту
+            await supabaseClient.from('ingredients').delete().eq('recipe_id', recipeId);
+            
+            // Затем удаляем сам рецепт
+            const { error } = await supabaseClient.from('recipes').delete().eq('id', recipeId);
 
             if (error) {
-                alert('Ошибка сохранения: ' + error.message);
+                alert('Ошибка удаления: ' + error.message);
             } else {
-                alert('Рецепт успешно сохранен в Supabase!');
-                toggleAdminPanel();
                 loadRecipes();
             }
         }
