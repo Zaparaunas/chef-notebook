@@ -4,9 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Блокнот Шефа</title>
-    <!-- Подключение Telegram WebApp SDK -->
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <!-- Подключение клиента Supabase -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         :root {
@@ -56,6 +54,12 @@
             padding: 10px; border-radius: 6px; margin-bottom: 8px; border: 1px solid #333;
         }
         .pro-fields { display: flex; gap: 5px; }
+        .loss-info { font-size: 11px; color: var(--hint-color); margin-bottom: 5px; }
+        .summary-box {
+            background: var(--bg-color); border: 1px dashed var(--button-color);
+            padding: 10px; border-radius: 6px; margin-bottom: 15px; font-size: 14px; font-weight: bold;
+            display: flex; justify-content: space-between;
+        }
         .actions-row { display: flex; gap: 10px; margin-top: 15px; }
     </style>
 </head>
@@ -101,7 +105,13 @@
 
             <h4>Ингредиенты:</h4>
             <div id="ingredientsList"></div>
-            <button class="mode-btn" style="width: 100%; margin-bottom: 15px;" onclick="addIngredientRow()">+ Добавить ингредиент</button>
+            <button class="mode-btn" style="width: 100%; margin-bottom: 10px;" onclick="addIngredientRow()">+ Добавить ингредиент</button>
+
+            <!-- Сводная итоговая строка -->
+            <div class="summary-box" id="summaryBox">
+                <span>Итого (брутто / нетто):</span>
+                <span id="summaryValues">0 г / 0 г</span>
+            </div>
 
             <h4>Шаги приготовления:</h4>
             <div id="stepsList"></div>
@@ -119,7 +129,7 @@
     </div>
 
 <script>
-    // ЖЕСТКО ВШИТЫЕ ТОКЕНЫ И КЛЮЧИ (все данные подставлены напрямую)
+    // Версия "Альфа" с жестко вшитыми ключами
     const SUPABASE_URL = 'https://fxvporgpgpxudzlbauty.supabase.co';
     const SUPABASE_KEY = 'sb_publishable_kcUT9hJ_k8e-2sj0j8BbAA_QvG8Wc-p';
     const SUPABASE_SECRET = 'sb_secret_H-40DrDJ25uaY61kgrOyJw_izkEEpU1';
@@ -187,6 +197,7 @@
             addIngredientRow();
             addStepRow();
         }
+        updateSummary();
     }
 
     function closeConstructor() {
@@ -203,22 +214,65 @@
         
         let proHtml = '';
         if (currentMode === 'pro') {
+            const grossVal = data.gross || '';
+            const netVal = data.net || '';
             proHtml = `
                 <div class="pro-fields">
-                    <input type="number" placeholder="Брутто (г)" value="${data.gross || ''}" class="ing-gross">
-                    <input type="number" placeholder="Нетто (г)" value="${data.net || ''}" class="ing-net">
+                    <input type="number" placeholder="Брутто (г)" value="${grossVal}" class="ing-gross" oninput="updateRowLoss(this); updateSummary();">
+                    <input type="number" placeholder="Нетто (г)" value="${netVal}" class="ing-net" oninput="updateRowLoss(this); updateSummary();">
                 </div>
+                <div class="loss-info">Потери: <span class="loss-percent">0%</span></div>
             `;
         } else {
-            proHtml = `<input type="number" placeholder="Вес (г)" value="${data.gross || data.weight || ''}" class="ing-weight">`;
+            proHtml = `<input type="number" placeholder="Вес (г)" value="${data.gross || data.weight || ''}" class="ing-weight" oninput="updateSummary()">`;
         }
 
         div.innerHTML = `
             <input type="text" placeholder="Название продукта" value="${data.name || ''}" class="ing-name">
             ${proHtml}
-            <button type="button" class="mode-btn" style="color: #ff5252; border-color: #ff5252; padding: 4px;" onclick="this.parentElement.remove();">Удалить ингредиент</button>
+            <button type="button" class="mode-btn" style="color: #ff5252; border-color: #ff5252; padding: 4px;" onclick="this.parentElement.remove(); updateSummary();">Удалить ингредиент</button>
         `;
         container.appendChild(div);
+        
+        if (currentMode === 'pro') {
+            updateRowLoss(div.querySelector('.ing-gross'));
+        }
+        updateSummary();
+    }
+
+    function updateRowLoss(element) {
+        const row = element.closest('.ingredient-row');
+        if (!row) return;
+        const gross = parseFloat(row.querySelector('.ing-gross')?.value) || 0;
+        const net = parseFloat(row.querySelector('.ing-net')?.value) || 0;
+        const lossSpan = row.querySelector('.loss-percent');
+        
+        if (lossSpan) {
+            if (gross > 0 && gross >= net) {
+                const loss = ((gross - net) / gross) * 100;
+                lossSpan.innerText = loss.toFixed(1) + '%';
+            } else {
+                lossSpan.innerText = '0%';
+            }
+        }
+    }
+
+    function updateSummary() {
+        let totalGross = 0;
+        let totalNet = 0;
+
+        document.querySelectorAll('.ingredient-row').forEach(row => {
+            if (currentMode === 'pro') {
+                totalGross += parseFloat(row.querySelector('.ing-gross')?.value) || 0;
+                totalNet += parseFloat(row.querySelector('.ing-net')?.value) || 0;
+            } else {
+                const val = parseFloat(row.querySelector('.ing-weight')?.value) || 0;
+                totalGross += val;
+                totalNet += val;
+            }
+        });
+
+        document.getElementById('summaryValues').innerText = `${totalGross} г / ${totalNet} г`;
     }
 
     function rebuildIngredientsListUI() {
@@ -430,7 +484,7 @@
             const card = document.createElement('div');
             card.className = 'recipe-card';
             
-            let ingListHtml = (recipe.ingredients || []).map(i => `<li>${i.name} — ${i.gross}г</li>`).join('');
+            let ingListHtml = (recipe.ingredients || []).map(i => `<li>${i.name} — Брутто: ${i.gross}г, Нетто: ${i.net}г</li>`).join('');
             
             let stepsArr = [];
             try {
