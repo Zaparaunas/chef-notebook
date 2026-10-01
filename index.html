@@ -1,161 +1,295 @@
-HTML
 <!DOCTYPE html>
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Блокнот Шефа</title>
-    <!-- Подключаем официальный скрипт Telegram Mini App SDK -->
-    <script src="
-"></script>
-    
+    <title>Блокнот Шефа • Telegram Mini App</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
-        /* Переменные подстраиваются под тему Telegram (темная/светлая) */
         :root {
-            --bg-color: var(--tg-theme-bg-color, #ffffff);
-            --text-color: var(--tg-theme-text-color, #000000);
-            --hint-color: var(--tg-theme-hint-color, #999999);
-            --button-color: var(--tg-theme-button-color, #2481cc);
-            --button-text-color: var(--tg-theme-button-text-color, #ffffff);
-            --card-bg: var(--tg-theme-secondary-bg-color, #f4f4f5);
+            --tg-bg: var(--tg-theme-bg-color, #0f1215);
+            --tg-card-bg: var(--tg-theme-secondary-bg-color, #181d23);
+            --tg-text: var(--tg-theme-text-color, #f5f5f7);
+            --tg-hint: var(--tg-theme-hint-color, #8e959d);
+            --tg-button: var(--tg-theme-button-color, #2ea6ff);
+            --tg-button-text: var(--tg-theme-button-text-color, #ffffff);
+            --tg-border: rgba(255, 255, 255, 0.08);
         }
+
         body {
-            background-color: var(--bg-color);
-            color: var(--text-color);
+            background-color: var(--tg-bg);
+            color: var(--tg-text);
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
             margin: 0;
-            padding: 16px;
+            padding: 12px;
+            -webkit-font-smoothing: antialiased;
         }
-        h2 { font-size: 20px; margin-bottom: 10px; }
-        /* Шапка с переключателем режимов */
+
+        .app-container {
+            max-width: 480px;
+            margin: 0 auto;
+        }
+
+        /* Шапка */
         .header {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 20px;
+            padding: 8px 4px 16px 4px;
+            border-bottom: 1px solid var(--tg-border);
+            margin-bottom: 14px;
         }
-        .mode-toggle {
-            background: var(--card-bg);
-            border: 1px solid var(--hint-color);
-            color: var(--text-color);
+
+        .header-title {
+            font-size: 17px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .mode-btn {
+            background: var(--tg-card-bg);
+            border: 1px solid var(--tg-border);
+            color: var(--tg-text);
             padding: 6px 12px;
-            border-radius: 8px;
-            font-size: 14px;
-            font-weight: 650;
+            border-radius: 16px;
+            font-size: 13px;
+            font-weight: 600;
             cursor: pointer;
+            transition: all 0.2s ease;
         }
+
+        .mode-btn:active {
+            transform: scale(0.95);
+        }
+
         /* Карточка рецепта */
         .recipe-card {
-            background-color: var(--card-bg);
-            border-radius: 12px;
+            background: var(--tg-card-bg);
+            border-radius: 16px;
             padding: 16px;
-            margin-bottom: 16px;
+            border: 1px solid var(--tg-border);
+            margin-bottom: 14px;
         }
-        /* Ползунок порций (от 1 до 10000) */
-        .portions-box {
-            margin: 15px 0;
+
+        .recipe-name {
+            font-size: 20px;
+            font-weight: 700;
+            margin-bottom: 12px;
+        }
+
+        /* Контроллер порций */
+        .portions-control {
+            margin-bottom: 16px;
+            padding-bottom: 14px;
+            border-bottom: 1px solid var(--tg-border);
+        }
+
+        .portions-info {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+            font-size: 15px;
+            font-weight: 600;
+        }
+
+        .portions-slider {
+            width: 100%;
+            accent-color: var(--tg-button);
+            cursor: pointer;
+        }
+
+        /* Секция ингредиентов */
+        .section-title {
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--tg-hint);
+            margin: 16px 4px 8px 4px;
+            font-weight: 700;
+        }
+
+        .ingredients-list {
             display: flex;
             flex-direction: column;
-            gap: 5px;
+            gap: 8px;
         }
-        input[type="range"] {
-            width: 100%;
-            accent-color: var(--button-color);
+
+        .ingredient-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 12px;
+            background: rgba(255, 255, 255, 0.02);
+            border-radius: 10px;
+            border: 1px solid var(--tg-border);
+            cursor: pointer;
+            user-select: none;
+            transition: opacity 0.2s;
         }
-        /* Скрытые элементы для Pro-режима */
+
+        .ingredient-item.checked {
+            opacity: 0.4;
+            text-decoration: line-through;
+        }
+
+        .ing-name {
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .ing-weight {
+            font-size: 14px;
+            font-weight: 700;
+            color: var(--tg-button);
+        }
+
+        /* Специфичные PRO-элементы (скрыты по умолчанию в режиме Дом) */
         .pro-only {
-            display: none; /* По умолчанию скрыто для домохозяек */
-            border-left: 3px solid var(--button-color);
-            padding-left: 8px;
-            margin-top: 5px;
+            display: none;
+            font-size: 11px;
+            color: var(--tg-hint);
+            margin-top: 2px;
         }
-        /* Когда включен режим Pro, этот класс делает элементы видимыми */
-        body.is-pro .pro-only {
+
+        body.pro-mode .pro-only {
             display: block;
         }
-        /* Кнопка */
-        .tg-button {
-            background-color: var(--button-color);
-            color: var(--button-text-color);
+
+        /* Кнопка загрузки */
+        .action-btn {
+            background: var(--tg-button);
+            color: var(--tg-button-text);
             border: none;
             width: 100%;
             padding: 12px;
-            border-radius: 10px;
-            font-size: 16px;
+            border-radius: 14px;
+            font-size: 15px;
             font-weight: 600;
             cursor: pointer;
             margin-top: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
         }
     </style>
 </head>
 <body>
-    <div class="header">
-        <h2>📜 Блокнот Шефа</h2>
-        <!-- Кнопка переключения режимов Дом / Про -->
-        <button class="mode-toggle" id="modeToggleBtn" onclick="toggleMode()">Режим: Дом</button>
-    </div>
-    <div class="recipe-card">
-        <h3 id="recipeTitle">Оссобуко по-милански</h3>
-        
-        <!-- Ползунок порций от 1 до 10000 -->
-        <div class="portions-box">
-            <label>Порций: <span id="portionsValue">4</span></label>
-            <input type="range" id="portionsRange" min="1" max="10000" value="4" oninput="updatePortions(this.value)">
+
+    <div class="app-container">
+        <!-- Шапка -->
+        <div class="header">
+            <div class="header-title">
+                <span>📜</span> Блокнот Шефа
+            </div>
+            <button class="mode-btn" id="modeToggleBtn" onclick="toggleMode()">Режим: Дом 🏡</button>
         </div>
-        <hr style="border:0; border-top:1px solid var(--hint-color); opacity: 0.2;">
-        <h4>Ингредиенты:</h4>
-        <ul id="ingredientsList">
-            <!-- Пример ингредиента с математикой -->
-            <li>
-                <span data-base="500" class="ing-name">Говяжья голяшка</span>: 
-                <strong class="ing-weight">500</strong> г
-                
-                <!-- Блок, который видит ТОЛЬКО шеф (Pro-режим) -->
-                <div class="pro-only">
-                    <small>Брутто: <span class="gross-weight">600</span>г | Потери при жарке: 16%</small>
+
+        <!-- Карточка блюда -->
+        <div class="recipe-card">
+            <div class="recipe-name">Оссобуко по-милански</div>
+
+            <!-- Управление порциями -->
+            <div class="portions-control">
+                <div class="portions-info">
+                    <span>Порций:</span>
+                    <span id="portionsValue" style="color: var(--tg-button);">4</span>
                 </div>
-            </li>
-        </ul>
+                <input type="range" min="1" max="50" value="4" class="portions-slider" id="portionsSlider" oninput="updatePortions(this.value)">
+            </div>
+
+            <!-- Список ингредиентов -->
+            <div class="section-title">Ингредиенты:</div>
+            <div class="ingredients-list" id="ingredientsList">
+                <!-- Динамически заполняется через JS -->
+            </div>
+        </div>
+
+        <!-- Кнопка действия -->
+        <button class="action-btn" onclick="openTelegramUpload()">
+            <span>➕</span> Загрузить техкарту через Telegram
+        </button>
     </div>
-    <button class="tg-button" onclick="addPhoto()">+ Загрузить фото через Telegram</button>
+
     <script>
-        // Инициализация Telegram WebApp
+        // Инициализация Telegram WebApp SDK
         let tg = window.Telegram.WebApp;
-        tg.expand(); // Разворачиваем мини-апп на весь экран телефона
+        tg.expand();
+
+        // Базовые данные рецепта (рассчитаны на 4 порции)
+        const basePortions = 4;
+        const ingredients = [
+            { name: "Говяжья голяшка", baseAmount: 500, unit: "г", loss: "Потери при зачистке: 15%" },
+            { name: "Вино сухое белое", baseAmount: 100, unit: "мл", loss: "Упаривание: 10%" },
+            { name: "Лук репчатый", baseAmount: 80, unit: "г", loss: "Очистка: 12%" },
+            { name: "Морковь", baseAmount: 60, unit: "г", loss: "Очистка: 15%" },
+            { name: "Бульон мясной", baseAmount: 250, unit: "мл", loss: "Без потерь" }
+        ];
+
         let isProMode = false;
-        let basePortions = 4; // База рецепта
-        // Функция переключения режимов (Дом / Pro)
-        function toggleMode() {
-            isProMode = !isProMode;
-            let btn = document.getElementById('modeToggleBtn');
-            
-            if (isProMode) {
-                document.body.classList.add('is-pro');
-                btn.innerText = "Режим: PRO 🔪";
-            } else {
-                document.body.classList.remove('is-pro');
-                btn.innerText = "Режим: Дом 🏡";
-            }
-        }
-        // Функция пересчета граммовок при движении ползунка от 1 до 10000 порций
-        function updatePortions(newPortions) {
-            document.getElementById('portionsValue').innerText = newPortions;
-            
-            // Считаем коэффициент пересчета
-            let coefficient = newPortions / basePortions;
-            // Находим все ингредиенты и пересчитываем их вес на лету
-            let weightElements = document.querySelectorAll('.ing-weight');
-            let baseWeights = [500]; // Базовый вес для наших тестовых данных
-            weightElements.forEach((el, index) => {
-                let calculatedWeight = Math.round(baseWeights[index] * coefficient * 10) / 10;
-                el.innerText = calculatedWeight;
+
+        // Рендер списка ингредиентов
+        function renderIngredients(currentPortions) {
+            const listContainer = document.getElementById('ingredientsList');
+            listContainer.innerHTML = '';
+
+            const factor = currentPortions / basePortions;
+
+            ingredients.forEach((item, index) => {
+                let calculatedAmount = Math.round(item.baseAmount * factor * 10) / 10;
+
+                const row = document.createElement('div');
+                row.className = 'ingredient-item';
+                row.onclick = () => row.classList.toggle('checked');
+
+                row.innerHTML = `
+                    <div class="ing-info">
+                        <div class="ing-name">• ${item.name}</div>
+                        <div class="pro-only">⚖️ Брутто с учетом потерь (${item.loss})</div>
+                    </div>
+                    <div class="ing-weight">${calculatedAmount} ${item.unit}</div>
+                `;
+                listContainer.appendChild(row);
             });
         }
-        // Функция загрузки фото через Telegram Cloud (file_id)
-        function addPhoto() {
-            // Внутри Telegram Mini App здесь вызывается нативная галерея
-            alert("Здесь открывается галерея телефона. Выбранное фото улетит в Telegram Cloud, а в базу запишется только file_id!");
+
+        // Обновление при движении ползунка
+        function updatePortions(val) {
+            document.getElementById('portionsValue').innerText = val;
+            renderIngredients(parseInt(val));
+            if (tg.HapticFeedback) {
+                tg.HapticFeedback.selectionChanged();
+            }
         }
+
+        // Переключение режимов Дом / PRO
+        function toggleMode() {
+            isProMode = !isProMode;
+            document.body.classList.toggle('pro-mode', isProMode);
+            const btn = document.getElementById('modeToggleBtn');
+            
+            if (isProMode) {
+                btn.innerText = "Режим: PRO 🔪";
+                btn.style.borderColor = "var(--tg-button)";
+            } else {
+                btn.innerText = "Режим: Дом 🏡";
+                btn.style.borderColor = "var(--tg-border)";
+            }
+
+            if (tg.HapticFeedback) {
+                tg.HapticFeedback.impactOccurred('medium');
+            }
+        }
+
+        function openTelegramUpload() {
+            tg.showAlert("Здесь откроется интерфейс загрузки фото техкарты для распознавания ИИ!");
+        }
+
+        // Первичный запуск отрисовки
+        renderIngredients(basePortions);
     </script>
 </body>
 </html>
