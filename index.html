@@ -121,17 +121,17 @@
         </div>
     </div>
 
-    <!-- Управление и рубрикатор (скрываются при редактировании) -->
+    <!-- Управление и рубрикатор (скрываются при редактировании/создании) -->
     <div id="navControlsContainer">
         <button class="primary" onclick="openConstructor()" style="margin-bottom: 12px;">+ Новая техкарта</button>
         
         <div class="category-nav" id="categoryNav">
             <div class="category-chip active" onclick="filterCategory('Все')">Все</div>
-            <div class="category-chip" onclick="filterCategory('Холодные блюда и закуски')">Холодные закуски</div>
-            <div class="category-chip" onclick="filterCategory('Супы')">Супы</div>
             <div class="category-chip" onclick="filterCategory('Мясо и птица')">Мясо и птица</div>
             <div class="category-chip" onclick="filterCategory('Рыба и морепродукты')">Рыба и морепродукты</div>
             <div class="category-chip" onclick="filterCategory('Овощи и грибы')">Овощи и грибы</div>
+            <div class="category-chip" onclick="filterCategory('Супы')">Супы</div>
+            <div class="category-chip" onclick="filterCategory('Холодные блюда и закуски')">Холодные закуски</div>
             <div class="category-chip" onclick="filterCategory('Крупы, макароны и бобовые')">Крупы и гарниры</div>
             <div class="category-chip" onclick="filterCategory('Соусы, маринады и заправки')">Соусы</div>
             <div class="category-chip" onclick="filterCategory('Полуфабрикаты и заготовки')">Заготовки</div>
@@ -151,17 +151,17 @@
         <h3>Создание техкарты</h3>
         
         <!-- Название блюда (выделено) -->
-        <input type="text" id="recipeTitle" class="recipe-title-input" placeholder="Название блюда (например, Оссобуко)" oninput="toggleConstructorFields()">
+        <input type="text" id="recipeTitle" class="recipe-title-input" placeholder="Название блюда (обязательно)..." oninput="toggleConstructorFields()">
 
         <!-- Поля, скрытые до ввода названия -->
         <div id="constructorBody" style="display: none;">
             <select id="recipeCategory">
                 <option value="" disabled selected>Выберите категорию...</option>
-                <option value="Холодные блюда и закуски">Холодные блюда и закуски</option>
-                <option value="Супы">Супы</option>
                 <option value="Мясо и птица">Мясо и птица</option>
                 <option value="Рыба и морепродукты">Рыба и морепродукты</option>
                 <option value="Овощи и грибы">Овощи и грибы</option>
+                <option value="Супы">Супы</option>
+                <option value="Холодные блюда и закуски">Холодные блюда и закуски</option>
                 <option value="Крупы, макароны и бобовые">Крупы, макароны и бобовые</option>
                 <option value="Соусы, маринады и заправки">Соусы, маринады и заправки</option>
                 <option value="Полуфабрикаты и заготовки">Полуфабрикаты и заготовки</option>
@@ -170,10 +170,11 @@
                 <option value="Другое">Другое</option>
             </select>
 
-            <div style="margin-bottom: 10px; display: flex; align-items: center; gap: 10px;">
-                <label style="font-size: 13px; color: var(--hint-color); flex: 1;">Порции:</label>
-                <input type="range" id="recipePortionsRange" min="1" max="20" value="4" oninput="syncPortions(this.value)" style="flex: 2; margin-bottom: 0;">
-                <input type="number" id="recipePortionsNum" min="1" value="4" oninput="syncPortionsNum(this.value)" style="flex: 1; margin-bottom: 0; text-align: center;">
+            <!-- Порции (ползунок до 20 + ручной ввод на одном уровне) -->
+            <div style="margin-bottom: 12px; display: flex; align-items: center; gap: 10px;">
+                <label style="font-size: 13px; color: var(--hint-color); white-space: nowrap;">Порции:</label>
+                <input type="range" id="recipePortionsRange" min="1" max="20" value="4" oninput="syncPortionsRange(this.value)" style="flex: 2; margin-bottom: 0;">
+                <input type="number" id="recipePortionsNum" min="1" value="4" oninput="syncPortionsNum(this.value)" style="width: 80px; margin-bottom: 0; text-align: center;">
             </div>
 
             <h4>Ингредиенты:</h4>
@@ -184,8 +185,8 @@
             <div id="stepsList"></div>
             <button class="secondary" onclick="addStepRow()" style="margin-bottom: 15px;">+ Добавить шаг</button>
 
-            <div style="display: flex; gap: 10px;">
-                <button class="primary" onclick="saveRecipe()" style="flex: 2;">Сохранить в базу</button>
+            <div style="display: flex; gap: 10px; margin-top: 16px;">
+                <button class="primary" onclick="saveRecipe()" style="flex: 2;">Сохранить техкарту</button>
                 <button class="secondary" onclick="closeConstructor()" style="flex: 1;">Отмена</button>
             </div>
         </div>
@@ -193,11 +194,18 @@
 
     <script>
         let currentMode = 'simple';
+        let recipes = JSON.parse(localStorage.getItem('chef_recipes') || '[]');
+        let activeCategory = 'Все';
+
+        document.addEventListener('DOMContentLoaded', () => {
+            renderRecipes();
+        });
 
         function setMode(mode) {
             currentMode = mode;
             document.getElementById('btnSimple').classList.toggle('active', mode === 'simple');
             document.getElementById('btnPro').classList.toggle('active', mode === 'pro');
+            renderRecipes();
         }
 
         function openConstructor() {
@@ -205,13 +213,24 @@
             document.getElementById('recipesContainer').style.display = 'none';
             document.getElementById('recipeConstructor').style.display = 'block';
             document.getElementById('recipeTitle').value = '';
+            document.getElementById('recipeCategory').selectedIndex = 0;
+            document.getElementById('recipePortionsRange').value = 4;
+            document.getElementById('recipePortionsRange').style.display = 'block';
+            document.getElementById('recipePortionsNum').value = 4;
+            document.getElementById('ingredientsList').innerHTML = '';
+            document.getElementById('stepsList').innerHTML = '';
             document.getElementById('constructorBody').style.display = 'none';
+            
+            // Добавим по умолчанию одну строчку ингредиента и шага
+            addIngredientRow();
+            addStepRow();
         }
 
         function closeConstructor() {
             document.getElementById('navControlsContainer').style.display = 'block';
             document.getElementById('recipesContainer').style.display = 'block';
             document.getElementById('recipeConstructor').style.display = 'none';
+            renderRecipes();
         }
 
         function toggleConstructorFields() {
@@ -220,71 +239,184 @@
             body.style.display = title.length > 0 ? 'block' : 'none';
         }
 
-        function syncPortions(val) {
+        function syncPortionsRange(val) {
             document.getElementById('recipePortionsNum').value = val;
-            if (val > 20) {
-                document.getElementById('recipePortionsRange').style.display = 'none';
-            } else {
-                document.getElementById('recipePortionsRange').style.display = 'block';
-            }
+            document.getElementById('recipePortionsRange').style.display = 'block';
         }
 
         function syncPortionsNum(val) {
+            const num = parseInt(val) || 1;
             const range = document.getElementById('recipePortionsRange');
-            if (val <= 20) {
-                range.value = val;
+            if (num <= 20) {
+                range.value = num;
                 range.style.display = 'block';
             } else {
-                range.style.display = 'none';
+                range.style.display = 'none'; // Скрываем ползунок при ручном вводе > 20
             }
         }
 
-        function addIngredientRow() {
+        function addIngredientRow(name = '', gross = '', net = '', unit = 'г') {
             const container = document.getElementById('ingredientsList');
             const row = document.createElement('div');
-            row.style.cssText = "display: flex; gap: 6px; margin-bottom: 8px; align-items: center; flex-wrap: wrap;";
-            row.innerHTML = `
-                <input type="text" placeholder="Ингредиент" style="flex: 2; margin-bottom:0;">
-                <input type="number" placeholder="Вес/Брутто" style="flex: 1; margin-bottom:0;" oninput="calcLoss(this)">
-                <input type="text" placeholder="ед. (г, мл)" style="width: 70px; margin-bottom:0;">
-                <button class="secondary" onclick="this.parentElement.remove()" style="padding: 6px 10px;">✕</button>
-            `;
+            row.className = "ingredient-row card";
+            row.style.cssText = "margin-bottom: 8px; padding: 10px;";
+
+            if (currentMode === 'simple') {
+                row.innerHTML = `
+                    <div style="display: flex; gap: 6px; align-items: center;">
+                        <input type="text" placeholder="Ингредиент" value="${name}" class="ing-name" style="flex: 2; margin-bottom:0;">
+                        <input type="number" placeholder="Вес" value="${gross}" class="ing-gross" style="flex: 1; margin-bottom:0;">
+                        <input type="text" placeholder="ед." value="${unit}" class="ing-unit" style="width: 60px; margin-bottom:0;">
+                        <button class="secondary" onclick="this.closest('.ingredient-row').remove()" style="padding: 6px 10px;">✕</button>
+                    </div>
+                `;
+            } else {
+                row.innerHTML = `
+                    <div style="display: flex; gap: 6px; align-items: center; margin-bottom: 6px;">
+                        <input type="text" placeholder="Ингредиент" value="${name}" class="ing-name" style="flex: 2; margin-bottom:0;">
+                        <input type="text" placeholder="ед." value="${unit}" class="ing-unit" style="width: 60px; margin-bottom:0;">
+                        <button class="secondary" onclick="this.closest('.ingredient-row').remove()" style="padding: 6px 10px;">✕</button>
+                    </div>
+                    <div style="display: flex; gap: 6px; align-items: center;">
+                        <input type="number" placeholder="Брутто" value="${gross}" class="ing-gross" style="flex: 1; margin-bottom:0;" oninput="calcRowLoss(this)">
+                        <input type="number" placeholder="Нетто" value="${net}" class="ing-net" style="flex: 1; margin-bottom:0;" oninput="calcRowLoss(this)">
+                        <span class="loss-display" style="font-size: 12px; color: var(--hint-color); flex: 1; text-align: right;">Потери: 0%</span>
+                    </div>
+                `;
+            }
             container.appendChild(row);
+            if (currentMode === 'pro') calcRowLoss(row.querySelector('.ing-gross'));
         }
 
-        function addStepRow() {
+        function calcRowLoss(el) {
+            const row = el.closest('.ingredient-row');
+            const gross = parseFloat(row.querySelector('.ing-gross').value) || 0;
+            const net = parseFloat(row.querySelector('.ing-net').value) || 0;
+            const display = row.querySelector('.loss-display');
+            if (gross > 0 && gross >= net) {
+                const loss = ((gross - net) / gross * 100).toFixed(1);
+                display.textContent = `Потери: ${loss}%`;
+            } else {
+                display.textContent = `Потери: 0%`;
+            }
+        }
+
+        function addStepRow(text = '', method = 'варить') {
             const container = document.getElementById('stepsList');
             const row = document.createElement('div');
-            row.className = "card";
+            row.className = "step-row card";
             row.style.marginBottom = "10px";
             row.innerHTML = `
-                <textarea placeholder="Опишите шаг готовки..." style="margin-bottom: 8px;"></textarea>
+                <textarea placeholder="Опишите шаг готовки..." style="margin-bottom: 8px;">${text}</textarea>
                 <label style="font-size: 12px; color: var(--hint-color); display: block; margin-bottom: 4px;">Метод приготовления:</label>
-                <select style="margin-bottom: 0;">
-                    <option value="бланшировать">Бланшировать</option>
-                    <option value="варить">Варить</option>
-                    <option value="тушить">Тушить</option>
-                    <option value="пар">Пар</option>
-                    <option value="жар/пар">Жар/пар</option>
-                    <option value="жар">Жар</option>
-                    <option value="жарить">Жарить</option>
-                    <option value="колеровать">Колеровать</option>
-                    <option value="гриль">Гриль</option>
+                <select class="step-method" style="margin-bottom: 8px;">
+                    <option value="бланшировать" ${method==='бланшировать'?'selected':''}>Бланшировать</option>
+                    <option value="варить" ${method==='варить'?'selected':''}>Варить</option>
+                    <option value="тушить" ${method==='тушить'?'selected':''}>Тушить</option>
+                    <option value="пар" ${method==='пар'?'selected':''}>Пар</option>
+                    <option value="жар/пар" ${method==='жар/пар'?'selected':''}>Жар/пар</option>
+                    <option value="жар" ${method==='жар'?'selected':''}>Жар</option>
+                    <option value="жарить" ${method==='жарить'?'selected':''}>Жарить</option>
+                    <option value="колеровать" ${method==='колеровать'?'selected':''}>Колеровать</option>
+                    <option value="гриль" ${method==='гриль'?'selected':''}>Гриль</option>
                 </select>
-                <button class="secondary" onclick="this.parentElement.remove()" style="margin-top: 8px; width: 100%;">Удалить шаг</button>
+                <button class="secondary" onclick="this.closest('.step-row').remove()" style="width: 100%;">Удалить шаг</button>
             `;
             container.appendChild(row);
         }
 
         function filterCategory(cat) {
+            activeCategory = cat;
             document.querySelectorAll('.category-chip').forEach(chip => {
                 chip.classList.toggle('active', chip.textContent.includes(cat) || (cat === 'Все' && chip.textContent === 'Все'));
             });
+            renderRecipes();
         }
 
         function saveRecipe() {
-            alert('Сохранение техкарты...');
+            const title = document.getElementById('recipeTitle').value.trim();
+            const category = document.getElementById('recipeCategory').value;
+            const portions = document.getElementById('recipePortionsNum').value;
+
+            if (!title) {
+                alert('Введите название рецепта!');
+                return;
+            }
+            if (!category) {
+                alert('Выберите категорию!');
+                return;
+            }
+
+            const ingredients = [];
+            document.querySelectorAll('.ingredient-row').forEach(row => {
+                ingredients.push({
+                    name: row.querySelector('.ing-name').value,
+                    gross: row.querySelector('.ing-gross').value,
+                    net: currentMode === 'pro' ? (row.querySelector('.ing-net').value || row.querySelector('.ing-gross').value) : row.querySelector('.ing-gross').value,
+                    unit: row.querySelector('.ing-unit').value || 'г'
+                });
+            });
+
+            const steps = [];
+            document.querySelectorAll('.step-row').forEach(row => {
+                steps.push({
+                    text: row.querySelector('textarea').value,
+                    method: row.querySelector('.step-method').value
+                });
+            });
+
+            const newRecipe = {
+                id: Date.now().toString(),
+                title,
+                category,
+                portions,
+                ingredients,
+                steps
+            };
+
+            recipes.push(newRecipe);
+            localStorage.setItem('chef_recipes', JSON.stringify(recipes));
             closeConstructor();
+        }
+
+        function deleteRecipe(id) {
+            if (confirm('Удалить эту техкарту?')) {
+                recipes = recipes.filter(r => r.id !== id);
+                localStorage.setItem('chef_recipes', JSON.stringify(recipes));
+                renderRecipes();
+            }
+        }
+
+        function renderRecipes() {
+            const container = document.getElementById('recipesContainer');
+            const filtered = activeCategory === 'Все' ? recipes : recipes.filter(r => r.category === activeCategory);
+
+            if (filtered.length === 0) {
+                container.innerHTML = `<p style="color: var(--hint-color); text-align: center;">Рецепты в данной категории пока не добавлены...</p>`;
+                return;
+            }
+
+            container.innerHTML = filtered.map(r => `
+                <div class="card">
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px;">
+                        <h3 style="margin: 0; font-size: 16px;">${r.title}</h3>
+                        <span style="font-size: 11px; background: var(--button-color); color: white; padding: 2px 8px; border-radius: 10px;">${r.category}</span>
+                    </div>
+                    <p style="font-size: 13px; color: var(--hint-color); margin: 4px 0;">Порций: ${r.portions}</p>
+                    
+                    <h4 style="margin: 8px 0 4px 0; font-size: 13px;">Ингредиенты:</h4>
+                    <ul style="margin: 0; padding-left: 16px; font-size: 13px;">
+                        ${r.ingredients.map(i => `<li>${i.name} —${i.gross} ${i.unit}${currentMode === 'pro' && i.net ? `(нетто: ${i.net} ${i.unit})` : ''}</li>`).join('')}
+                    </ul>
+
+                    <h4 style="margin: 8px 0 4px 0; font-size: 13px;">Шаги готовки:</h4>
+                    <ol style="margin: 0; padding-left: 16px; font-size: 13px;">
+                        ${r.steps.map(s => `<li>${s.text}<br><span style="display:inline-block; font-size:11px; background:#e1e4e8; padding:2px 6px; border-radius:4px; margin-top:2px; margin-bottom:4px;">🔥 ${s.method}</span></li>`).join('')}
+                    </ol>
+
+                    <button class="secondary" onclick="deleteRecipe('${r.id}')" style="margin-top: 12px; color: #ff3b30; border-color: #ff3b30; width: 100%;">Удалить техкарту</button>
+                </div>
+            `).join('');
         }
     </script>
 </body>
