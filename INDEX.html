@@ -1,0 +1,161 @@
+HTML
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Блокнот Шефа</title>
+    <!-- Подключаем официальный скрипт Telegram Mini App SDK -->
+    <script src="
+"></script>
+    
+    <style>
+        /* Переменные подстраиваются под тему Telegram (темная/светлая) */
+        :root {
+            --bg-color: var(--tg-theme-bg-color, #ffffff);
+            --text-color: var(--tg-theme-text-color, #000000);
+            --hint-color: var(--tg-theme-hint-color, #999999);
+            --button-color: var(--tg-theme-button-color, #2481cc);
+            --button-text-color: var(--tg-theme-button-text-color, #ffffff);
+            --card-bg: var(--tg-theme-secondary-bg-color, #f4f4f5);
+        }
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            margin: 0;
+            padding: 16px;
+        }
+        h2 { font-size: 20px; margin-bottom: 10px; }
+        /* Шапка с переключателем режимов */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        .mode-toggle {
+            background: var(--card-bg);
+            border: 1px solid var(--hint-color);
+            color: var(--text-color);
+            padding: 6px 12px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 650;
+            cursor: pointer;
+        }
+        /* Карточка рецепта */
+        .recipe-card {
+            background-color: var(--card-bg);
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 16px;
+        }
+        /* Ползунок порций (от 1 до 10000) */
+        .portions-box {
+            margin: 15px 0;
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+        input[type="range"] {
+            width: 100%;
+            accent-color: var(--button-color);
+        }
+        /* Скрытые элементы для Pro-режима */
+        .pro-only {
+            display: none; /* По умолчанию скрыто для домохозяек */
+            border-left: 3px solid var(--button-color);
+            padding-left: 8px;
+            margin-top: 5px;
+        }
+        /* Когда включен режим Pro, этот класс делает элементы видимыми */
+        body.is-pro .pro-only {
+            display: block;
+        }
+        /* Кнопка */
+        .tg-button {
+            background-color: var(--button-color);
+            color: var(--button-text-color);
+            border: none;
+            width: 100%;
+            padding: 12px;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h2>📜 Блокнот Шефа</h2>
+        <!-- Кнопка переключения режимов Дом / Про -->
+        <button class="mode-toggle" id="modeToggleBtn" onclick="toggleMode()">Режим: Дом</button>
+    </div>
+    <div class="recipe-card">
+        <h3 id="recipeTitle">Оссобуко по-милански</h3>
+        
+        <!-- Ползунок порций от 1 до 10000 -->
+        <div class="portions-box">
+            <label>Порций: <span id="portionsValue">4</span></label>
+            <input type="range" id="portionsRange" min="1" max="10000" value="4" oninput="updatePortions(this.value)">
+        </div>
+        <hr style="border:0; border-top:1px solid var(--hint-color); opacity: 0.2;">
+        <h4>Ингредиенты:</h4>
+        <ul id="ingredientsList">
+            <!-- Пример ингредиента с математикой -->
+            <li>
+                <span data-base="500" class="ing-name">Говяжья голяшка</span>: 
+                <strong class="ing-weight">500</strong> г
+                
+                <!-- Блок, который видит ТОЛЬКО шеф (Pro-режим) -->
+                <div class="pro-only">
+                    <small>Брутто: <span class="gross-weight">600</span>г | Потери при жарке: 16%</small>
+                </div>
+            </li>
+        </ul>
+    </div>
+    <button class="tg-button" onclick="addPhoto()">+ Загрузить фото через Telegram</button>
+    <script>
+        // Инициализация Telegram WebApp
+        let tg = window.Telegram.WebApp;
+        tg.expand(); // Разворачиваем мини-апп на весь экран телефона
+        let isProMode = false;
+        let basePortions = 4; // База рецепта
+        // Функция переключения режимов (Дом / Pro)
+        function toggleMode() {
+            isProMode = !isProMode;
+            let btn = document.getElementById('modeToggleBtn');
+            
+            if (isProMode) {
+                document.body.classList.add('is-pro');
+                btn.innerText = "Режим: PRO 🔪";
+            } else {
+                document.body.classList.remove('is-pro');
+                btn.innerText = "Режим: Дом 🏡";
+            }
+        }
+        // Функция пересчета граммовок при движении ползунка от 1 до 10000 порций
+        function updatePortions(newPortions) {
+            document.getElementById('portionsValue').innerText = newPortions;
+            
+            // Считаем коэффициент пересчета
+            let coefficient = newPortions / basePortions;
+            // Находим все ингредиенты и пересчитываем их вес на лету
+            let weightElements = document.querySelectorAll('.ing-weight');
+            let baseWeights = [500]; // Базовый вес для наших тестовых данных
+            weightElements.forEach((el, index) => {
+                let calculatedWeight = Math.round(baseWeights[index] * coefficient * 10) / 10;
+                el.innerText = calculatedWeight;
+            });
+        }
+        // Функция загрузки фото через Telegram Cloud (file_id)
+        function addPhoto() {
+            // Внутри Telegram Mini App здесь вызывается нативная галерея
+            alert("Здесь открывается галерея телефона. Выбранное фото улетит в Telegram Cloud, а в базу запишется только file_id!");
+        }
+    </script>
+</body>
+</html>
