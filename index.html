@@ -3,17 +3,17 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Блокнот Шефа — Альфа</title>
+    <title>Блокнот Шефа</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         :root {
-            --bg-color: #121212;
-            --surface-color: #1e1e1e;
-            --primary-color: #ff9800;
-            --text-color: #e0e0e0;
-            --text-muted: #aaaaaa;
-            --border-color: #333333;
+            --bg-color: #17212b;
+            --surface-color: #242f3d;
+            --primary-color: #2ea6ff;
+            --text-color: #ffffff;
+            --text-muted: #829ab1;
+            --border-color: #111822;
         }
 
         body {
@@ -25,40 +25,64 @@
             box-sizing: border-box;
         }
 
-        h2, h3 {
-            margin-top: 0;
-            color: var(--primary-color);
-        }
-
         .container {
             max-width: 600px;
             margin: 0 auto;
         }
 
+        /* Кнопки переключения режимов Дом / Pro */
+        .modes-container {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 14px;
+        }
+        .mode-btn {
+            flex: 1;
+            padding: 10px;
+            border-radius: 8px;
+            border: 1px solid var(--primary-color);
+            background: transparent;
+            color: var(--primary-color);
+            font-weight: bold;
+            cursor: pointer;
+            text-align: center;
+        }
+        .mode-btn.active {
+            background-color: var(--primary-color);
+            color: #ffffff;
+        }
+
         .card {
             background-color: var(--surface-color);
             border: 1px solid var(--border-color);
-            border-radius: 8px;
+            border-radius: 12px;
             padding: 16px;
             margin-bottom: 16px;
+        }
+
+        h3 {
+            margin-top: 0;
+            color: var(--text-color);
+            font-size: 16px;
         }
 
         label {
             display: block;
             margin-bottom: 6px;
-            font-size: 14px;
+            font-size: 13px;
             color: var(--text-muted);
         }
 
         input, select, textarea {
             width: 100%;
-            padding: 8px 12px;
+            padding: 10px 12px;
             margin-bottom: 12px;
-            background-color: #2c2c2c;
+            background-color: #18222d;
             border: 1px solid var(--border-color);
-            border-radius: 4px;
+            border-radius: 8px;
             color: var(--text-color);
             box-sizing: border-box;
+            font-size: 14px;
         }
 
         /* Пожелание: наименования ингредиентов — черный текст на белом фоне */
@@ -67,12 +91,12 @@
             background-color: #ffffff !important;
         }
 
-        /* Блок метода готовки и температуры на одной строке */
+        /* Строка шага: метод готовки и температура на одной линии */
         .cooking-row {
             display: flex;
             gap: 10px;
             align-items: center;
-            margin-bottom: 10px;
+            margin-bottom: 8px;
         }
         .cooking-row select {
             flex: 2;
@@ -83,25 +107,22 @@
             margin-bottom: 0;
         }
 
-        button {
+        .action-btn {
             background-color: var(--primary-color);
-            color: #000;
+            color: #ffffff;
             border: none;
-            padding: 10px 16px;
-            border-radius: 4px;
+            padding: 12px 16px;
+            border-radius: 8px;
             font-weight: bold;
             cursor: pointer;
             width: 100%;
-        }
-
-        button:active {
-            opacity: 0.8;
+            font-size: 15px;
         }
 
         .step-item {
-            background: #252525;
-            padding: 10px;
-            border-radius: 6px;
+            background: #18222d;
+            padding: 12px;
+            border-radius: 8px;
             margin-bottom: 10px;
             border: 1px solid var(--border-color);
         }
@@ -110,31 +131,46 @@
 <body>
 
     <div class="container">
-        <h2>👨‍🍳 Блокнот Шефа (Альфа)</h2>
-        
+        <!-- Переключатели режимов, как на твоем скриншоте -->
+        <div class="modes-container">
+            <button class="mode-btn active" onclick="setMode('dom')">Режим: Дом</button>
+            <button class="mode-btn" onclick="setMode('pro')">Режим: Pro</button>
+        </div>
+
         <div class="card">
-            <h3>Создание / Редактирование техкарты</h3>
+            <h3>➕ Новая техкарта</h3>
             
             <label>Название блюда</label>
             <input type="text" id="recipeTitle" placeholder="Введите название...">
 
             <label>Категория</label>
             <select id="recipeCategory">
+                <option value="Соусы, маринады и заправки">Соусы, маринады и заправки</option>
                 <option value="Супы">Супы</option>
                 <option value="Горячие блюда">Горячие блюда</option>
                 <option value="Холодные закуски">Холодные закуски</option>
                 <option value="Десерты">Десерты</option>
             </select>
 
-            <label>Ингредиенты (наименование — черный текст на белом фоне)</label>
-            <div class="ingredient-row">
-                <input type="text" class="ingredient-name-input" placeholder="Название ингредиента...">
+            <label>Порций</label>
+            <input type="number" id="recipePortions" value="4">
+
+            <label>Ингредиенты</label>
+            <div class="ingredient-row" style="margin-bottom: 8px;">
+                <input type="text" class="ingredient-name-input" placeholder="Лук">
+            </div>
+            <div style="display: flex; gap: 8px; margin-bottom: 12px;">
+                <input type="number" placeholder="120" style="margin-bottom:0;">
+                <input type="number" placeholder="100" style="margin-bottom:0;">
             </div>
 
-            <label>Шаги приготовления (метод готовки и температура -18..300°C)</label>
+            <label>Шаги приготовления:</label>
             <div class="step-item">
                 <textarea placeholder="Описание шага..."></textarea>
+                
+                <label style="margin-top: 8px;">Метод приготовления и температура:</label>
                 <div class="cooking-row">
+                    <!-- Пожелание: метод готовки по умолчанию пустой, добавлен фритюр -->
                     <select class="cooking-method-select">
                         <option value="" disabled selected>Выберите метод...</option>
                         <option value="бланшировать">бланшировать</option>
@@ -148,22 +184,29 @@
                         <option value="колеровать">колеровать</option>
                         <option value="гриль">гриль</option>
                     </select>
+                    <!-- Пожелание: температура от -18 до 300 на той же строке -->
                     <input type="number" min="-18" max="300" placeholder="°C (-18..300)" title="Температура от -18 до 300 °C">
                 </div>
             </div>
 
-            <button onclick="alert('Техкарта сохранена!')">Сохранить техкарту</button>
+            <button class="action-btn" onclick="alert('Техкарта сохранена!')">Сохранить техкарту</button>
         </div>
     </div>
 
     <script>
-        // Инициализация Telegram WebApp
+        let tg = null;
+
         window.addEventListener('load', () => {
-            const tg = window.Telegram?.WebApp;
+            tg = window.Telegram?.WebApp;
             if (tg) {
                 tg.expand();
             }
         });
+
+        function setMode(mode) {
+            document.querySelectorAll('.mode-btn').forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+        }
     </script>
 </body>
 </html>
