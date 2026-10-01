@@ -167,7 +167,7 @@
     </div>
 
     <!-- Список рецептов -->
-    <div id="recipesContainer">
+    <div id="recipesContainer" class="card">
         <p style="color: var(--hint-color); text-align: center;">Загрузка рецептов...</p>
     </div>
 
@@ -176,7 +176,6 @@
         <h3>Создание техкарты</h3>
         <input type="text" id="recipeTitle" placeholder="Название блюда (например, Оссобуко)" oninput="saveDraftLocally()">
         
-        <!-- Выверенные категории по сырью -->
         <select id="recipeCategory" onchange="saveDraftLocally()">
             <option value="" disabled selected>Выберите категорию...</option>
             <option value="Холодные блюда и закуски">Холодные блюда и закуски</option>
@@ -216,7 +215,6 @@
         const userId = tg.initDataUnsafe?.user?.id ? String(tg.initDataUnsafe.user.id) : 'demo_user_123';
         let currentMode = 'simple';
 
-        // Ваши точные данные подключения к Supabase
         const SUPABASE_URL = 'https://fxvporgpgpxudzlbauty.supabase.co';
         const SUPABASE_KEY = 'sb_publishable_kcUT9hJ_k8e-2sj0j8BbAA_QvG8Wc-p';
         const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
