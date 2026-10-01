@@ -4,17 +4,16 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Блокнот Шефа</title>
-    <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
         :root {
-            --bg-color: var(--tg-theme-bg-color, #ffffff);
-            --text-color: var(--tg-theme-text-color, #000000);
-            --hint-color: var(--tg-theme-hint-color, #999999);
-            --button-color: var(--tg-theme-button-color, #2481cc);
-            --button-text-color: var(--tg-theme-button-text-color, #ffffff);
-            --secondary-bg-color: var(--tg-theme-secondary-bg-color, #f1f1f1);
+            --bg-color: #ffffff;
+            --text-color: #222222;
+            --hint-color: #888888;
+            --button-color: #007aff;
+            --button-text: #ffffff;
+            --card-bg: #f8f9fa;
+            --border-color: #e1e4e8;
         }
-
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
             background-color: var(--bg-color);
@@ -22,69 +21,93 @@
             margin: 0;
             padding: 16px;
         }
-
         .header {
             display: flex;
             justify-content: space-between;
             align-items: center;
             margin-bottom: 16px;
         }
-
-        h2, h3, h4 { margin: 0 0 10px 0; }
-
-        button {
-            background-color: var(--button-color);
-            color: var(--button-text-color);
-            border: none;
+        .mode-switch {
+            display: flex;
+            background: var(--card-bg);
             border-radius: 8px;
+            padding: 2px;
+            border: 1px solid var(--border-color);
+        }
+        .mode-btn {
+            background: transparent;
+            border: none;
+            padding: 6px 12px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            border-radius: 6px;
+            color: var(--text-color);
+        }
+        .mode-btn.active {
+            background: var(--button-color);
+            color: var(--button-text);
+        }
+        .card {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 12px;
+        }
+        button.primary {
+            background: var(--button-color);
+            color: var(--button-text);
+            border: none;
             padding: 10px 16px;
-            font-size: 14px;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            width: 100%;
+        }
+        button.secondary {
+            background: transparent;
+            color: var(--button-color);
+            border: 1px solid var(--button-color);
+            padding: 8px 12px;
+            border-radius: 8px;
             font-weight: 600;
             cursor: pointer;
         }
-
-        button.secondary {
-            background-color: var(--secondary-bg-color);
-            color: var(--text-color);
-        }
-
         input, select, textarea {
             width: 100%;
             padding: 10px;
             margin-bottom: 10px;
-            border: 1px solid var(--hint-color);
+            border: 1px solid var(--border-color);
             border-radius: 8px;
-            background: var(--bg-color);
-            color: var(--text-color);
             box-sizing: border-box;
+            font-size: 14px;
         }
-
-        .card {
-            background: var(--secondary-bg-color);
-            border-radius: 12px;
-            padding: 14px;
-            margin-bottom: 12px;
+        .recipe-title-input {
+            font-size: 18px;
+            font-weight: bold;
+            border: 2px solid var(--button-color);
         }
-
-        .mode-switch {
+        .category-nav {
             display: flex;
-            background: var(--secondary-bg-color);
-            border-radius: 8px;
-            padding: 2px;
+            gap: 6px;
+            overflow-x: auto;
+            margin-bottom: 16px;
+            padding-bottom: 4px;
         }
-
-        .mode-btn {
-            background: transparent;
-            color: var(--text-color);
-            border: none;
+        .category-chip {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
             padding: 6px 12px;
-            border-radius: 6px;
-            font-size: 13px;
+            border-radius: 16px;
+            font-size: 12px;
+            white-space: nowrap;
+            cursor: pointer;
         }
-
-        .mode-btn.active {
+        .category-chip.active {
             background: var(--button-color);
-            color: var(--button-text-color);
+            color: var(--button-text);
+            border-color: var(--button-color);
         }
     </style>
 </head>
@@ -98,252 +121,170 @@
         </div>
     </div>
 
-    <!-- Уведомление о черновике -->
-    <div id="draftNotification" class="card" style="display: none; border: 1px solid var(--button-color);">
-        <p style="margin: 0 0 10px 0; font-size: 14px;">📦 Обнаружен несохраненный черновик рецепта.</p>
-        <div style="display: flex; gap: 10px;">
-            <button onclick="restoreDraft()">Восстановить</button>
-            <button class="secondary" onclick="discardDraft()">Удалить</button>
+    <!-- Управление и рубрикатор (скрываются при редактировании) -->
+    <div id="navControlsContainer">
+        <button class="primary" onclick="openConstructor()" style="margin-bottom: 12px;">+ Новая техкарта</button>
+        
+        <div class="category-nav" id="categoryNav">
+            <div class="category-chip active" onclick="filterCategory('Все')">Все</div>
+            <div class="category-chip" onclick="filterCategory('Холодные блюда и закуски')">Холодные закуски</div>
+            <div class="category-chip" onclick="filterCategory('Супы')">Супы</div>
+            <div class="category-chip" onclick="filterCategory('Мясо и птица')">Мясо и птица</div>
+            <div class="category-chip" onclick="filterCategory('Рыба и морепродукты')">Рыба и морепродукты</div>
+            <div class="category-chip" onclick="filterCategory('Овощи и грибы')">Овощи и грибы</div>
+            <div class="category-chip" onclick="filterCategory('Крупы, макароны и бобовые')">Крупы и гарниры</div>
+            <div class="category-chip" onclick="filterCategory('Соусы, маринады и заправки')">Соусы</div>
+            <div class="category-chip" onclick="filterCategory('Полуфабрикаты и заготовки')">Заготовки</div>
+            <div class="category-chip" onclick="filterCategory('Выпечка и десерты')">Десерты</div>
+            <div class="category-chip" onclick="filterCategory('Напитки')">Напитки</div>
+            <div class="category-chip" onclick="filterCategory('Другое')">Другое</div>
         </div>
-    </div>
-
-    <!-- Кнопки управления -->
-    <div style="margin-bottom: 16px; display: flex; gap: 10px;">
-        <button onclick="openConstructor()" style="flex: 1;">+ Новая техкарта</button>
-        <button class="secondary" onclick="loadDemoRecipes()">📥 Демо</button>
     </div>
 
     <!-- Список рецептов -->
     <div id="recipesContainer">
-        <p style="color: var(--hint-color); text-align: center;">Рецепты пока не загружены...</p>
+        <p style="color: var(--hint-color); text-align: center;">Рецепты пока не добавлены...</p>
     </div>
 
     <!-- Конструктор / Редактор техкарты -->
     <div id="recipeConstructor" class="card" style="display: none;">
-        <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid var(--button-color); padding-bottom: 6px; margin-bottom: 14px;">
-            <h3 style="font-size: 18px; margin: 0;">🍳 Создание техкарты</h3>
-            <button class="secondary" onclick="cancelConstructor()" style="padding: 4px 8px; font-size: 12px;">✕ Отмена</button>
-        </div>
+        <h3>Создание техкарты</h3>
         
-        <!-- Название блюда (Выделено, первично) -->
-        <div style="margin-bottom: 14px;">
-            <label style="font-size: 13px; font-weight: 700; color: var(--text-color);">Название блюда *</label>
-            <input type="text" id="recipeTitle" placeholder="Например, Оссобуко по-милански" oninput="handleTitleInput(this.value); saveDraftLocally()" style="font-size: 16px; font-weight: 600; border: 2px solid var(--button-color);">
-        </div>
+        <!-- Название блюда (выделено) -->
+        <input type="text" id="recipeTitle" class="recipe-title-input" placeholder="Название блюда (например, Оссобуко)" oninput="toggleConstructorFields()">
 
-        <!-- Динамическое тело формы (появляется только после ввода названия) -->
-        <div id="dynamicFormBody" style="display: none;">
-            
-            <!-- Категории: выстроены от мяса к напиткам + другое -->
-            <div style="margin-bottom: 14px;">
-                <label style="font-size: 12px; color: var(--hint-color);">Категория</label>
-                <select id="recipeCategory" onchange="saveDraftLocally()">
-                    <option value="" disabled selected>Выберите категорию...</option>
-                    <option value="Мясо и птица">Мясо и птица</option>
-                    <option value="Рыба и морепродукты">Рыба и морепродукты</option>
-                    <option value="Овощи и грибы">Овощи и грибы</option>
-                    <option value="Крупы, макароны и бобовые">Крупы, макароны и бобовые</option>
-                    <option value="Супы">Супы</option>
-                    <option value="Холодные блюда и закуски">Холодные блюда и закуски</option>
-                    <option value="Соусы, маринады и заправки">Соусы, маринады и заправки</option>
-                    <option value="Полуфабрикаты и заготовки">Полуфабрикаты и заготовки</option>
-                    <option value="Выпечка и десерты">Выпечка и десерты</option>
-                    <option value="Напитки">Напитки</option>
-                    <option value="Другое">Другое</option>
-                </select>
+        <!-- Поля, скрытые до ввода названия -->
+        <div id="constructorBody" style="display: none;">
+            <select id="recipeCategory">
+                <option value="" disabled selected>Выберите категорию...</option>
+                <option value="Холодные блюда и закуски">Холодные блюда и закуски</option>
+                <option value="Супы">Супы</option>
+                <option value="Мясо и птица">Мясо и птица</option>
+                <option value="Рыба и морепродукты">Рыба и морепродукты</option>
+                <option value="Овощи и грибы">Овощи и грибы</option>
+                <option value="Крупы, макароны и бобовые">Крупы, макароны и бобовые</option>
+                <option value="Соусы, маринады и заправки">Соусы, маринады и заправки</option>
+                <option value="Полуфабрикаты и заготовки">Полуфабрикаты и заготовки</option>
+                <option value="Выпечка и десерты">Выпечка и десерты</option>
+                <option value="Напитки">Напитки</option>
+                <option value="Другое">Другое</option>
+            </select>
+
+            <div style="margin-bottom: 10px; display: flex; align-items: center; gap: 10px;">
+                <label style="font-size: 13px; color: var(--hint-color); flex: 1;">Порции:</label>
+                <input type="range" id="recipePortionsRange" min="1" max="20" value="4" oninput="syncPortions(this.value)" style="flex: 2; margin-bottom: 0;">
+                <input type="number" id="recipePortionsNum" min="1" value="4" oninput="syncPortionsNum(this.value)" style="flex: 1; margin-bottom: 0; text-align: center;">
             </div>
 
-            <!-- Блок порций: ползунок до 20 + ручной ввод на одном уровне -->
-            <div style="margin-bottom: 14px;">
-                <label style="font-size: 12px; color: var(--hint-color);">Количество порций</label>
-                <div style="display: flex; align-items: center; gap: 10px; margin-top: 4px;">
-                    <input type="range" id="recipePortionsRange" min="1" max="20" value="4" oninput="syncPortions('range', this.value)" style="flex: 1; margin: 0;">
-                    <input type="number" id="recipePortionsInput" min="1" max="1000" value="4" oninput="syncPortions('input', this.value)" style="width: 70px; margin: 0; text-align: center; font-weight: 600;">
-                </div>
+            <h4>Ингредиенты:</h4>
+            <div id="ingredientsList"></div>
+            <button class="secondary" onclick="addIngredientRow()" style="margin-bottom: 15px;">+ Добавить ингредиент</button>
+
+            <h4>Шаги приготовления:</h4>
+            <div id="stepsList"></div>
+            <button class="secondary" onclick="addStepRow()" style="margin-bottom: 15px;">+ Добавить шаг</button>
+
+            <div style="display: flex; gap: 10px;">
+                <button class="primary" onclick="saveRecipe()" style="flex: 2;">Сохранить в базу</button>
+                <button class="secondary" onclick="closeConstructor()" style="flex: 1;">Отмена</button>
             </div>
-
-            <!-- Ингредиенты -->
-            <h4 style="margin: 16px 0 8px 0; font-size: 14px;">Ингредиенты:</h4>
-            <div id="ingredientsList" style="display: flex; flex-direction: column; gap: 8px; margin-bottom: 10px;"></div>
-            <button class="secondary" onclick="addIngredientRow()" style="width: 100%; margin-bottom: 16px;">+ Добавить ингредиент</button>
-
-            <!-- Шаги приготовления с методом -->
-            <h4 style="margin: 16px 0 8px 0; font-size: 14px;">Шаги приготовления:</h4>
-            <div id="stepsList" style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 10px;"></div>
-            <button class="secondary" onclick="addStepRow()" style="width: 100%; margin-bottom: 20px;">+ Добавить шаг</button>
-
-            <!-- Кнопка сохранения -->
-            <button onclick="saveNewRecipe()" style="width: 100%;">Сохранить техкарту в базу</button>
         </div>
     </div>
 
     <script>
-        let tg = window.Telegram?.WebApp;
-        if (tg) { tg.expand(); }
-
         let currentMode = 'simple';
-        let recipes = [];
 
         function setMode(mode) {
             currentMode = mode;
             document.getElementById('btnSimple').classList.toggle('active', mode === 'simple');
             document.getElementById('btnPro').classList.toggle('active', mode === 'pro');
-            renderRecipes();
         }
 
         function openConstructor() {
-            const constructor = document.getElementById('recipeConstructor');
-            constructor.style.display = constructor.style.display === 'none' ? 'block' : 'none';
+            document.getElementById('navControlsContainer').style.display = 'none';
+            document.getElementById('recipesContainer').style.display = 'none';
+            document.getElementById('recipeConstructor').style.display = 'block';
+            document.getElementById('recipeTitle').value = '';
+            document.getElementById('constructorBody').style.display = 'none';
         }
 
-        function cancelConstructor() {
-            if (confirm('Сбросить несохраненные изменения?')) {
-                document.getElementById('recipeTitle').value = '';
-                document.getElementById('recipeCategory').value = '';
-                document.getElementById('recipePortionsRange').value = 4;
-                document.getElementById('recipePortionsInput').value = 4;
-                document.getElementById('recipePortionsRange').style.display = 'block';
-                document.getElementById('ingredientsList').innerHTML = '';
-                document.getElementById('stepsList').innerHTML = '';
-                document.getElementById('dynamicFormBody').style.display = 'none';
-                document.getElementById('recipeConstructor').style.display = 'none';
-                discardDraft();
-            }
+        function closeConstructor() {
+            document.getElementById('navControlsContainer').style.display = 'block';
+            document.getElementById('recipesContainer').style.display = 'block';
+            document.getElementById('recipeConstructor').style.display = 'none';
         }
 
-        // Появление формы ввода только при наличии названия
-        function handleTitleInput(val) {
-            const body = document.getElementById('dynamicFormBody');
-            if (val.trim().length > 0) {
-                body.style.display = 'block';
+        function toggleConstructorFields() {
+            const title = document.getElementById('recipeTitle').value.trim();
+            const body = document.getElementById('constructorBody');
+            body.style.display = title.length > 0 ? 'block' : 'none';
+        }
+
+        function syncPortions(val) {
+            document.getElementById('recipePortionsNum').value = val;
+            if (val > 20) {
+                document.getElementById('recipePortionsRange').style.display = 'none';
             } else {
-                body.style.display = 'none';
+                document.getElementById('recipePortionsRange').style.display = 'block';
             }
         }
 
-        // Синхронизация ползунка и ручного ввода порций
-        function syncPortions(source, val) {
+        function syncPortionsNum(val) {
             const range = document.getElementById('recipePortionsRange');
-            const input = document.getElementById('recipePortionsInput');
-            
-            if (source === 'range') {
-                input.value = val;
+            if (val <= 20) {
+                range.value = val;
                 range.style.display = 'block';
             } else {
-                let num = parseInt(val) || 1;
-                if (num > 20) {
-                    range.style.display = 'none'; // Если больше 20 — скрываем ползунок
-                } else {
-                    range.style.display = 'block';
-                    range.value = num;
-                }
+                range.style.display = 'none';
             }
-            saveDraftLocally();
         }
 
-        function addIngredientRow(name = '', amount = '', unit = 'г') {
+        function addIngredientRow() {
             const container = document.getElementById('ingredientsList');
             const row = document.createElement('div');
-            row.style.cssText = 'display: flex; gap: 6px; align-items: center;';
+            row.style.cssText = "display: flex; gap: 6px; margin-bottom: 8px; align-items: center; flex-wrap: wrap;";
             row.innerHTML = `
-                <input type="text" placeholder="Продукт" value="${name}" style="flex: 2; margin: 0;">
-                <input type="number" placeholder="Вес" value="${amount}" style="flex: 1; margin: 0;">
-                <select style="flex: 1; margin: 0;" value="${unit}">
-                    <option value="г">г</option>
-                    <option value="кг">кг</option>
-                    <option value="мл">мл</option>
-                    <option value="л">л</option>
-                    <option value="шт">шт</option>
-                </select>
-                <button type="button" onclick="this.parentElement.remove()" style="background: none; border: none; color: #ff5252; cursor: pointer; font-weight: bold; padding: 5px;">✕</button>
+                <input type="text" placeholder="Ингредиент" style="flex: 2; margin-bottom:0;">
+                <input type="number" placeholder="Вес/Брутто" style="flex: 1; margin-bottom:0;" oninput="calcLoss(this)">
+                <input type="text" placeholder="ед. (г, мл)" style="width: 70px; margin-bottom:0;">
+                <button class="secondary" onclick="this.parentElement.remove()" style="padding: 6px 10px;">✕</button>
             `;
             container.appendChild(row);
         }
 
-        function addStepRow(stepText = '', method = 'жарить') {
+        function addStepRow() {
             const container = document.getElementById('stepsList');
-            const methods = ['жар', 'пар', 'жар/пар', 'варить', 'жарить', 'бланшировать', 'тушить', 'колеровать', 'гриль'];
-            let optionsHtml = methods.map(m => `<option value="${m}" ${m === method ? 'selected' : ''}>${m}</option>`).join('');
-
             const row = document.createElement('div');
-            row.className = 'step-row';
-            row.style.cssText = 'display: flex; flex-direction: column; gap: 6px; padding: 10px; background: var(--bg-color); border-radius: 8px; border: 1px solid var(--hint-color);';
+            row.className = "card";
+            row.style.marginBottom = "10px";
             row.innerHTML = `
-                <div style="display: flex; gap: 8px; align-items: center;">
-                    <select style="flex: 1; margin: 0; padding: 6px;" name="stepMethod">
-                        ${optionsHtml}
-                    </select>
-                    <button type="button" onclick="this.closest('.step-row').remove()" style="background: none; border: none; color: #ff5252; cursor: pointer; font-weight: bold;">✕</button>
-                </div>
-                <textarea placeholder="Описание шага приготовления..." style="width: 100%; margin: 0; padding: 6px; resize: vertical;" rows="2">${stepText}</textarea>
+                <textarea placeholder="Опишите шаг готовки..." style="margin-bottom: 8px;"></textarea>
+                <label style="font-size: 12px; color: var(--hint-color); display: block; margin-bottom: 4px;">Метод приготовления:</label>
+                <select style="margin-bottom: 0;">
+                    <option value="бланшировать">Бланшировать</option>
+                    <option value="варить">Варить</option>
+                    <option value="тушить">Тушить</option>
+                    <option value="пар">Пар</option>
+                    <option value="жар/пар">Жар/пар</option>
+                    <option value="жар">Жар</option>
+                    <option value="жарить">Жарить</option>
+                    <option value="колеровать">Колеровать</option>
+                    <option value="гриль">Гриль</option>
+                </select>
+                <button class="secondary" onclick="this.parentElement.remove()" style="margin-top: 8px; width: 100%;">Удалить шаг</button>
             `;
             container.appendChild(row);
         }
 
-        function saveDraftLocally() {
-            const draft = {
-                title: document.getElementById('recipeTitle').value,
-                category: document.getElementById('recipeCategory').value,
-                portions: document.getElementById('recipePortionsInput').value
-            };
-            localStorage.setItem('chef_recipe_draft', JSON.stringify(draft));
+        function filterCategory(cat) {
+            document.querySelectorAll('.category-chip').forEach(chip => {
+                chip.classList.toggle('active', chip.textContent.includes(cat) || (cat === 'Все' && chip.textContent === 'Все'));
+            });
         }
 
-        function restoreDraft() {
-            const draft = JSON.parse(localStorage.getItem('chef_recipe_draft'));
-            if (draft) {
-                document.getElementById('recipeTitle').value = draft.title || '';
-                handleTitleInput(draft.title || '');
-                document.getElementById('recipeCategory').value = draft.category || '';
-                document.getElementById('recipePortionsInput').value = draft.portions || 4;
-                syncPortions('input', draft.portions || 4);
-            }
-            document.getElementById('draftNotification').style.display = 'none';
-        }
-
-        function discardDraft() {
-            localStorage.removeItem('chef_recipe_draft');
-            document.getElementById('draftNotification').style.display = 'none';
-        }
-
-        function loadDemoRecipes() {
-            recipes = [
-                {
-                    title: "Оссобуко из индейки",
-                    category: "Мясо и птица",
-                    portions: 4,
-                    ingredients: [{ name: "Голяшка индейки", amount: 600, unit: "г" }],
-                    steps: [{ method: "тушить", text: "Обжарить до корочки и тушить 1.5 часа." }]
-                }
-            ];
-            renderRecipes();
-        }
-
-        function renderRecipes() {
-            const container = document.getElementById('recipesContainer');
-            if (recipes.length === 0) {
-                container.innerHTML = '<p style="color: var(--hint-color); text-align: center;">Список рецептов пуст</p>';
-                return;
-            }
-            container.innerHTML = recipes.map(r => `
-                <div class="card">
-                    <h3 style="margin-bottom: 4px;">${r.title}</h3>
-                    <div style="font-size: 12px; color: var(--hint-color); margin-bottom: 8px;">Категория: ${r.category} | Порций: ${r.portions}</div>
-                </div>
-            `).join('');
-        }
-
-        function saveNewRecipe() {
-            alert('Рецепт успешно сохранен!');
-            document.getElementById('recipeConstructor').style.display = 'none';
-            discardDraft();
-        }
-
-        // Проверяем черновик при старте
-        window.onload = function() {
-            if (localStorage.getItem('chef_recipe_draft')) {
-                document.getElementById('draftNotification').style.display = 'block';
-            }
+        function saveRecipe() {
+            alert('Сохранение техкарты...');
+            closeConstructor();
         }
     </script>
 </body>
