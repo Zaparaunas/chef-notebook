@@ -4,8 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Блокнот Шефа</title>
-    <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <!-- defer гарантирует, что внешние скрипты загрузятся ДО inline-кода -->
+    <script src="https://telegram.org/js/telegram-web-app.js" defer></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
     <style>
         :root {
             --bg-color: var(--tg-theme-bg-color, #121212);
@@ -16,129 +17,25 @@
             --card-bg: #1e1e1e;
             --border-color: #333333;
         }
-
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            background-color: var(--bg-color);
-            color: var(--text-color);
-            margin: 0;
-            padding: 16px;
-            box-sizing: border-box;
-        }
-
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background-color: var(--bg-color); color: var(--text-color); margin: 0; padding: 16px; box-sizing: border-box; }
         h2, h3, h4 { margin-top: 0; }
-
-        .header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 20px;
-        }
-
-        .mode-switch {
-            display: flex;
-            background: var(--card-bg);
-            border-radius: 8px;
-            padding: 4px;
-            border: 1px solid var(--border-color);
-        }
-
-        .mode-btn {
-            background: transparent;
-            border: none;
-            color: var(--hint-color);
-            padding: 6px 12px;
-            border-radius: 6px;
-            cursor: pointer;
-            font-weight: bold;
-            font-size: 13px;
-        }
-
-        .mode-btn.active {
-            background: var(--button-color);
-            color: var(--button-text-color);
-        }
-
-        .card {
-            background-color: var(--card-bg);
-            border: 1px solid var(--border-color);
-            border-radius: 12px;
-            padding: 16px;
-            margin-bottom: 16px;
-        }
-
-        input, select, textarea {
-            width: 100%;
-            padding: 10px;
-            margin-bottom: 10px;
-            background: #2a2a2a;
-            border: 1px solid var(--border-color);
-            border-radius: 8px;
-            color: var(--text-color);
-            box-sizing: border-box;
-            font-size: 14px;
-        }
-
-        button.primary {
-            background-color: var(--button-color);
-            color: var(--button-text-color);
-            border: none;
-            padding: 12px;
-            border-radius: 8px;
-            font-weight: bold;
-            width: 100%;
-            cursor: pointer;
-            font-size: 15px;
-            margin-top: 5px;
-        }
-
-        button.secondary {
-            background: transparent;
-            border: 1px solid var(--border-color);
-            color: var(--text-color);
-            padding: 8px 12px;
-            border-radius: 8px;
-            cursor: pointer;
-            font-size: 13px;
-        }
-
-        button.danger {
-            background: #dc2626;
-            color: white;
-            border: none;
-            padding: 6px 10px;
-            border-radius: 6px;
-            cursor: pointer;
-        }
-
-        .ingredient-row {
-            display: grid;
-            grid-template-columns: 2fr 1fr 1fr 40px;
-            gap: 8px;
-            margin-bottom: 8px;
-            align-items: center;
-        }
-
-        .actions-row {
-            display: flex;
-            gap: 10px;
-        }
-
-        .recipe-item {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 10px;
-            border-bottom: 1px solid var(--border-color);
-        }
-
-        .badge {
-            background: #333;
-            padding: 2px 8px;
-            border-radius: 4px;
-            font-size: 11px;
-            color: var(--hint-color);
-        }
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        .mode-switch { display: flex; background: var(--card-bg); border-radius: 8px; padding: 4px; border: 1px solid var(--border-color); }
+        .mode-btn { background: transparent; border: none; color: var(--hint-color); padding: 6px 12px; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 13px; }
+        .mode-btn.active { background: var(--button-color); color: var(--button-text-color); }
+        .card { background-color: var(--card-bg); border: 1px solid var(--border-color); border-radius: 12px; padding: 16px; margin-bottom: 16px; }
+        input, select, textarea { width: 100%; padding: 10px; margin-bottom: 10px; background: #2a2a2a; border: 1px solid var(--border-color); border-radius: 8px; color: var(--text-color); box-sizing: border-box; font-size: 14px; }
+        button.primary { background-color: var(--button-color); color: var(--button-text-color); border: none; padding: 12px; border-radius: 8px; font-weight: bold; width: 100%; cursor: pointer; font-size: 15px; margin-top: 5px; }
+        button.secondary { background: transparent; border: 1px solid var(--border-color); color: var(--text-color); padding: 8px 12px; border-radius: 8px; cursor: pointer; font-size: 13px; }
+        button.danger { background: #dc2626; color: white; border: none; padding: 6px 10px; border-radius: 6px; cursor: pointer; }
+        .ingredient-row { display: grid; grid-template-columns: 2fr 1fr 1fr 40px; gap: 8px; margin-bottom: 8px; align-items: center; }
+        .actions-row { display: flex; gap: 10px; }
+        .recipe-item { display: flex; justify-content: space-between; align-items: center; padding: 10px; border-bottom: 1px solid var(--border-color); }
+        .badge { background: #333; padding: 2px 8px; border-radius: 4px; font-size: 11px; color: var(--hint-color); }
+        .status-box { font-size: 12px; padding: 8px; border-radius: 8px; margin-bottom: 10px; }
+        .status-ok { background: rgba(34,197,94,0.15); color: #22c55e; }
+        .status-err { background: rgba(220,38,38,0.15); color: #dc2626; }
+        .status-warn { background: rgba(234,88,12,0.15); color: #ea580c; }
     </style>
 </head>
 <body>
@@ -150,6 +47,9 @@
             <button class="mode-btn" id="btnPro" onclick="setMode('pro')">Pro</button>
         </div>
     </div>
+
+    <!-- Диагностика: покажет, что загрузилось -->
+    <div id="statusBox" class="status-box status-warn">⏳ Инициализация...</div>
 
     <!-- Уведомление о черновике -->
     <div id="draftNotification" class="card" style="display: none; border-color: var(--button-color);">
@@ -171,11 +71,10 @@
         <p style="color: var(--hint-color); text-align: center;">Загрузка рецептов...</p>
     </div>
 
-    <!-- Конструктор / Редактор рецепта -->
+    <!-- Конструктор -->
     <div id="recipeConstructor" class="card" style="display: none;">
         <h3>Создание техкарты</h3>
-        <input type="text" id="recipeTitle" placeholder="Название блюда (например, Оссобуко)" oninput="saveDraftLocally()">
-        
+        <input type="text" id="recipeTitle" placeholder="Название блюда" oninput="saveDraftLocally()">
         <select id="recipeCategory" onchange="saveDraftLocally()">
             <option value="" disabled selected>Выберите категорию...</option>
             <option value="Холодные блюда и закуски">Холодные блюда и закуски</option>
@@ -189,19 +88,15 @@
             <option value="Выпечка и десерты">Выпечка и десерты</option>
             <option value="Напитки">Напитки</option>
         </select>
-        
         <label style="font-size: 12px; color: var(--hint-color);" id="portionsLabel">Базовых порций: <span id="portionsValue">4</span></label>
         <div id="portionsContainer">
             <input type="range" id="recipePortionsRange" min="1" max="20" value="4" oninput="updatePortionsVal(this.value); saveDraftLocally()">
         </div>
-
         <h4>Ингредиенты:</h4>
         <div id="ingredientsList"></div>
         <button class="secondary" onclick="addIngredientRow()" style="margin-bottom: 15px;">+ Добавить ингредиент</button>
-
         <h4>Порядок приготовления:</h4>
-        <textarea id="recipeSteps" rows="4" placeholder="Опишите шаги приготовления..." oninput="saveDraftLocally()"></textarea>
-
+        <textarea id="recipeSteps" rows="4" placeholder="Опишите шаги..." oninput="saveDraftLocally()"></textarea>
         <div class="actions-row">
             <button class="primary" onclick="saveRecipe()" style="flex: 2;">Сохранить в базу</button>
             <button class="secondary" onclick="cancelConstructor()" style="flex: 1;">Отмена</button>
@@ -209,70 +104,191 @@
     </div>
 
     <script>
-        const tg = window.Telegram.WebApp;
-        tg.expand();
-
-        const userId = tg.initDataUnsafe?.user?.id ? String(tg.initDataUnsafe.user.id) : 'demo_user_123';
-        let currentMode = 'simple';
-
+        // ============================================================
+        // КОНФИГ
+        // ============================================================
         const SUPABASE_URL = 'https://fxvporgpgpxudzlbauty.supabase.co';
         const SUPABASE_KEY = 'sb_publishable_kcUT9hJ_k8e-2sj0j8BbAA_QvG8Wc-p';
-        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
+        // ============================================================
+        // ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ
+        // ============================================================
+        let tg = null;
+        let supabaseClient = null;
+        let currentMode = 'simple';
+        let userId = 'demo_user_123';
+
+        // ============================================================
+        // СТАТУС
+        // ============================================================
+        function setStatus(msg, type) {
+            const box = document.getElementById('statusBox');
+            if (!box) return;
+            box.className = 'status-box ' + (type === 'ok' ? 'status-ok' : type === 'err' ? 'status-err' : 'status-warn');
+            box.innerText = msg;
+        }
+
+        // ============================================================
+        // ИНИЦИАЛИЗАЦИЯ (после полной загрузки скриптов)
+        // ============================================================
+        window.addEventListener('load', function () {
+            console.log('[App] load event fired');
+
+            // --- 1. Telegram SDK ---
+            if (window.Telegram && window.Telegram.WebApp) {
+                tg = window.Telegram.WebApp;
+                try { tg.expand(); } catch (e) { console.warn('[TG] expand error', e); }
+                if (tg.initDataUnsafe && tg.initDataUnsafe.user && tg.initDataUnsafe.user.id) {
+                    userId = String(tg.initDataUnsafe.user.id);
+                }
+                console.log('[TG] OK, user =', userId);
+            } else {
+                console.warn('[TG] SDK не загрузился — работаем в обычном браузере');
+            }
+
+            // --- 2. Supabase ---
+            if (!window.supabase) {
+                setStatus('❌ Библиотека Supabase не загрузилась. Проверьте интернет.', 'err');
+                document.getElementById('recipesContainer').innerHTML =
+                    '<p style="color:#dc2626;text-align:center;">Нет подключения к базе данных.</p>';
+                return;
+            }
+
+            try {
+                supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+                console.log('[SB] OK');
+            } catch (e) {
+                console.error('[SB] createClient error', e);
+                setStatus('❌ Ошибка Supabase: ' + e.message, 'err');
+                document.getElementById('recipesContainer').innerHTML =
+                    '<p style="color:#dc2626;text-align:center;">Ошибка подключения к БД: ' + e.message + '</p>';
+                return;
+            }
+
+            setStatus('✅ Приложение готово к работе', 'ok');
+            setTimeout(() => document.getElementById('statusBox').style.display = 'none', 2500);
+
+            // --- 3. Черновик ---
+            if (localStorage.getItem('chef_recipe_draft')) {
+                document.getElementById('draftNotification').style.display = 'block';
+            }
+
+            // --- 4. Загрузка рецептов ---
+            fetchRecipes();
+        });
+
+        // ============================================================
+        // ИНТЕРФЕЙС
+        // ============================================================
         function setMode(mode) {
             currentMode = mode;
             document.getElementById('btnSimple').classList.toggle('active', mode === 'simple');
             document.getElementById('btnPro').classList.toggle('active', mode === 'pro');
-            
+
             const container = document.getElementById('portionsContainer');
-            const currentVal = document.getElementById('recipePortionsRange')?.value || document.getElementById('recipePortionsInput')?.value || 4;
-            
+            const rangeEl = document.getElementById('recipePortionsRange');
+            const inputEl = document.getElementById('recipePortionsInput');
+            const currentVal = (rangeEl && rangeEl.value) || (inputEl && inputEl.value) || 4;
+
             if (mode === 'pro') {
-                container.innerHTML = `<input type="number" id="recipePortionsInput" value="${currentVal}" min="1" max="10000" placeholder="Количество порций" oninput="saveDraftLocally()">`;
+                container.innerHTML = '<input type="number" id="recipePortionsInput" value="' + currentVal + '" min="1" max="10000" placeholder="Количество порций" oninput="saveDraftLocally()">';
                 document.getElementById('portionsLabel').style.display = 'none';
             } else {
-                container.innerHTML = `<input type="range" id="recipePortionsRange" min="1" max="20" value="${currentVal > 20 ? 20 : currentVal}" oninput="updatePortionsVal(this.value); saveDraftLocally()">`;
+                const safeVal = currentVal > 20 ? 20 : currentVal;
+                container.innerHTML = '<input type="range" id="recipePortionsRange" min="1" max="20" value="' + safeVal + '" oninput="updatePortionsVal(this.value); saveDraftLocally()">';
                 document.getElementById('portionsLabel').style.display = 'block';
-                document.getElementById('portionsValue').innerText = currentVal > 20 ? 20 : currentVal;
+                document.getElementById('portionsValue').innerText = safeVal;
             }
+            if (tg && tg.HapticFeedback) tg.HapticFeedback.selectionChanged();
         }
 
         function updatePortionsVal(val) {
-            document.getElementById('portionsValue').innerText = val;
+            const el = document.getElementById('portionsValue');
+            if (el) el.innerText = val;
         }
 
         function getPortionsCount() {
             if (currentMode === 'pro') {
-                return parseInt(document.getElementById('recipePortionsInput')?.value) || 4;
-            } else {
-                return parseInt(document.getElementById('recipePortionsRange')?.value) || 4;
+                const el = document.getElementById('recipePortionsInput');
+                return (el && parseInt(el.value)) || 4;
+            }
+            const el = document.getElementById('recipePortionsRange');
+            return (el && parseInt(el.value)) || 4;
+        }
+
+        function openConstructor() {
+            document.getElementById('recipeConstructor').style.display = 'block';
+            document.getElementById('recipeTitle').value = '';
+            document.getElementById('recipeCategory').selectedIndex = 0;
+            document.getElementById('recipeSteps').value = '';
+            document.getElementById('ingredientsList').innerHTML = '';
+            addIngredientRow();
+            if (tg && tg.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
+        }
+
+        function cancelConstructor() {
+            if (confirm('Сбросить изменения и закрыть конструктор?')) {
+                document.getElementById('recipeConstructor').style.display = 'none';
+                discardDraft();
             }
         }
 
-        window.addEventListener('DOMContentLoaded', () => {
-            const savedDraft = localStorage.getItem('chef_recipe_draft');
-            if (savedDraft) {
-                document.getElementById('draftNotification').style.display = 'block';
-            }
-            fetchRecipes();
-        });
+        function addIngredientRow(name, gross, unit) {
+            name = name || ''; gross = gross || ''; unit = unit || 'г';
+            const list = document.getElementById('ingredientsList');
+            const row = document.createElement('div');
+            row.className = 'ingredient-row';
+            row.innerHTML =
+                '<input type="text" class="ing-name" placeholder="Продукт" value="' + name + '" oninput="saveDraftLocally()">' +
+                '<input type="number" class="ing-gross" placeholder="Брутто" value="' + gross + '" oninput="saveDraftLocally()">' +
+                '<select class="ing-unit" onchange="saveDraftLocally()">' +
+                    '<option value="г"' + (unit === 'г' ? ' selected' : '') + '>г</option>' +
+                    '<option value="кг"' + (unit === 'кг' ? ' selected' : '') + '>кг</option>' +
+                    '<option value="мл"' + (unit === 'мл' ? ' selected' : '') + '>мл</option>' +
+                    '<option value="л"' + (unit === 'л' ? ' selected' : '') + '>л</option>' +
+                    '<option value="шт"' + (unit === 'шт' ? ' selected' : '') + '>шт</option>' +
+                '</select>' +
+                '<button class="danger" onclick="this.parentElement.remove(); saveDraftLocally()">✕</button>';
+            list.appendChild(row);
+        }
 
+        function getIngredientsFromDOM() {
+            const rows = document.querySelectorAll('.ingredient-row');
+            const items = [];
+            rows.forEach(function (r) {
+                const nameEl = r.querySelector('.ing-name');
+                const grossEl = r.querySelector('.ing-gross');
+                const unitEl = r.querySelector('.ing-unit');
+                items.push({
+                    name: nameEl ? nameEl.value : '',
+                    gross: grossEl ? (parseFloat(grossEl.value) || 0) : 0,
+                    unit: unitEl ? unitEl.value : 'г'
+                });
+            });
+            return items;
+        }
+
+        // ============================================================
+        // ЧЕРНОВИК
+        // ============================================================
         function saveDraftLocally() {
-            const draft = {
-                title: document.getElementById('recipeTitle').value,
-                category: document.getElementById('recipeCategory').value,
-                portions: getPortionsCount(),
-                steps: document.getElementById('recipeSteps').value,
-                ingredients: getIngredientsFromDOM()
-            };
-            localStorage.setItem('chef_recipe_draft', JSON.stringify(draft));
+            try {
+                const draft = {
+                    title: document.getElementById('recipeTitle').value,
+                    category: document.getElementById('recipeCategory').value,
+                    portions: getPortionsCount(),
+                    steps: document.getElementById('recipeSteps').value,
+                    ingredients: getIngredientsFromDOM()
+                };
+                localStorage.setItem('chef_recipe_draft', JSON.stringify(draft));
+            } catch (e) { console.warn('draft save error', e); }
         }
 
         function restoreDraft() {
-            const savedDraft = localStorage.getItem('chef_recipe_draft');
-            if (!savedDraft) return;
+            const saved = localStorage.getItem('chef_recipe_draft');
+            if (!saved) return;
             try {
-                const draft = JSON.parse(savedDraft);
+                const draft = JSON.parse(saved);
                 document.getElementById('recipeTitle').value = draft.title || '';
                 document.getElementById('recipeCategory').value = draft.category || '';
                 if (draft.portions) {
@@ -285,20 +301,17 @@
                     }
                 }
                 document.getElementById('recipeSteps').value = draft.steps || '';
-                
+
                 const list = document.getElementById('ingredientsList');
                 list.innerHTML = '';
                 if (draft.ingredients && draft.ingredients.length > 0) {
-                    draft.ingredients.forEach(ing => addIngredientRow(ing.name, ing.gross, ing.unit));
+                    draft.ingredients.forEach(function (ing) { addIngredientRow(ing.name, ing.gross, ing.unit); });
                 } else {
                     addIngredientRow();
                 }
-
                 document.getElementById('recipeConstructor').style.display = 'block';
                 document.getElementById('draftNotification').style.display = 'none';
-            } catch (e) {
-                console.error('Ошибка восстановления черновика', e);
-            }
+            } catch (e) { console.error('Ошибка восстановления черновика', e); }
         }
 
         function discardDraft() {
@@ -306,140 +319,94 @@
             document.getElementById('draftNotification').style.display = 'none';
         }
 
-        function openConstructor() {
-            document.getElementById('recipeConstructor').style.display = 'block';
-            document.getElementById('recipeTitle').value = '';
-            document.getElementById('recipeCategory').selectedIndex = 0;
-            document.getElementById('recipeSteps').value = '';
-            document.getElementById('ingredientsList').innerHTML = '';
-            addIngredientRow();
-        }
-
-        function cancelConstructor() {
-            if (confirm('Сбросить текущие изменения и закрыть конструктор?')) {
-                document.getElementById('recipeConstructor').style.display = 'none';
-                discardDraft();
-            }
-        }
-
-        function addIngredientRow(name = '', gross = '', unit = 'г') {
-            const list = document.getElementById('ingredientsList');
-            const row = document.createElement('div');
-            row.className = 'ingredient-row';
-            row.innerHTML = `
-                <input type="text" class="ing-name" placeholder="Продукт" value="${name}" oninput="saveDraftLocally()">
-                <input type="number" class="ing-gross" placeholder="Брутто" value="${gross}" oninput="saveDraftLocally()">
-                <select class="ing-unit" onchange="saveDraftLocally()">
-                    <option value="г" ${unit==='г'?'selected':''}>г</option>
-                    <option value="кг" ${unit==='кг'?'selected':''}>кг</option>
-                    <option value="мл" ${unit==='мл'?'selected':''}>мл</option>
-                    <option value="л" ${unit==='л'?'selected':''}>л</option>
-                    <option value="шт" ${unit==='шт'?'selected':''}>шт</option>
-                </select>
-                <button class="danger" onclick="this.parentElement.remove(); saveDraftLocally()">✕</button>
-            `;
-            list.appendChild(row);
-        }
-
-        function getIngredientsFromDOM() {
-            const rows = document.querySelectorAll('.ingredient-row');
-            let items = [];
-            rows.forEach(r => {
-                items.push({
-                    name: r.querySelector('.ing-name').value,
-                    gross: parseFloat(r.querySelector('.ing-gross').value) || 0,
-                    unit: r.querySelector('.ing-unit').value
-                });
-            });
-            return items;
-        }
-
+        // ============================================================
+        // SUPABASE: RECIPES
+        // ============================================================
         async function fetchRecipes() {
             const container = document.getElementById('recipesContainer');
+            if (!supabaseClient) return;
             try {
-                const { data, error } = await supabase
+                const res = await supabaseClient
                     .from('recipes')
                     .select('*')
                     .order('id', { ascending: false });
-
-                if (error) throw error;
+                if (res.error) throw res.error;
+                const data = res.data;
 
                 if (!data || data.length === 0) {
-                    container.innerHTML = '<p style="color: var(--hint-color); text-align: center;">Пока нет сохраненных рецептов.</p>';
+                    container.innerHTML = '<p style="color: var(--hint-color); text-align: center;">Пока нет сохраненных рецептов. Нажмите «Загрузить демо».</p>';
                     return;
                 }
-
                 container.innerHTML = '';
-                data.forEach(recipe => {
+                data.forEach(function (recipe) {
                     const el = document.createElement('div');
                     el.className = 'recipe-item';
-                    el.innerHTML = `
-                        <div>
-                            <strong>${recipe.title}</strong><br>
-                            <span class="badge">${recipe.category || 'Общее'}</span> • Порций: ${recipe.base_portions}
-                        </div>
-                        <button class="danger" onclick="deleteRecipe('${recipe.id}')">Удалить</button>
-                    `;
+                    el.innerHTML =
+                        '<div>' +
+                            '<strong>' + (recipe.title || 'Без названия') + '</strong><br>' +
+                            '<span class="badge">' + (recipe.category || 'Общее') + '</span> • Порций: ' + (recipe.base_portions || 4) +
+                        '</div>' +
+                        '<button class="danger" onclick="deleteRecipe(\'' + recipe.id + '\')">Удалить</button>';
                     container.appendChild(el);
                 });
             } catch (err) {
-                console.error(err);
-                container.innerHTML = `<p style="color: #dc2626; text-align: center;">Ошибка загрузки: ${err.message}</p>`;
+                console.error('[SB fetchRecipes]', err);
+                container.innerHTML = '<p style="color:#dc2626;text-align:center;">Ошибка загрузки: ' + err.message + '</p>';
             }
         }
 
         async function saveRecipe() {
+            if (!supabaseClient) { alert('Нет подключения к базе данных'); return; }
+
             const title = document.getElementById('recipeTitle').value.trim();
             const category = document.getElementById('recipeCategory').value;
             const base_portions = getPortionsCount();
             const steps = document.getElementById('recipeSteps').value.trim();
             const ingredients = getIngredientsFromDOM();
 
-            if (!title) {
-                alert('Пожалуйста, введите название блюда!');
-                return;
-            }
+            if (!title) { alert('Введите название блюда!'); return; }
 
             try {
-                const { data: recipeData, error: recipeError } = await supabase
+                const insRes = await supabaseClient
                     .from('recipes')
-                    .insert([{ user_id: userId, title, category, base_portions, steps }])
+                    .insert([{ user_id: userId, title: title, category: category, base_portions: base_portions, steps: steps }])
                     .select()
                     .single();
+                if (insRes.error) throw insRes.error;
 
-                if (recipeError) throw recipeError;
-
-                const recipeId = recipeData.id;
+                const recipeId = insRes.data.id;
 
                 if (ingredients.length > 0) {
-                    const ingRows = ingredients.map(ing => ({
-                        recipe_id: recipeId,
-                        name: ing.name || 'Продукт',
-                        gross: ing.gross,
-                        net: ing.gross,
-                        unit: ing.unit
-                    }));
-
-                    const { error: ingError } = await supabase.from('ingredients').insert(ingRows);
-                    if (ingError) throw ingError;
+                    const rows = ingredients.map(function (ing) {
+                        return {
+                            recipe_id: recipeId,
+                            name: ing.name || 'Продукт',
+                            gross: ing.gross,
+                            net: ing.gross,
+                            unit: ing.unit
+                        };
+                    });
+                    const ingRes = await supabaseClient.from('ingredients').insert(rows);
+                    if (ingRes.error) throw ingRes.error;
                 }
 
-                alert('Рецепт успешно сохранен!');
+                alert('✅ Рецепт сохранён!');
                 document.getElementById('recipeConstructor').style.display = 'none';
                 discardDraft();
                 fetchRecipes();
             } catch (err) {
-                alert('Ошибка сохранения рецепта: ' + err.message);
-                console.error(err);
+                console.error('[SB saveRecipe]', err);
+                alert('Ошибка сохранения: ' + err.message);
             }
         }
 
         async function deleteRecipe(id) {
-            if (!confirm('Точно удалить этот рецепт?')) return;
+            if (!supabaseClient) return;
+            if (!confirm('Удалить этот рецепт?')) return;
             try {
-                await supabase.from('ingredients').delete().eq('recipe_id', id);
-                const { error } = await supabase.from('recipes').delete().eq('id', id);
-                if (error) throw error;
+                await supabaseClient.from('ingredients').delete().eq('recipe_id', id);
+                const del = await supabaseClient.from('recipes').delete().eq('id', id);
+                if (del.error) throw del.error;
                 fetchRecipes();
             } catch (err) {
                 alert('Ошибка удаления: ' + err.message);
@@ -447,19 +414,20 @@
         }
 
         async function loadDemoRecipes() {
+            if (!supabaseClient) { alert('Нет подключения к базе данных'); return; }
             try {
                 const demos = [
                     { title: 'Борщ классический (Демо)', category: 'Супы', base_portions: 4, steps: 'Отварить бульон, пассеровать овощи, соединить и проварить.' },
                     { title: 'Оссобуко по-милански (Демо)', category: 'Мясо и птица', base_portions: 2, steps: 'Обжарить телятину, тушить с овощами и белым вином.' }
                 ];
-
-                for (let d of demos) {
-                    await supabase.from('recipes').insert([{ user_id: userId, ...d }]);
+                for (let i = 0; i < demos.length; i++) {
+                    const r = await supabaseClient.from('recipes').insert([Object.assign({ user_id: userId }, demos[i])]);
+                    if (r.error) throw r.error;
                 }
-
-                alert('Демо-рецепты успешно добавлены!');
+                alert('✅ Демо-рецепты добавлены!');
                 fetchRecipes();
             } catch (err) {
+                console.error('[SB loadDemo]', err);
                 alert('Ошибка загрузки демо: ' + err.message);
             }
         }
