@@ -3,379 +3,518 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Блокнот Шефа</title>
-    <!-- Tailwind CSS -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Supabase JS Client -->
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <!-- Telegram Web App SDK -->
+    <title>Техкарты Шефа</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <script>
-        // Настройка Tailwind под цвета Telegram (используем системные переменные или стандартный синий акцент TG)
-        tailwind.config = {
-            theme: {
-                extend: {
-                    colors: {
-                        tg: {
-                            bg: 'var(--tg-theme-bg-color, #111827)',
-                            text: 'var(--tg-theme-text-color, #f3f4f6)',
-                            hint: 'var(--tg-theme-hint-color, #9ca3af)',
-                            button: 'var(--tg-theme-button-color, #2481cc)',
-                            buttonText: 'var(--tg-theme-button-text-color, #ffffff)',
-                            secondaryBg: 'var(--tg-theme-secondary-bg-color, #1f2937)'
-                        }
-                    }
-                }
-            }
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        :root {
+            --bg-color: var(--tg-theme-bg-color, #ffffff);
+            --text-color: var(--tg-theme-text-color, #222222);
+            --hint-color: var(--tg-theme-hint-color, #999999);
+            --button-color: var(--tg-theme-button-color, #2481cc);
+            --button-text-color: var(--tg-theme-button-text-color, #ffffff);
+            --secondary-bg-color: var(--tg-theme-secondary-bg-color, #f1f1f1);
         }
-    </script>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 15px;
+            box-sizing: border-box;
+        }
+        h2, h3 { margin-top: 0; }
+        .mode-toggle {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        .mode-btn {
+            flex: 1;
+            padding: 10px;
+            border: 1px solid var(--button-color);
+            background: transparent;
+            color: var(--button-color);
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+        .mode-btn.active {
+            background: var(--button-color);
+            color: var(--button-text-color);
+        }
+        .action-btn {
+            background: var(--button-color);
+            color: var(--button-text-color);
+            border: none;
+            padding: 12px;
+            width: 100%;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            margin-bottom: 15px;
+        }
+        /* Рубрикатор категорий */
+        .categories-grid {
+            display: flex;
+            gap: 8px;
+            overflow-x: auto;
+            padding-bottom: 8px;
+            margin-bottom: 15px;
+        }
+        .category-chip {
+            background: var(--secondary-bg-color);
+            padding: 6px 12px;
+            border-radius: 16px;
+            font-size: 13px;
+            white-space: nowrap;
+            cursor: pointer;
+            border: 1px solid transparent;
+        }
+        .category-chip.active {
+            border-color: var(--button-color);
+            font-weight: bold;
+        }
+        /* Карточки рецептов */
+        .recipe-card {
+            background: var(--secondary-bg-color);
+            padding: 12px;
+            border-radius: 10px;
+            margin-bottom: 10px;
+        }
+        /* Конструктор */
+        .admin-panel {
+            background: var(--secondary-bg-color);
+            padding: 15px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+        }
+        input, select, textarea {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 10px;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            box-sizing: border-box;
+            background: var(--bg-color);
+            color: var(--text-color);
+        }
+        /* Выделение названия блюда */
+        #newTitle {
+            font-size: 18px;
+            font-weight: bold;
+            border: 2px solid var(--button-color);
+        }
+        .ingredient-row, .step-row {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+            background: var(--bg-color);
+            padding: 8px;
+            border-radius: 6px;
+            margin-bottom: 8px;
+        }
+        .pro-fields {
+            display: flex;
+            gap: 5px;
+        }
+    </style>
 </head>
-<body class="bg-gray-900 text-gray-100 min-h-screen flex flex-col">
+<body>
 
-    <!-- Шапка приложения -->
-    <header class="bg-gray-800 border-b border-gray-700 p-4 sticky top-0 z-50 shadow-md">
-        <div class="max-w-md mx-auto flex justify-between items-center">
-            <h1 class="text-xl font-bold text-blue-400">🔪 Блокнот Шефа</h1>
-            <!-- Переключатель Дом / Pro -->
-            <div class="flex items-center bg-gray-700 rounded-lg p-1">
-                <button id="modeDom" onclick="setMode('dom')" class="px-3 py-1 rounded-md text-xs font-medium transition bg-blue-600 text-white">Дом</button>
-                <button id="modePro" onclick="setMode('pro')" class="px-3 py-1 rounded-md text-xs font-medium transition text-gray-300">Pro</button>
-            </div>
-        </div>
-    </header>
+    <div class="mode-toggle">
+        <button id="btnSimple" class="mode-btn active" onclick="setMode('simple')">Режим: Дом</button>
+        <button id="btnPro" class="mode-btn" onclick="setMode('pro')">Режим: Pro</button>
+    </div>
 
-    <!-- Основной контент -->
-    <main class="flex-1 max-w-md w-full mx-auto p-4 pb-24">
+    <!-- Кнопка создания техкарты -->
+    <button id="createRecipeBtn" class="action-btn" onclick="openConstructor()">+ Новая тех карта</button>
+
+    <!-- Рубрикатор категорий -->
+    <div id="categoryClassifier" class="categories-grid">
+        <div class="category-chip active" onclick="filterCategory('Все')">Все</div>
+        <div class="category-chip" onclick="filterCategory('Мясо и птица')">🥩 Мясо и птица</div>
+        <div class="category-chip" onclick="filterCategory('Рыба и морепродукты')">🐟 Рыба и морепродукты</div>
+        <div class="category-chip" onclick="filterCategory('Овощи и грибы')">🥦 Овощи и грибы</div>
+        <div class="category-chip" onclick="filterCategory('Крупы, макароны и бобовые')">🌾 Крупы и макароны</div>
+        <div class="category-chip" onclick="filterCategory('Супы')">🍲 Супы</div>
+        <div class="category-chip" onclick="filterCategory('Холодные блюда и закуски')">🥗 Закуски</div>
+        <div class="category-chip" onclick="filterCategory('Соусы, маринады и заправки')">🍯 Соусы</div>
+        <div class="category-chip" onclick="filterCategory('Полуфабрикаты и заготовки')">🍳 Заготовки</div>
+        <div class="category-chip" onclick="filterCategory('Выпечка и десерты')">🥐 Выпечка и десерты</div>
+        <div class="category-chip" onclick="filterCategory('Напитки')">🍷 Напитки</div>
+        <div class="category-chip" onclick="filterCategory('Другое')">📌 Другое</div>
+    </div>
+
+    <!-- Конструктор / Редактор техкарт -->
+    <div class="admin-panel" id="adminPanel" style="display: none;">
+        <h3 id="constructorTitle">➕ Новая техкарта</h3>
         
-        <!-- Кнопки управления -->
-        <div class="flex gap-2 mb-4">
-            <button onclick="openNewRecipeModal()" class="flex-1 bg-blue-600 hover:bg-blue-500 text-white font-medium py-2.5 px-4 rounded-xl shadow transition flex items-center justify-center gap-2">
-                <span>+ Новая техкарта</span>
-            </button>
-            <button onclick="loadDemoRecipes()" class="bg-gray-700 hover:bg-gray-600 text-gray-300 font-medium py-2.5 px-3 rounded-xl transition text-sm">
-                📥 Демо
-            </button>
-        </div>
+        <!-- Название блюда (выделено) -->
+        <input type="text" id="newTitle" placeholder="Введите название блюда..." oninput="checkTitleInput()">
 
-        <!-- Классификатор (Фильтры по категориям) -->
-        <div id="categoryFilters" class="flex gap-2 overflow-x-auto pb-2 mb-4 scrollbar-none">
-            <button onclick="filterCategory('Все')" class="cat-btn px-3 py-1.5 rounded-xl text-xs font-medium whitespace-nowrap bg-blue-600 text-white transition">Все</button>
-            <button onclick="filterCategory('Основное блюдо')" class="cat-btn px-3 py-1.5 rounded-xl text-xs font-medium whitespace-nowrap bg-gray-800 text-gray-300 border border-gray-700 transition">Основное</button>
-            <button onclick="filterCategory('Супы')" class="cat-btn px-3 py-1.5 rounded-xl text-xs font-medium whitespace-nowrap bg-gray-800 text-gray-300 border border-gray-700 transition">Супы</button>
-            <button onclick="filterCategory('Салаты')" class="cat-btn px-3 py-1.5 rounded-xl text-xs font-medium whitespace-nowrap bg-gray-800 text-gray-300 border border-gray-700 transition">Салаты</button>
-            <button onclick="filterCategory('Соусы')" class="cat-btn px-3 py-1.5 rounded-xl text-xs font-medium whitespace-nowrap bg-gray-800 text-gray-300 border border-gray-700 transition">Соусы</button>
-            <button onclick="filterCategory('Заготовки')" class="cat-btn px-3 py-1.5 rounded-xl text-xs font-medium whitespace-nowrap bg-gray-800 text-gray-300 border border-gray-700 transition">Заготовки</button>
-        </div>
+        <!-- Поля, скрытые до ввода названия -->
+        <div id="constructorBody" style="display: none;">
+            <select id="recipeCategory">
+                <option value="" disabled selected>Выберите категорию...</option>
+                <option value="Мясо и птица">Мясо и птица</option>
+                <option value="Рыба и морепродукты">Рыба и морепродукты</option>
+                <option value="Овощи и грибы">Овощи и грибы</option>
+                <option value="Крупы, макароны и бобовые">Крупы, макароны и бобовые</option>
+                <option value="Супы">Супы</option>
+                <option value="Холодные блюда и закуски">Холодные блюда и закуски</option>
+                <option value="Соусы, маринады и заправки">Соусы, маринады и заправки</option>
+                <option value="Полуфабрикаты и заготовки">Полуфабрикаты и заготовки</option>
+                <option value="Выпечка и десерты">Выпечка и десерты</option>
+                <option value="Напитки">Напитки</option>
+                <option value="Другое">Другое</option>
+            </select>
 
-        <!-- Статус загрузки / ошибки -->
-        <div id="statusMessage" class="text-center text-gray-400 py-4 text-xs hidden">
-            Загрузка рецептов из облака...
-        </div>
-
-        <!-- Список рецептов -->
-        <div id="recipesList" class="space-y-4">
-            <!-- Динамически заполняется скриптом -->
-        </div>
-    </main>
-
-    <!-- Модальное окно создания / редактирования рецепта -->
-    <div id="recipeModal" class="fixed inset-0 bg-black/70 backdrop-blur-sm hidden z-50 flex items-center justify-center p-4">
-        <div class="bg-gray-800 border border-gray-700 w-full max-w-md rounded-2xl p-5 shadow-2xl max-h-[90vh] overflow-y-auto">
-            <div class="flex justify-between items-center mb-4">
-                <h2 id="modalTitle" class="text-lg font-bold text-blue-400">Новая техкарта</h2>
-                <button id="deleteBtn" onclick="deleteCurrentRecipe()" class="hidden text-red-400 hover:text-red-300 text-xs font-medium bg-red-950/50 border border-red-900 px-2.5 py-1 rounded-lg transition">Удалить</button>
+            <!-- Порции: ползунок до 20 + ручной ввод -->
+            <div style="margin-bottom: 10px; display: flex; align-items: center; gap: 10px;">
+                <label style="font-size: 13px; color: var(--hint-color);">Порции:</label>
+                <input type="range" id="recipePortionsRange" min="1" max="20" value="4" oninput="syncPortionsRange(this.value)" style="flex: 2; margin-bottom: 0;">
+                <input type="number" id="recipePortionsNum" min="1" value="4" placeholder="Порций" oninput="syncPortionsNum(this.value)" style="flex: 1; margin-bottom: 0; text-align: center;">
             </div>
-            
-            <form id="recipeForm" onsubmit="saveRecipe(event)" class="space-y-4">
-                <input type="hidden" id="recipeId">
-                <div>
-                    <label class="block text-xs font-medium text-gray-400 mb-1">Название блюда</label>
-                    <input type="text" id="recipeTitle" required class="w-full bg-gray-900 border border-gray-700 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500" placeholder="Например: Оссобуко по-милански">
-                </div>
 
-                <div>
-                    <label class="block text-xs font-medium text-gray-400 mb-1">Категория</label>
-                    <select id="recipeCategory" class="w-full bg-gray-900 border border-gray-700 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500">
-                        <option value="Основное блюдо">Основное блюдо</option>
-                        <option value="Супы">Супы</option>
-                        <option value="Салаты">Салаты</option>
-                        <option value="Соусы">Соусы</option>
-                        <option value="Заготовки">Заготовки</option>
-                    </select>
-                </div>
+            <h4>Ингредиенты:</h4>
+            <div id="ingredientsList"></div>
+            <button class="mode-btn" style="width: 100%; margin-bottom: 15px;" onclick="addIngredientRow()">+ Добавить ингредиент</button>
 
-                <div id="proPortionsContainer" class="hidden">
-                    <label class="block text-xs font-medium text-gray-400 mb-1">Базовые порции (Pro)</label>
-                    <input type="number" id="recipeBasePortions" value="1" min="1" class="w-full bg-gray-900 border border-gray-700 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500">
-                </div>
+            <h4>Шаги приготовления:</h4>
+            <div id="stepsList"></div>
+            <button class="mode-btn" style="width: 100%; margin-bottom: 15px;" onclick="addStepRow()">+ Добавить шаг</button>
 
-                <div>
-                    <label class="block text-xs font-medium text-gray-400 mb-1">Шаги приготовления</label>
-                    <textarea id="recipeSteps" rows="4" class="w-full bg-gray-900 border border-gray-700 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500" placeholder="Опишите процесс приготовления..."></textarea>
-                </div>
-
-                <div class="flex gap-3 pt-2">
-                    <button type="button" onclick="closeModal()" class="flex-1 bg-gray-700 hover:bg-gray-600 text-gray-300 font-medium py-2 rounded-xl transition text-sm">Отмена</button>
-                    <button type="submit" class="flex-1 bg-blue-600 hover:bg-blue-500 text-white font-medium py-2 rounded-xl transition text-sm">Сохранить</button>
-                </div>
-            </form>
+            <div style="display: flex; gap: 10px;">
+                <button class="action-btn" onclick="saveRecipe()" style="flex: 2; margin-bottom: 0;">Сохранить в базу</button>
+                <button class="mode-btn" onclick="closeConstructor()" style="flex: 1; margin-bottom: 0;">Отмена</button>
+            </div>
         </div>
     </div>
 
-    <!-- Скрипт логики -->
-    <script>
-        const tg = window.Telegram?.WebApp;
-        if (tg) {
-            tg.expand();
-            // Применяем цвета из темы Telegram, если они доступны
-            if (tg.themeParams && tg.themeParams.button_color) {
-                document.documentElement.style.setProperty('--tg-theme-button-color', tg.themeParams.button_color);
-            }
+    <!-- Список рецептов -->
+    <div id="recipesContainer">
+        <p style="text-align: center; color: var(--hint-color);">Загрузка рецептов из Supabase...</p>
+    </div>
+
+<script>
+    // Вшитые учетные данные Supabase и Telegram
+    const SUPABASE_URL = 'https://fxvporgpgpxudzlbauty.supabase.co';
+    const SUPABASE_KEY = 'sb_publishable_kcUT9hJ_k8e-2sj0j8BbAA_QvG8Wc-p';
+    const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    let currentMode = 'simple';
+    let editingRecipeId = null;
+    let recipes = [];
+
+    const tg = window.Telegram.WebApp;
+    tg.expand();
+
+    async function initApp() {
+        await loadRecipesFromSupabase();
+    }
+
+    async function loadRecipesFromSupabase() {
+        const { data, error } = await supabaseClient
+            .from('recipes')
+            .select('*')
+            .order('created_at', { ascending: false });
+
+        if (error) {
+            console.error('Ошибка загрузки из Supabase:', error);
+            document.getElementById('recipesContainer').innerHTML = `<p style="text-align: center; color: red;">Ошибка загрузки базы данных.</p>`;
+            return;
         }
-        const userId = tg?.initDataUnsafe?.user?.id ? String(tg.initDataUnsafe.user.id) : 'test_chef_user';
 
-        const SUPABASE_URL = 'https://fxvporgpgpxudzlbauty.supabase.co';
-        const SUPABASE_KEY = 'sb_publishable_kcUT9hJ_k8e-2sj0j8BbAA_QvG8Wc-p';
-        const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        recipes = data || [];
+        renderRecipes();
+    }
 
-        let currentMode = 'dom';
-        let currentCategory = 'Все';
-        let recipes = [];
+    function setMode(mode) {
+        currentMode = mode;
+        document.getElementById('btnSimple').classList.toggle('active', mode === 'simple');
+        document.getElementById('btnPro').classList.toggle('active', mode === 'pro');
+        renderRecipes();
+    }
 
-        function setMode(mode) {
-            currentMode = mode;
-            const btnDom = document.getElementById('modeDom');
-            const btnPro = document.getElementById('modePro');
-            const proContainer = document.getElementById('proPortionsContainer');
+    function checkTitleInput() {
+        const titleVal = document.getElementById('newTitle').value.trim();
+        const body = document.getElementById('constructorBody');
+        body.style.display = titleVal.length > 0 ? 'block' : 'none';
+    }
 
-            if (mode === 'dom') {
-                btnDom.className = 'px-3 py-1 rounded-md text-xs font-medium transition bg-blue-600 text-white';
-                btnPro.className = 'px-3 py-1 rounded-md text-xs font-medium transition text-gray-300';
-                proContainer.classList.add('hidden');
+    function openConstructor(recipe = null) {
+        document.getElementById('createRecipeBtn').style.display = 'none';
+        document.getElementById('categoryClassifier').style.display = 'none';
+        document.getElementById('adminPanel').style.display = 'block';
+        
+        document.getElementById('ingredientsList').innerHTML = '';
+        document.getElementById('stepsList').innerHTML = '';
+
+        if (recipe) {
+            editingRecipeId = recipe.id;
+            document.getElementById('constructorTitle').textContent = '✏️ Редактирование техкарты';
+            document.getElementById('newTitle').value = recipe.title || '';
+            checkTitleInput();
+            document.getElementById('recipeCategory').value = recipe.category || '';
+            
+            const portions = recipe.base_portions || 4;
+            document.getElementById('recipePortionsRange').value = portions <= 20 ? portions : 20;
+            document.getElementById('recipePortionsNum').value = portions;
+            if (portions > 20) {
+                document.getElementById('recipePortionsRange').style.display = 'none';
             } else {
-                btnPro.className = 'px-3 py-1 rounded-md text-xs font-medium transition bg-blue-600 text-white';
-                btnDom.className = 'px-3 py-1 rounded-md text-xs font-medium transition text-gray-300';
-                proContainer.classList.remove('hidden');
+                document.getElementById('recipePortionsRange').style.display = 'block';
             }
-            renderRecipes();
+
+            let parsedIngredients = recipe.ingredients;
+            if (typeof parsedIngredients === 'string') {
+                try { parsedIngredients = JSON.parse(parsedIngredients); } catch(e) { parsedIngredients = []; }
+            }
+            (parsedIngredients || []).forEach(ing => addIngredientRow(ing));
+
+            let parsedSteps = recipe.steps;
+            if (typeof parsedSteps === 'string') {
+                try { parsedSteps = JSON.parse(parsedSteps); } catch(e) { parsedSteps = []; }
+            }
+            (parsedSteps || []).forEach(stp => addStepRow(stp));
+        } else {
+            editingRecipeId = null;
+            document.getElementById('constructorTitle').textContent = '➕ Новая техкарта';
+            document.getElementById('newTitle').value = '';
+            checkTitleInput();
+            document.getElementById('recipeCategory').selectedIndex = 0;
+            document.getElementById('recipePortionsRange').value = 4;
+            document.getElementById('recipePortionsRange').style.display = 'block';
+            document.getElementById('recipePortionsNum').value = 4;
+            addIngredientRow();
+            addStepRow();
+        }
+    }
+
+    function closeConstructor() {
+        document.getElementById('adminPanel').style.display = 'none';
+        document.getElementById('createRecipeBtn').style.display = 'block';
+        document.getElementById('categoryClassifier').style.display = 'flex';
+        editingRecipeId = null;
+    }
+
+    function syncPortionsRange(val) {
+        document.getElementById('recipePortionsNum').value = val;
+    }
+
+    function syncPortionsNum(val) {
+        const range = document.getElementById('recipePortionsRange');
+        const num = parseInt(val);
+        if (num > 20 || isNaN(num)) {
+            range.style.display = 'none';
+        } else {
+            range.style.display = 'block';
+            range.value = num;
+        }
+    }
+
+    function addIngredientRow(data = {}) {
+        const container = document.getElementById('ingredientsList');
+        const div = document.createElement('div');
+        div.className = 'ingredient-row';
+        
+        let proHtml = '';
+        if (currentMode === 'pro') {
+            const gross = data.gross || '';
+            const net = data.net || '';
+            const loss = (gross && net && gross >= net) ? (((gross - net) / gross) * 100).toFixed(1) + '%' : '0%';
+            proHtml = `
+                <div class="pro-fields">
+                    <input type="number" placeholder="Брутто (г)" value="${gross}" oninput="calcLoss(this)" class="ing-gross">
+                    <input type="number" placeholder="Нетто (г)" value="${net}" oninput="calcLoss(this)" class="ing-net">
+                    <input type="text" placeholder="Потери" value="${loss}" readonly style="background: var(--secondary-bg-color); text-align: center;" class="ing-loss">
+                </div>
+            `;
+        } else {
+            proHtml = `<input type="number" placeholder="Вес (г)" value="${data.weight || data.net || ''}" class="ing-weight">`;
         }
 
-        function filterCategory(category) {
-            currentCategory = category;
-            
-            document.querySelectorAll('#categoryFilters button').forEach(btn => {
-                if (btn.textContent.trim() === category || (category === 'Все' && btn.textContent.trim() === 'Все')) {
-                    btn.className = 'cat-btn px-3 py-1.5 rounded-xl text-xs font-medium whitespace-nowrap bg-blue-600 text-white transition';
-                } else {
-                    btn.className = 'cat-btn px-3 py-1.5 rounded-xl text-xs font-medium whitespace-nowrap bg-gray-800 text-gray-300 border border-gray-700 transition';
-                }
+        div.innerHTML = `
+            <input type="text" placeholder="Название ингредиента" value="${data.name || ''}" class="ing-name">
+            ${proHtml}
+            <button type="button" class="mode-btn" style="color: red; border-color: red; padding: 4px;" onclick="this.parentElement.remove()">Удалить ингредиент</button>
+        `;
+        container.appendChild(div);
+    }
+
+    function calcLoss(element) {
+        const row = element.closest('.ingredient-row');
+        const gross = parseFloat(row.querySelector('.ing-gross').value) || 0;
+        const net = parseFloat(row.querySelector('.ing-net').value) || 0;
+        const lossField = row.querySelector('.ing-loss');
+        if (gross > 0 && gross >= net) {
+            const loss = ((gross - net) / gross) * 100;
+            lossField.value = loss.toFixed(1) + '%';
+        } else {
+            lossField.value = '0%';
+        }
+    }
+
+    function addStepRow(data = {}) {
+        const container = document.getElementById('stepsList');
+        const div = document.createElement('div');
+        div.className = 'step-row';
+        
+        const methods = ['бланшировать', 'варить', 'тушить', 'пар', 'жар/пар', 'жар', 'жарить', 'колеровать', 'гриль'];
+        let optionsHtml = methods.map(m => `<option value="${m}" ${(data.method === m) ? 'selected' : ''}>${m}</option>`).join('');
+
+        div.innerHTML = `
+            <textarea placeholder="Описание шага приготовления..." rows="2" class="step-desc">${data.desc || (typeof data === 'string' ? data : '')}</textarea>
+            <label style="font-size: 11px; color: var(--hint-color); margin-top: 2px;">Метод приготовления:</label>
+            <select class="step-method">
+                ${optionsHtml}
+            </select>
+            <button type="button" class="mode-btn" style="color: red; border-color: red; padding: 4px;" onclick="this.parentElement.remove()">Удалить шаг</button>
+        `;
+        container.appendChild(div);
+    }
+
+    async function saveRecipe() {
+        const title = document.getElementById('newTitle').value.trim();
+        const category = document.getElementById('recipeCategory').value;
+        const base_portions = parseInt(document.getElementById('recipePortionsNum').value) || 4;
+
+        if (!title) {
+            alert('Введите название блюда!');
+            return;
+        }
+        if (!category) {
+            alert('Выберите категорию!');
+            return;
+        }
+
+        const ingredients = [];
+        document.querySelectorAll('.ingredient-row').forEach(row => {
+            const name = row.querySelector('.ing-name').value;
+            if (currentMode === 'pro') {
+                ingredients.push({
+                    name,
+                    gross: parseFloat(row.querySelector('.ing-gross').value) || 0,
+                    net: parseFloat(row.querySelector('.ing-net').value) || 0
+                });
+            } else {
+                ingredients.push({
+                    name,
+                    weight: parseFloat(row.querySelector('.ing-weight').value) || 0
+                });
+            }
+        });
+
+        const steps = [];
+        document.querySelectorAll('.step-row').forEach(row => {
+            steps.push({
+                desc: row.querySelector('.step-desc').value,
+                method: row.querySelector('.step-method').value
             });
+        });
 
-            renderRecipes();
+        const recipeData = {
+            title,
+            category,
+            base_portions,
+            ingredients,
+            steps,
+            user_id: tg.initDataUnsafe?.user?.id ? String(tg.initDataUnsafe.user.id) : 'default_chef'
+        };
+
+        let error;
+        if (editingRecipeId) {
+            const res = await supabaseClient.from('recipes').update(recipeData).eq('id', editingRecipeId);
+            error = res.error;
+        } else {
+            const res = await supabaseClient.from('recipes').insert([recipeData]);
+            error = res.error;
         }
 
-        async function fetchRecipes() {
-            const statusEl = document.getElementById('statusMessage');
-            statusEl.textContent = 'Загрузка рецептов из облака...';
-            statusEl.classList.remove('hidden');
-
-            try {
-                const { data, error } = await supabaseClient
-                    .from('recipes')
-                    .select('*')
-                    .eq('user_id', userId)
-                    .order('created_at', { ascending: false });
-
-                if (error) throw error;
-
-                recipes = data || [];
-                statusEl.classList.add('hidden');
-                localStorage.setItem('chef_recipes_cache', JSON.stringify(recipes));
-                renderRecipes();
-            } catch (err) {
-                console.error('Ошибка Supabase:', err.message);
-                const cached = localStorage.getItem('chef_recipes_cache');
-                if (cached) {
-                    recipes = JSON.parse(cached);
-                    statusEl.textContent = `⚠️ Ошибка базы: ${err.message}. Показан кэш.`;
-                    statusEl.classList.remove('hidden');
-                    renderRecipes();
-                } else {
-                    statusEl.textContent = `❌ Ошибка: ${err.message}`;
-                    statusEl.classList.remove('hidden');
-                }
-            }
+        if (error) {
+            alert('Ошибка при сохранении: ' + error.message);
+            return;
         }
 
-        function renderRecipes() {
-            const listEl = document.getElementById('recipesList');
-            listEl.innerHTML = '';
+        closeConstructor();
+        await loadRecipesFromSupabase();
+    }
 
-            let filtered = recipes;
-            if (currentCategory !== 'Все') {
-                filtered = recipes.filter(r => r.category === currentCategory);
+    let activeFilter = 'Все';
+    function filterCategory(cat) {
+        activeFilter = cat;
+        document.querySelectorAll('.category-chip').forEach(chip => {
+            chip.classList.toggle('active', chip.textContent.includes(cat) || (cat === 'Все' && chip.textContent === 'Все'));
+        });
+        renderRecipes();
+    }
+
+    function renderRecipes() {
+        const container = document.getElementById('recipesContainer');
+        container.innerHTML = '';
+
+        let filtered = recipes;
+        if (activeFilter !== 'Все') {
+            filtered = recipes.filter(r => r.category === activeFilter);
+        }
+
+        if (filtered.length === 0) {
+            container.innerHTML = `<p style="text-align: center; color: var(--hint-color);">Техкарт пока нет в категории «${activeFilter}».</p>`;
+            return;
+        }
+
+        filtered.forEach(recipe => {
+            const card = document.createElement('div');
+            card.className = 'recipe-card';
+            
+            let ingredientsArr = recipe.ingredients;
+            if (typeof ingredientsArr === 'string') {
+                try { ingredientsArr = JSON.parse(ingredientsArr); } catch(e) { ingredientsArr = []; }
             }
 
-            if (filtered.length === 0) {
-                listEl.innerHTML = '<div class="text-center text-gray-500 py-8 text-sm">В этой категории пока пусто.</div>';
-                return;
-            }
-
-            filtered.forEach((recipe) => {
-                const card = document.createElement('div');
-                card.className = 'bg-gray-800 border border-gray-700 rounded-2xl p-4 shadow-md hover:border-blue-500/50 transition cursor-pointer';
-                card.onclick = () => openEditRecipeModal(recipe.id);
-                
-                let proDetails = '';
+            let ingListHtml = (ingredientsArr || []).map(i => {
                 if (currentMode === 'pro') {
-                    proDetails = `
-                        <div class="mt-3 pt-3 border-t border-gray-700 text-xs text-blue-300 flex justify-between">
-                            <span>Базовые порции: <b>${recipe.base_portions || 1}</b></span>
-                            <span class="text-gray-400">ID: ${recipe.id.slice(0, 8)}</span>
-                        </div>
-                    `;
-                }
-
-                card.innerHTML = `
-                    <div class="flex justify-between items-start mb-2">
-                        <h3 class="font-bold text-base text-white">${escapeHtml(recipe.title)}</h3>
-                        <span class="bg-gray-700 text-blue-400 text-[10px] px-2 py-0.5 rounded-full font-medium">${escapeHtml(recipe.category)}</span>
-                    </div>
-                    <p class="text-gray-400 text-xs line-clamp-2 mb-2">${escapeHtml(recipe.steps || 'Без описания шагов')}</p>
-                    ${proDetails}
-                `;
-                listEl.appendChild(card);
-            });
-        }
-
-        function openNewRecipeModal() {
-            document.getElementById('recipeForm').reset();
-            document.getElementById('recipeId').value = '';
-            document.getElementById('modalTitle').textContent = 'Новая техкарта';
-            document.getElementById('deleteBtn').classList.add('hidden');
-            document.getElementById('recipeModal').classList.remove('hidden');
-        }
-
-        function openEditRecipeModal(id) {
-            const recipe = recipes.find(r => r.id === id);
-            if (!recipe) return;
-
-            document.getElementById('recipeId').value = recipe.id;
-            document.getElementById('recipeTitle').value = recipe.title || '';
-            document.getElementById('recipeCategory').value = recipe.category || 'Основное блюдо';
-            document.getElementById('recipeBasePortions').value = recipe.base_portions || 1;
-            document.getElementById('recipeSteps').value = recipe.steps || '';
-            
-            document.getElementById('modalTitle').textContent = 'Редактировать техкарту';
-            document.getElementById('deleteBtn').classList.remove('hidden');
-            document.getElementById('recipeModal').classList.remove('hidden');
-        }
-
-        function closeModal() {
-            document.getElementById('recipeModal').classList.add('hidden');
-        }
-
-        async function saveRecipe(event) {
-            event.preventDefault();
-            
-            const id = document.getElementById('recipeId').value;
-            const title = document.getElementById('recipeTitle').value.trim();
-            const category = document.getElementById('recipeCategory').value;
-            const base_portions = parseInt(document.getElementById('recipeBasePortions').value) || 1;
-            const steps = document.getElementById('recipeSteps').value.trim();
-
-            if (!title) return;
-
-            const recipeData = {
-                user_id: userId,
-                title: title,
-                category: category,
-                base_portions: base_portions,
-                steps: steps,
-                photo_file_id: ''
-            };
-
-            try {
-                let data, error;
-
-                if (id) {
-                    const response = await supabaseClient.from('recipes').update(recipeData).eq('id', id).select();
-                    data = response.data;
-                    error = response.error;
+                    let gross = i.gross || 0;
+                    let net = i.net || i.weight || 0;
+                    let loss = (gross && net && gross >= net) ? (((gross - net) / gross) * 100).toFixed(1) + '%' : '0%';
+                    return `<li>${i.name || 'Ингредиент'} — Брутто: ${gross}г, Нетто: ${net}г (Потери: ${loss})</li>`;
                 } else {
-                    const response = await supabaseClient.from('recipes').insert([recipeData]).select();
-                    data = response.data;
-                    error = response.error;
+                    let w = i.weight || i.net || 0;
+                    return `<li>${i.name || 'Ингредиент'} — ${w}г</li>`;
                 }
+            }).join('');
 
-                if (error) throw error;
-
-                if (data && data.length > 0) {
-                    if (id) {
-                        const index = recipes.findIndex(r => r.id === id);
-                        if (index !== -1) recipes[index] = data[0];
-                    } else {
-                        recipes.unshift(data[0]);
-                    }
-                    localStorage.setItem('chef_recipes_cache', JSON.stringify(recipes));
-                    renderRecipes();
-                }
-
-                closeModal();
-            } catch (err) {
-                console.error('Ошибка сохранения:', err.message);
-                alert('Не удалось сохранить: ' + err.message);
+            let stepsArr = recipe.steps;
+            if (typeof stepsArr === 'string') {
+                try { stepsArr = JSON.parse(stepsArr); } catch(e) { stepsArr = []; }
             }
-        }
 
-        async function deleteCurrentRecipe() {
-            const id = document.getElementById('recipeId').value;
-            if (!id || !confirm('Удалить эту техкарту?')) return;
+            let stepsListHtml = (stepsArr || []).map((s, idx) => {
+                let desc = typeof s === 'object' ? s.desc : s;
+                let method = typeof s === 'object' ? s.method : 'не указан';
+                return `<li>Шаг ${idx+1}: ${desc} <br><b>Метод:</b> ${method}</li>`;
+            }).join('');
 
-            try {
-                const { error } = await supabaseClient.from('recipes').delete().eq('id', id);
-                if (error) throw error;
+            card.innerHTML = `
+                <h3 style="margin-bottom: 5px;">${recipe.title}</h3>
+                <div style="font-size: 12px; color: var(--hint-color); margin-bottom: 8px;">Категория: ${recipe.category} | Порций: ${recipe.base_portions || 4}</div>
+                <div style="font-size: 13px; margin-bottom: 6px;"><b>Ингредиенты:</b><ul>${ingListHtml}</ul></div>
+                <div style="font-size: 13px; margin-bottom: 10px;"><b>Шаги:</b><ol>${stepsListHtml}</ol></div>
+                <button class="mode-btn" onclick='editRecipe("${recipe.id}")'>Редактировать техкарту</button>
+            `;
+            container.appendChild(card);
+        });
+    }
 
-                recipes = recipes.filter(r => r.id !== id);
-                localStorage.setItem('chef_recipes_cache', JSON.stringify(recipes));
-                renderRecipes();
-                closeModal();
-            } catch (err) {
-                console.error('Ошибка удаления:', err.message);
-                alert('Не удалось удалить: ' + err.message);
-            }
-        }
+    function editRecipe(id) {
+        const recipe = recipes.find(r => r.id == id);
+        if (recipe) openConstructor(recipe);
+    }
 
-        async function loadDemoRecipes() {
-            const demoRecipe = {
-                user_id: userId,
-                title: 'Оссобуко по-милански',
-                category: 'Основное блюдо',
-                base_portions: 4,
-                steps: '1. Обжарить говяжью голяшку. 2. Добавить овощи, белое вино и бульон. 3. Тушить 2.5 часа.',
-                photo_file_id: ''
-            };
-
-            try {
-                const { data, error } = await supabaseClient.from('recipes').insert([demoRecipe]).select();
-                if (error) throw error;
-                if (data) {
-                    recipes.unshift(data[0]);
-                    localStorage.setItem('chef_recipes_cache', JSON.stringify(recipes));
-                    renderRecipes();
-                }
-            } catch (err) {
-                console.error('Демо ошибка:', err.message);
-                alert('Ошибка демо: ' + err.message);
-            }
-        }
-
-        function escapeHtml(text) {
-            if (!text) return '';
-            return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
-        }
-
-        fetchRecipes();
-    </script>
+    // Запуск инициализации при загрузке страницы
+    initApp();
+</script>
 </body>
 </html>
