@@ -57,7 +57,6 @@
         }
         .recipe-title-input { font-size: 16px; font-weight: bold; border: 2px solid var(--button-color); }
 
-        /* Поля порций — всегда белый фон и чёрный текст */
         #portionsRange,
         #portionsInput {
             background: #ffffff !important;
@@ -114,6 +113,21 @@
         .pro-fields { display: flex; gap: 6px; }
         .loss-info { font-size: 11px; color: var(--hint-color); }
         
+        .method-temp-row {
+            display: flex;
+            gap: 6px;
+            align-items: center;
+        }
+        .method-temp-row select {
+            margin-bottom: 0;
+        }
+        .method-temp-row .step-method {
+            flex: 2;
+        }
+        .method-temp-row .step-temp {
+            flex: 1;
+        }
+
         .summary-box {
             background: var(--bg-color); border: 1px dashed var(--button-color);
             padding: 8px; border-radius: 6px; margin-bottom: 10px; font-size: 13px;
@@ -397,10 +411,17 @@
         const currentMethod = data.method || 'тушить';
         let optionsHtml = methods.map(m => `<option value="${m}" ${currentMethod === m ? 'selected' : ''}>${m}</option>`).join('');
 
+        const temps = ['-18', '-5', '0', '4', '60', '75', '80', '85', '90', '95', '98', '100', '120', '125', '130', '140', '150', '160', '175', '180', '190', '200', '210', '240'];
+        const currentTemp = data.temp || '';
+        let tempOptionsHtml = '<option value="">— °C —</option>' + temps.map(t => `<option value="${t}" ${String(currentTemp) === String(t) ? 'selected' : ''}>${t} °C</option>`).join('');
+
         div.innerHTML = `
             <textarea placeholder="Описание шага..." rows="2" class="step-desc">${data.desc || ''}</textarea>
             <label style="font-size: 11px; color: var(--hint-color);">Метод приготовления:</label>
-            <select class="step-method">${optionsHtml}</select>
+            <div class="method-temp-row">
+                <select class="step-method">${optionsHtml}</select>
+                <select class="step-temp">${tempOptionsHtml}</select>
+            </div>
             <button type="button" class="delete-ing-btn" onclick="this.parentElement.remove();">Удалить шаг</button>
         `;
         container.appendChild(div);
@@ -434,7 +455,8 @@
         document.querySelectorAll('.step-row').forEach(row => {
             steps.push({
                 desc: row.querySelector('.step-desc')?.value.trim() || '',
-                method: row.querySelector('.step-method')?.value || 'тушить'
+                method: row.querySelector('.step-method')?.value || 'тушить',
+                temp: row.querySelector('.step-temp')?.value || ''
             });
         });
 
@@ -514,7 +536,10 @@
                 return `<li>${i.name} — Брутто: ${i.gross}г, Нетто: ${i.net}г</li>`;
             }).join('');
 
-            let stepsHtml = (recipe.steps || []).map((s, idx) => `<li>Шаг ${idx+1}: ${s.desc} <br><span style="color:var(--hint-color);">Метод: ${s.method}</span></li>`).join('');
+            let stepsHtml = (recipe.steps || []).map((s, idx) => {
+                const tempLabel = s.temp ? ` | Темп: ${s.temp} °C` : '';
+                return `<li>Шаг ${idx+1}: ${s.desc} <br><span style="color:var(--hint-color);">Метод: ${s.method}${tempLabel}</span></li>`;
+            }).join('');
 
             card.innerHTML = `
                 <h3 style="margin-bottom: 4px;">${recipe.title}</h3>
