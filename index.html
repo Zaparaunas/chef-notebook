@@ -991,7 +991,6 @@ function getTotalGross() {
     return totalGross;
 }
 
-// Взять вес после ПОСЛЕДНЕГО заполненного шага
 function getLastStepWeight() {
     const steps = document.querySelectorAll('.step-row');
     let lastWeight = null;
@@ -1228,7 +1227,6 @@ function resetViewValues() {
     updateViewNumbers();
 }
 
-// Считаем потери из шагов: сумма нетто − последний вес шага
 function calculateTotalLoss(recipe) {
     let totalNet = 0;
     (recipe.ingredients || []).forEach(i => {
