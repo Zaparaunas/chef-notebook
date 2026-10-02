@@ -24,6 +24,7 @@
             color: var(--text-color);
             margin: 0;
             padding: 12px;
+            padding-bottom: 80px;
             box-sizing: border-box;
         }
         h2, h3, h4 { margin-top: 0; }
@@ -128,6 +129,40 @@
             height: 18px;
             cursor: pointer;
             margin: 0;
+        }
+
+        .product-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 14px;
+            border-bottom: 1px solid var(--border-color);
+            cursor: pointer;
+            gap: 8px;
+        }
+        .product-row:last-child { border-bottom: none; }
+        .product-row:active { background: rgba(36, 129, 204, 0.08); }
+        .product-row-left { flex: 1; min-width: 0; }
+        .product-row-name {
+            font-size: 14px;
+            font-weight: 500;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        .product-row-supplier {
+            font-size: 11px;
+            color: var(--hint-color);
+            margin-top: 2px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        .product-row-price {
+            font-size: 14px;
+            font-weight: 700;
+            color: var(--success-color);
+            white-space: nowrap;
         }
 
         input, select, textarea {
@@ -248,7 +283,7 @@
             margin-bottom: 0;
         }
         .weight-group select {
-            width: 70px;
+            width: 80px;
             flex: 0 0 auto;
             margin-bottom: 0;
         }
@@ -554,6 +589,35 @@
             color: var(--text-color);
             margin-bottom: 8px;
         }
+
+        .tab-bar {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: var(--secondary-bg-color);
+            border-top: 1px solid var(--border-color);
+            display: flex;
+            z-index: 500;
+            padding-bottom: env(safe-area-inset-bottom, 0);
+        }
+        .tab-btn {
+            flex: 1;
+            background: transparent;
+            border: none;
+            color: var(--hint-color);
+            padding: 8px 6px 10px;
+            font-size: 11px;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 2px;
+            font-family: inherit;
+        }
+        .tab-btn .tab-icon { font-size: 20px; line-height: 1.1; }
+        .tab-btn.active { color: var(--button-color); }
     </style>
 </head>
 <body>
@@ -565,40 +629,60 @@
         </div>
     </div>
 
-    <div id="navControlsContainer">
-        <button class="primary" id="btnNewRecipe" onclick="openConstructor()">+ Новая техкарта</button>
-        
+    <div id="tabRecipesContent">
+        <div id="navControlsContainer">
+            <button class="primary" id="btnNewRecipe" onclick="openConstructor()">+ Новая техкарта</button>
+            
+            <div class="search-container">
+                <input type="text" id="searchInput" class="search-input" placeholder="🔍 Поиск по названию..." oninput="onSearchInput(this.value)">
+            </div>
+        </div>
+
+        <div id="selectionPanel" class="selection-panel">
+            <div class="selection-info" id="selectionInfo">Выбрано: 0</div>
+            <div class="selection-buttons">
+                <button class="mode-btn" onclick="selectAll()">Выбрать все</button>
+                <button class="mode-btn" onclick="clearSelection()">Снять все</button>
+                <button class="mode-btn" onclick="exitSelectionMode()">Выйти</button>
+            </div>
+        </div>
+
+        <div id="recipesContainer">
+            <p style="color: var(--hint-color); text-align: center;">Загрузка…</p>
+        </div>
+
+        <div class="bottom-controls" id="bottomControls" style="display: none;">
+            <div class="controls-row">
+                <button class="mode-btn" onclick="toggleExportMenu()">Экспорт ▾</button>
+                <button class="mode-btn" id="btnImportMenu" onclick="toggleImportMenu()">Импорт ▾</button>
+            </div>
+            <div class="dropdown-menu" id="exportMenu">
+                <button class="mode-btn" onclick="startSelectionMode()">Выбрать рецепты…</button>
+                <button class="mode-btn" onclick="exportAllToFile()">Экспорт всех в файл</button>
+                <button class="mode-btn" onclick="exportAllToClipboard()">Экспорт всех в буфер</button>
+            </div>
+            <div class="dropdown-menu" id="importMenu">
+                <button class="mode-btn" onclick="importFromFilePrompt()">Импорт из файла</button>
+                <button class="mode-btn" onclick="importFromClipboardPrompt()">Импорт из буфера</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="tabProductsContent" style="display: none;">
+        <button class="primary" id="btnNewProduct" onclick="openProductForm()">+ Добавить продукт</button>
         <div class="search-container">
-            <input type="text" id="searchInput" class="search-input" placeholder="🔍 Поиск по названию..." oninput="onSearchInput(this.value)">
+            <input type="text" id="productSearchInput" class="search-input" placeholder="🔍 Поиск продукта..." oninput="onProductSearchInput(this.value)">
+        </div>
+        <div id="productsContainer">
+            <p style="color: var(--hint-color); text-align: center;">Загрузка…</p>
         </div>
     </div>
 
-    <div id="selectionPanel" class="selection-panel">
-        <div class="selection-info" id="selectionInfo">Выбрано: 0</div>
-        <div class="selection-buttons">
-            <button class="mode-btn" onclick="selectAll()">Выбрать все</button>
-            <button class="mode-btn" onclick="clearSelection()">Снять все</button>
-            <button class="mode-btn" onclick="exitSelectionMode()">Выйти</button>
-        </div>
-    </div>
-
-    <div id="recipesContainer">
-        <p style="color: var(--hint-color); text-align: center;">Загрузка…</p>
-    </div>
-
-    <div class="bottom-controls" id="bottomControls" style="display: none;">
-        <div class="controls-row">
-            <button class="mode-btn" onclick="toggleExportMenu()">Экспорт ▾</button>
-            <button class="mode-btn" id="btnImportMenu" onclick="toggleImportMenu()">Импорт ▾</button>
-        </div>
-        <div class="dropdown-menu" id="exportMenu">
-            <button class="mode-btn" onclick="startSelectionMode()">Выбрать рецепты…</button>
-            <button class="mode-btn" onclick="exportAllToFile()">Экспорт всех в файл</button>
-            <button class="mode-btn" onclick="exportAllToClipboard()">Экспорт всех в буфер</button>
-        </div>
-        <div class="dropdown-menu" id="importMenu">
-            <button class="mode-btn" onclick="importFromFilePrompt()">Импорт из файла</button>
-            <button class="mode-btn" onclick="importFromClipboardPrompt()">Импорт из буфера</button>
+    <div id="tabMoreContent" style="display: none;">
+        <div class="empty-state">
+            <div class="icon">⚙️</div>
+            <h3>Настройки</h3>
+            <p>Здесь скоро появятся настройки, управление пользователями и другие функции.</p>
         </div>
     </div>
 
@@ -683,6 +767,44 @@
 
     <div id="recipeView" style="display: none;"></div>
 
+    <div id="productForm" class="card" style="display: none;">
+        <h3 id="productFormTitle">Новый продукт</h3>
+        <input type="text" id="productName" placeholder="Название продукта">
+        <div class="pro-fields">
+            <div class="weight-group">
+                <input type="number" id="productPrice" placeholder="Цена" step="0.01" min="0" style="margin-bottom:0;">
+                <select id="productUnit">
+                    <option value="кг">₽/кг</option>
+                    <option value="л">₽/л</option>
+                    <option value="шт">₽/шт</option>
+                    <option value="г">₽/г</option>
+                    <option value="мл">₽/мл</option>
+                </select>
+            </div>
+        </div>
+        <input type="text" id="productSupplier" placeholder="Поставщик (опционально)">
+        <textarea id="productNotes" placeholder="Заметки (опционально)" rows="2"></textarea>
+        <div style="display: flex; gap: 8px;">
+            <button class="primary save-db-btn" style="flex: 2; margin-bottom: 0;" onclick="saveProduct()">Сохранить</button>
+            <button class="mode-btn" style="flex: 1;" onclick="closeProductForm()">Отмена</button>
+        </div>
+    </div>
+
+    <div class="tab-bar" id="tabBar">
+        <button class="tab-btn active" id="tabBtnRecipes" onclick="switchTab('recipes')">
+            <span class="tab-icon">📓</span>
+            <span>Рецепты</span>
+        </button>
+        <button class="tab-btn" id="tabBtnProducts" onclick="switchTab('products')">
+            <span class="tab-icon">📦</span>
+            <span>Продукты</span>
+        </button>
+        <button class="tab-btn" id="tabBtnMore" onclick="switchTab('more')">
+            <span class="tab-icon">⚙️</span>
+            <span>Ещё</span>
+        </button>
+    </div>
+
 <script>
 // ==========================================
 // КОНСТАНТЫ И РОЛИ
@@ -705,6 +827,9 @@ const CATEGORIES = [
     'Напитки',
     'Другое'
 ];
+
+const UNITS = ['г', 'кг', 'мл', 'л'];
+const PRICE_UNITS = ['кг', 'л', 'шт', 'г', 'мл'];
 
 const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
@@ -746,9 +871,16 @@ function isChef() {
     return currentUserRole === 'chef' || currentUserRole === 'admin';
 }
 
+function canSeeProducts() {
+    return currentUserRole === 'chef' || currentUserRole === 'admin' || currentUserRole === 'technolog';
+}
+
 function applyRoleUI() {
     const btnNew = document.getElementById('btnNewRecipe');
     const btnImport = document.getElementById('btnImportMenu');
+    const tabProducts = document.getElementById('tabBtnProducts');
+    const btnNewProduct = document.getElementById('btnNewProduct');
+
     if (!isChef()) {
         if (btnNew) btnNew.style.display = 'none';
         if (btnImport) btnImport.style.display = 'none';
@@ -756,13 +888,19 @@ function applyRoleUI() {
         if (btnNew) btnNew.style.display = 'block';
         if (btnImport) btnImport.style.display = 'block';
     }
+
+    if (!canSeeProducts()) {
+        if (tabProducts) tabProducts.style.display = 'none';
+        if (btnNewProduct) btnNewProduct.style.display = 'none';
+    } else {
+        if (tabProducts) tabProducts.style.display = 'flex';
+        if (btnNewProduct) btnNewProduct.style.display = 'block';
+    }
 }
 
 // ==========================================
 // ЕДИНИЦЫ И ФОРМАТИРОВАНИЕ
 // ==========================================
-
-const UNITS = ['г', 'кг', 'мл', 'л'];
 
 function formatWeight(value, unit) {
     if (value === undefined || value === null || isNaN(value)) return '0 ' + (unit || 'г');
@@ -781,6 +919,13 @@ function formatNum(n) {
     const num = Number(n);
     if (Number.isInteger(num)) return String(num);
     return num.toFixed(1);
+}
+
+function formatPrice(n) {
+    if (n === undefined || n === null || isNaN(n)) return '0 ₽';
+    const num = Number(n);
+    if (Number.isInteger(num)) return num.toLocaleString('ru-RU') + ' ₽';
+    return num.toLocaleString('ru-RU', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' ₽';
 }
 
 function unitToGrams(value, unit) {
@@ -858,6 +1003,10 @@ let editingRecipeId = null;
 let viewingRecipeId = null;
 let activeFilter = 'Все';
 let recipes = [];
+let products = [];
+let editingProductId = null;
+let productSearchQuery = '';
+let activeTab = 'recipes';
 let selectionMode = false;
 let selectedIds = new Set();
 let viewPortions = null;
@@ -867,7 +1016,7 @@ let expandedCategories = new Set();
 let searchQuery = '';
 
 // ==========================================
-// ЗАГРУЗКА ИЗ SUPABASE
+// ЗАГРУЗКА ИЗ SUPABASE — РЕЦЕПТЫ
 // ==========================================
 
 async function loadRecipesFromSupabase() {
@@ -1008,6 +1157,74 @@ async function deleteRecipeFromSupabase(recipeId) {
 }
 
 // ==========================================
+// ЗАГРУЗКА ИЗ SUPABASE — ПРОДУКТЫ
+// ==========================================
+
+async function loadProductsFromSupabase() {
+    try {
+        const userId = getCurrentUserId();
+        const { data, error } = await supabaseClient
+            .from('products')
+            .select('*')
+            .eq('user_id', userId)
+            .order('name', { ascending: true });
+
+        if (error) throw error;
+
+        return (data || []).map(p => ({
+            id: p.id,
+            name: p.name || '',
+            unit: p.unit || 'кг',
+            price_per_unit: p.price_per_unit || 0,
+            supplier: p.supplier || '',
+            notes: p.notes || '',
+            updated_at: p.updated_at || new Date().toISOString()
+        }));
+    } catch(e) {
+        console.error('Ошибка загрузки продуктов из Supabase:', e);
+        return [];
+    }
+}
+
+async function saveProductToSupabase(product) {
+    try {
+        const userId = getCurrentUserId();
+        const row = {
+            id: product.id,
+            user_id: userId,
+            name: product.name,
+            unit: product.unit || 'кг',
+            price_per_unit: product.price_per_unit || 0,
+            supplier: product.supplier || null,
+            notes: product.notes || null,
+            updated_at: new Date().toISOString()
+        };
+        const { error } = await supabaseClient
+            .from('products')
+            .upsert(row, { onConflict: 'id' });
+        if (error) throw error;
+        return true;
+    } catch(e) {
+        console.error('Ошибка сохранения продукта:', e);
+        return false;
+    }
+}
+
+async function deleteProductFromSupabase(productId) {
+    try {
+        const { error } = await supabaseClient
+            .from('products')
+            .delete()
+            .eq('id', productId);
+        if (error) throw error;
+        return true;
+    } catch(e) {
+        console.error('Ошибка удаления продукта:', e);
+        return false;
+    }
+}
+
+// ==========================================
 // ЛОКАЛЬНОЕ ХРАНИЛИЩЕ
 // ==========================================
 
@@ -1024,6 +1241,19 @@ function saveRecipesToLocal() {
     } catch(e) {}
 }
 
+function loadProductsFromLocal() {
+    try {
+        const data = localStorage.getItem('chef_products');
+        return data ? JSON.parse(data) : [];
+    } catch(e) { return []; }
+}
+
+function saveProductsToLocal() {
+    try {
+        localStorage.setItem('chef_products', JSON.stringify(products));
+    } catch(e) {}
+}
+
 // ==========================================
 // ИНИЦИАЛИЗАЦИЯ
 // ==========================================
@@ -1032,22 +1262,33 @@ window.addEventListener('DOMContentLoaded', async () => {
     await loadUserRole();
     applyRoleUI();
 
-    const local = loadRecipesFromLocal();
-    recipes = local;
+    const localRecipes = loadRecipesFromLocal();
+    recipes = localRecipes;
     renderRecipes();
 
-    const cloud = await loadRecipesFromSupabase();
-    if (cloud !== null) {
-        if (cloud.length > 0) {
-            recipes = cloud;
-        } else if (local.length > 0 && isChef()) {
-            for (const r of local) {
+    const localProducts = loadProductsFromLocal();
+    products = localProducts;
+
+    const cloudRecipes = await loadRecipesFromSupabase();
+    if (cloudRecipes !== null) {
+        if (cloudRecipes.length > 0) {
+            recipes = cloudRecipes;
+        } else if (localRecipes.length > 0 && isChef()) {
+            for (const r of localRecipes) {
                 await saveRecipeToSupabase(r);
             }
-            recipes = local;
+            recipes = localRecipes;
         }
         saveRecipesToLocal();
         renderRecipes();
+    }
+
+    if (canSeeProducts()) {
+        const cloudProducts = await loadProductsFromSupabase();
+        if (cloudProducts !== null) {
+            products = cloudProducts;
+            saveProductsToLocal();
+        }
     }
 
     document.addEventListener('click', function(e) {
@@ -1060,7 +1301,37 @@ window.addEventListener('DOMContentLoaded', async () => {
 });
 
 // ==========================================
-// КОНСТРУКТОР
+// ПЕРЕКЛЮЧЕНИЕ ВКЛАДОК
+// ==========================================
+
+function switchTab(tab) {
+    activeTab = tab;
+
+    document.getElementById('tabBtnRecipes').classList.toggle('active', tab === 'recipes');
+    document.getElementById('tabBtnProducts').classList.toggle('active', tab === 'products');
+    document.getElementById('tabBtnMore').classList.toggle('active', tab === 'more');
+
+    document.getElementById('tabRecipesContent').style.display = (tab === 'recipes') ? 'block' : 'none';
+    document.getElementById('tabProductsContent').style.display = (tab === 'products') ? 'block' : 'none';
+    document.getElementById('tabMoreContent').style.display = (tab === 'more') ? 'block' : 'none';
+
+    if (tab === 'recipes') renderRecipes();
+    if (tab === 'products') renderProducts();
+
+    updateTabBarVisibility();
+}
+
+function updateTabBarVisibility() {
+    const constructorOpen = document.getElementById('recipeConstructor').style.display === 'block';
+    const viewOpen = document.getElementById('recipeView').style.display === 'block';
+    const productFormOpen = document.getElementById('productForm').style.display === 'block';
+
+    const hide = constructorOpen || viewOpen || productFormOpen || selectionMode;
+    document.getElementById('tabBar').style.display = hide ? 'none' : 'flex';
+}
+
+// ==========================================
+// КОНСТРУКТОР РЕЦЕПТА
 // ==========================================
 
 function toggleConstructorFields() {
@@ -1071,10 +1342,8 @@ function toggleConstructorFields() {
 function openConstructor(recipe = null) {
     if (!isChef()) return;
 
-    document.getElementById('navControlsContainer').style.display = 'none';
-    document.getElementById('recipesContainer').style.display = 'none';
+    document.getElementById('tabRecipesContent').style.display = 'none';
     document.getElementById('selectionPanel').classList.remove('active');
-    document.getElementById('bottomControls').style.display = 'none';
     document.getElementById('recipeView').style.display = 'none';
     document.getElementById('recipeConstructor').style.display = 'block';
 
@@ -1113,14 +1382,15 @@ function openConstructor(recipe = null) {
     updateSummary();
     updateOutputSummary();
     validateStepChain();
+    updateTabBarVisibility();
 }
 
 function closeConstructor() {
     document.getElementById('recipeConstructor').style.display = 'none';
-    document.getElementById('navControlsContainer').style.display = 'block';
-    document.getElementById('recipesContainer').style.display = 'block';
+    document.getElementById('tabRecipesContent').style.display = (activeTab === 'recipes') ? 'block' : 'none';
     editingRecipeId = null;
     renderRecipes();
+    updateTabBarVisibility();
 }
 
 function onRangeInput(val) {
@@ -1223,18 +1493,8 @@ function renderRecipePickerResults(input, showAllOnFocus) {
 
     let available = getAvailableRecipesForIngredient();
 
-    if (query && !showAllOnFocus) {
+    if (query) {
         available = available.filter(r => (r.title || '').toLowerCase().includes(query));
-    } else if (query && showAllOnFocus) {
-        const exactMatch = available.find(r => (r.title || '').toLowerCase() === query);
-        if (exactMatch) {
-            available = available.filter(r => (r.title || '').toLowerCase().includes(query));
-        } else {
-            available = available.filter(r => (r.title || '').toLowerCase().includes(query));
-            if (available.length === 0) {
-                available = getAvailableRecipesForIngredient();
-            }
-        }
     }
 
     if (available.length === 0) {
@@ -1635,7 +1895,7 @@ function onMethodChange(selectEl) {
 }
 
 // ==========================================
-// СОХРАНЕНИЕ
+// СОХРАНЕНИЕ РЕЦЕПТА
 // ==========================================
 
 async function saveRecipe() {
@@ -1717,7 +1977,7 @@ function editRecipe(id) {
 }
 
 // ==========================================
-// ЭКРАН ПРОСМОТРА
+// ЭКРАН ПРОСМОТРА РЕЦЕПТА
 // ==========================================
 
 function openRecipeView(id) {
@@ -1732,14 +1992,12 @@ function openRecipeView(id) {
     viewPortions = recipe.portions || 4;
     viewOutput = recipe.output || 0;
 
-    document.getElementById('navControlsContainer').style.display = 'none';
-    document.getElementById('recipesContainer').style.display = 'none';
-    document.getElementById('selectionPanel').classList.remove('active');
-    document.getElementById('bottomControls').style.display = 'none';
+    document.getElementById('tabRecipesContent').style.display = 'none';
     document.getElementById('recipeConstructor').style.display = 'none';
     const view = document.getElementById('recipeView');
     view.style.display = 'block';
     renderRecipeView();
+    updateTabBarVisibility();
 }
 
 function closeRecipeView() {
@@ -1756,12 +2014,12 @@ function closeRecipeView() {
     }
     viewStack = [];
     document.getElementById('recipeView').style.display = 'none';
-    document.getElementById('navControlsContainer').style.display = 'block';
-    document.getElementById('recipesContainer').style.display = 'block';
+    document.getElementById('tabRecipesContent').style.display = (activeTab === 'recipes') ? 'block' : 'none';
     viewingRecipeId = null;
     viewPortions = null;
     viewOutput = null;
     renderRecipes();
+    updateTabBarVisibility();
 }
 
 function openLinkedFromView(linkedId) {
@@ -2133,6 +2391,158 @@ function buildCompactRow(recipe) {
 }
 
 // ==========================================
+// ПРОДУКТЫ — СПИСОК, ФОРМА
+// ==========================================
+
+function onProductSearchInput(val) {
+    productSearchQuery = (val || '').trim().toLowerCase();
+    renderProducts();
+}
+
+function renderProducts() {
+    const container = document.getElementById('productsContainer');
+    if (!container) return;
+    container.innerHTML = '';
+
+    if (!canSeeProducts()) {
+        container.innerHTML = '<p style="text-align: center; color: var(--hint-color);">Нет доступа.</p>';
+        return;
+    }
+
+    let list = products.slice();
+    if (productSearchQuery) {
+        list = list.filter(p => (p.name || '').toLowerCase().includes(productSearchQuery));
+    }
+    list.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+
+    if (list.length === 0) {
+        if (products.length === 0) {
+            container.innerHTML = `
+                <div class="empty-state">
+                    <div class="icon">📦</div>
+                    <h3>Справочник пуст</h3>
+                    <p>Добавьте первый продукт — нажмите «+ Добавить продукт».</p>
+                </div>
+            `;
+        } else {
+            container.innerHTML = `<p style="text-align: center; color: var(--hint-color);">Ничего не найдено по запросу «${escapeHtml(productSearchQuery)}».</p>`;
+        }
+        return;
+    }
+
+    const group = document.createElement('div');
+    group.className = 'accordion-group';
+
+    list.forEach(p => {
+        const row = document.createElement('div');
+        row.className = 'product-row';
+        row.onclick = () => openProductForm(p);
+
+        const supplier = p.supplier ? `<div class="product-row-supplier">${escapeHtml(p.supplier)}</div>` : '';
+
+        row.innerHTML = `
+            <div class="product-row-left">
+                <div class="product-row-name">${escapeHtml(p.name)}</div>
+                ${supplier}
+            </div>
+            <div class="product-row-price">${formatPrice(p.price_per_unit)}/${escapeHtml(p.unit)}</div>
+        `;
+        group.appendChild(row);
+    });
+
+    container.appendChild(group);
+}
+
+function openProductForm(product = null) {
+    if (!canSeeProducts()) return;
+
+    document.getElementById('tabProductsContent').style.display = 'none';
+    document.getElementById('productForm').style.display = 'block';
+
+    if (product) {
+        editingProductId = product.id;
+        document.getElementById('productFormTitle').textContent = '✏️ Редактирование продукта';
+        document.getElementById('productName').value = product.name || '';
+        document.getElementById('productPrice').value = product.price_per_unit || '';
+        document.getElementById('productUnit').value = product.unit || 'кг';
+        document.getElementById('productSupplier').value = product.supplier || '';
+        document.getElementById('productNotes').value = product.notes || '';
+    } else {
+        editingProductId = null;
+        document.getElementById('productFormTitle').textContent = '➕ Новый продукт';
+        document.getElementById('productName').value = '';
+        document.getElementById('productPrice').value = '';
+        document.getElementById('productUnit').value = 'кг';
+        document.getElementById('productSupplier').value = '';
+        document.getElementById('productNotes').value = '';
+    }
+
+    updateTabBarVisibility();
+}
+
+function closeProductForm() {
+    document.getElementById('productForm').style.display = 'none';
+    document.getElementById('tabProductsContent').style.display = (activeTab === 'products') ? 'block' : 'none';
+    editingProductId = null;
+    renderProducts();
+    updateTabBarVisibility();
+}
+
+async function saveProduct() {
+    if (!canSeeProducts()) return;
+
+    const name = document.getElementById('productName').value.trim();
+    const price = parseFloat(document.getElementById('productPrice').value) || 0;
+    const unit = document.getElementById('productUnit').value || 'кг';
+    const supplier = document.getElementById('productSupplier').value.trim();
+    const notes = document.getElementById('productNotes').value.trim();
+
+    if (!name) { alert('Введите название продукта!'); return; }
+    if (price < 0) { alert('Цена не может быть отрицательной'); return; }
+
+    const now = new Date().toISOString();
+    let product;
+    if (editingProductId) {
+        const idx = products.findIndex(p => p.id === editingProductId);
+        product = {
+            id: editingProductId,
+            name,
+            price_per_unit: price,
+            unit,
+            supplier,
+            notes,
+            updated_at: now
+        };
+        if (idx !== -1) products[idx] = product;
+    } else {
+        product = {
+            id: crypto.randomUUID(),
+            name,
+            price_per_unit: price,
+            unit,
+            supplier,
+            notes,
+            updated_at: now
+        };
+        products.unshift(product);
+    }
+
+    saveProductsToLocal();
+    await saveProductToSupabase(product);
+    closeProductForm();
+    renderProducts();
+}
+
+async function deleteProduct(id) {
+    if (!canSeeProducts()) return;
+    if (!confirm('Удалить этот продукт?')) return;
+    products = products.filter(p => p.id !== id);
+    saveProductsToLocal();
+    await deleteProductFromSupabase(id);
+    renderProducts();
+}
+
+// ==========================================
 // ВЫБОР РЕЦЕПТОВ
 // ==========================================
 
@@ -2155,6 +2565,7 @@ function startSelectionMode() {
     document.getElementById('exportMenu').classList.remove('active');
     document.getElementById('selectionPanel').classList.add('active');
     renderRecipes();
+    updateTabBarVisibility();
 }
 
 function exitSelectionMode() {
@@ -2162,6 +2573,7 @@ function exitSelectionMode() {
     selectedIds.clear();
     document.getElementById('selectionPanel').classList.remove('active');
     renderRecipes();
+    updateTabBarVisibility();
 }
 
 function selectAll() {
