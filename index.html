@@ -284,8 +284,51 @@
             flex: 1;
             margin-bottom: 0;
         }
-        .ing-preparation-fields select {
+
+        .recipe-picker {
+            position: relative;
             margin-bottom: 4px;
+        }
+        .recipe-picker .recipe-search-input {
+            margin-bottom: 0;
+        }
+        .recipe-picker .recipe-search-input.selected {
+            border-color: var(--button-color);
+            background: rgba(36, 129, 204, 0.08);
+        }
+        .recipe-search-results {
+            position: absolute;
+            top: calc(100% + 2px);
+            left: 0;
+            right: 0;
+            background: var(--bg-color);
+            border: 1px solid var(--button-color);
+            border-radius: 6px;
+            max-height: 260px;
+            overflow-y: auto;
+            z-index: 100;
+            box-shadow: 0 6px 16px rgba(0,0,0,0.4);
+            display: none;
+        }
+        .recipe-search-results.open { display: block; }
+        .recipe-search-item {
+            padding: 10px 12px;
+            border-bottom: 1px solid var(--border-color);
+            cursor: pointer;
+            font-size: 14px;
+        }
+        .recipe-search-item:last-child { border-bottom: none; }
+        .recipe-search-item:active { background: rgba(36, 129, 204, 0.15); }
+        .recipe-search-item-cat {
+            font-size: 11px;
+            color: var(--hint-color);
+            margin-top: 2px;
+        }
+        .recipe-search-empty {
+            padding: 12px;
+            color: var(--hint-color);
+            font-size: 12px;
+            text-align: center;
         }
 
         .method-temp-row {
@@ -745,6 +788,16 @@ function unitToGrams(value, unit) {
     return value;
 }
 
+function escapeHtml(str) {
+    if (str === undefined || str === null) return '';
+    return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+}
+
 // ==========================================
 // МАТРЁШКА — ЗАЩИТА ОТ ЦИКЛОВ
 // ==========================================
@@ -996,6 +1049,14 @@ window.addEventListener('DOMContentLoaded', async () => {
         saveRecipesToLocal();
         renderRecipes();
     }
+
+    document.addEventListener('click', function(e) {
+        if (!e.target.closest('.recipe-picker')) {
+            document.querySelectorAll('.recipe-search-results.open').forEach(el => {
+                el.classList.remove('open');
+            });
+        }
+    });
 });
 
 // ==========================================
@@ -1095,19 +1156,13 @@ function addIngredientRow(data = {}) {
     const unit = data.unit || 'г';
     const type = data.type || 'product';
     const linkedId = data.linked_recipe_id || '';
+    let linkedTitle = '';
+    if (linkedId) {
+        const rec = recipes.find(r => r.id === linkedId);
+        if (rec) linkedTitle = rec.title;
+    }
 
     const unitOptions = UNITS.map(u => `<option value="${u}" ${u === unit ? 'selected' : ''}>${u}</option>`).join('');
-
-    const availableRecipes = getAvailableRecipesForIngredient();
-    let recipeOptionsHtml = '<option value="">— выберите рецепт —</option>';
-    availableRecipes.forEach(r => {
-        const label = r.title + (r.category ? ' · ' + r.category : '');
-        recipeOptionsHtml += `<option value="${r.id}" ${r.id === linkedId ? 'selected' : ''}>${label}</option>`;
-    });
-
-    if (linkedId && !availableRecipes.find(r => r.id === linkedId)) {
-        recipeOptionsHtml += `<option value="${linkedId}" selected>(недоступный рецепт)</option>`;
-    }
 
     const productDisplay = type === 'product' ? '' : 'display:none;';
     const preparationDisplay = type === 'preparation' ? '' : 'display:none;';
@@ -1123,8 +1178,10 @@ function addIngredientRow(data = {}) {
         <div class="ing-product-fields" style="${productDisplay}">
             <input type="text" placeholder="Название продукта" value="${type === 'product' ? (data.name || '') : ''}" class="ing-name">
         </div>
-        <div class="ing-preparation-fields" style="${preparationDisplay}">
-            <select class="ing-linked-recipe">${recipeOptionsHtml}</select>
+        <div class="ing-preparation-fields recipe-picker" style="${preparationDisplay}">
+            <input type="text" class="recipe-search-input ${linkedId ? 'selected' : ''}" placeholder="Начните вводить название..." value="${escapeHtml(linkedTitle)}" autocomplete="off" oninput="onRecipeSearchInput(this)" onfocus="onRecipeSearchFocus(this)">
+            <input type="hidden" class="ing-linked-recipe" value="${linkedId}">
+            <div class="recipe-search-results"></div>
         </div>
         <div class="pro-fields">
             <div class="weight-group">
@@ -1144,6 +1201,72 @@ function addIngredientRow(data = {}) {
     container.appendChild(div);
     updateRowLoss(div.querySelector('.ing-gross'));
     updateSummary();
+}
+
+function onRecipeSearchFocus(input) {
+    renderRecipePickerResults(input, true);
+}
+
+function onRecipeSearchInput(input) {
+    const row = input.closest('.recipe-picker');
+    const hidden = row.querySelector('.ing-linked-recipe');
+    hidden.value = '';
+    input.classList.remove('selected');
+    renderRecipePickerResults(input, false);
+}
+
+function renderRecipePickerResults(input, showAllOnFocus) {
+    const picker = input.closest('.recipe-picker');
+    if (!picker) return;
+    const results = picker.querySelector('.recipe-search-results');
+    const query = (input.value || '').trim().toLowerCase();
+
+    let available = getAvailableRecipesForIngredient();
+
+    if (query && !showAllOnFocus) {
+        available = available.filter(r => (r.title || '').toLowerCase().includes(query));
+    } else if (query && showAllOnFocus) {
+        const exactMatch = available.find(r => (r.title || '').toLowerCase() === query);
+        if (exactMatch) {
+            available = available.filter(r => (r.title || '').toLowerCase().includes(query));
+        } else {
+            available = available.filter(r => (r.title || '').toLowerCase().includes(query));
+            if (available.length === 0) {
+                available = getAvailableRecipesForIngredient();
+            }
+        }
+    }
+
+    if (available.length === 0) {
+        results.innerHTML = `<div class="recipe-search-empty">Ничего не найдено</div>`;
+        results.classList.add('open');
+        return;
+    }
+
+    let html = '';
+    available.slice(0, 50).forEach(r => {
+        html += `
+            <div class="recipe-search-item" onclick="selectRecipeForIngredient(this, '${r.id}', '${escapeHtml(r.title).replace(/'/g, "\\'")}')">
+                <div>${escapeHtml(r.title)}</div>
+                <div class="recipe-search-item-cat">${escapeHtml(r.category)}</div>
+            </div>
+        `;
+    });
+    results.innerHTML = html;
+    results.classList.add('open');
+}
+
+function selectRecipeForIngredient(el, recipeId, recipeTitle) {
+    const picker = el.closest('.recipe-picker');
+    if (!picker) return;
+    const input = picker.querySelector('.recipe-search-input');
+    const hidden = picker.querySelector('.ing-linked-recipe');
+    const results = picker.querySelector('.recipe-search-results');
+
+    input.value = recipeTitle;
+    input.classList.add('selected');
+    hidden.value = recipeId;
+    results.classList.remove('open');
 }
 
 function onIngredientTypeChange(selectEl) {
@@ -1166,8 +1289,8 @@ function getIngredientDataFromRow(row) {
     let linked_recipe_id = null;
 
     if (type === 'preparation') {
-        const linkedSelect = row.querySelector('.ing-linked-recipe');
-        linked_recipe_id = linkedSelect?.value || null;
+        const hidden = row.querySelector('.ing-linked-recipe');
+        linked_recipe_id = hidden?.value || null;
         if (linked_recipe_id) {
             const rec = recipes.find(r => r.id === linked_recipe_id);
             name = rec ? rec.title : '(неизвестный полуфабрикат)';
@@ -1776,7 +1899,7 @@ function renderRecipeView() {
         totalGross += (i.gross || 0) * factor * ratio;
         totalNet += (i.net || 0) * factor * ratio;
 
-        let nameCell = i.name || '';
+        let nameCell = escapeHtml(i.name || '');
         if (i.type === 'preparation') {
             const hasLink = i.linked_recipe_id && recipes.find(r => r.id === i.linked_recipe_id);
             nameCell += ` <span class="linked-badge">полуфаб.</span>`;
@@ -1804,8 +1927,8 @@ function renderRecipeView() {
         const weightLabel = (s.weight !== null && s.weight !== undefined && s.weight > 0) ? ` | Вес: ${formatWeight(s.weight, 'г')}` : '';
         stepsHtml += `
             <div class="view-step">
-                <div><span class="view-step-num">${idx+1}</span>${s.desc || ''}</div>
-                <div class="view-step-meta">Метод: ${s.method}${tempLabel}${humidityLabel}${weightLabel}</div>
+                <div><span class="view-step-num">${idx+1}</span>${escapeHtml(s.desc || '')}</div>
+                <div class="view-step-meta">Метод: ${escapeHtml(s.method)}${tempLabel}${humidityLabel}${weightLabel}</div>
             </div>
         `;
     });
@@ -1822,8 +1945,8 @@ function renderRecipeView() {
             <button class="back-btn" onclick="closeRecipeView()">←</button>
         </div>
         <div style="margin-bottom: 8px;">
-            <div class="view-title">${recipe.title}</div>
-            <div style="font-size: 12px; color: var(--hint-color);">${recipe.category} · базово: ${basePortions} порц. по ${formatWeight(baseOutput, 'г')}</div>
+            <div class="view-title">${escapeHtml(recipe.title)}</div>
+            <div style="font-size: 12px; color: var(--hint-color);">${escapeHtml(recipe.category)} · базово: ${basePortions} порц. по ${formatWeight(baseOutput, 'г')}</div>
         </div>
 
         ${actionsHtml}
@@ -1912,11 +2035,10 @@ function renderRecipes() {
     const bottom = document.getElementById('bottomControls');
     bottom.style.display = recipes.length > 0 ? 'block' : 'none';
 
-    // Режим поиска — плоский список
     if (searchQuery) {
         const filtered = recipes.filter(r => (r.title || '').toLowerCase().includes(searchQuery));
         if (filtered.length === 0) {
-            container.innerHTML = `<p style="text-align: center; color: var(--hint-color);">Ничего не найдено по запросу «${searchQuery}».</p>`;
+            container.innerHTML = `<p style="text-align: center; color: var(--hint-color);">Ничего не найдено по запросу «${escapeHtml(searchQuery)}».</p>`;
             return;
         }
         const wrap = document.createElement('div');
@@ -1929,7 +2051,6 @@ function renderRecipes() {
         return;
     }
 
-    // Пусто
     if (recipes.length === 0) {
         container.innerHTML = `
             <div class="empty-state">
@@ -1941,7 +2062,6 @@ function renderRecipes() {
         return;
     }
 
-    // Аккордеон по категориям
     CATEGORIES.forEach(cat => {
         const inCat = recipes.filter(r => r.category === cat);
         const isOpen = expandedCategories.has(cat);
@@ -1991,7 +2111,7 @@ function buildCompactRow(recipe) {
 
     row.innerHTML = `
         ${checkboxHtml}
-        <div class="recipe-compact-title">${recipe.title}</div>
+        <div class="recipe-compact-title">${escapeHtml(recipe.title)}</div>
         <div class="recipe-compact-meta">${meta}</div>
     `;
 
