@@ -28,13 +28,11 @@
         h2, h3, h4 { margin-top: 0; }
         .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
         .header-left { display: flex; align-items: center; }
-        .mode-switch { display: flex; gap: 6px; }
         .mode-btn {
             padding: 6px 12px; border: 1px solid var(--button-color);
             background: transparent; color: var(--button-color); border-radius: 6px;
             font-weight: 600; cursor: pointer; font-size: 13px;
         }
-        .mode-btn.active { background: var(--button-color); color: var(--button-text-color); }
         
         button.primary {
             background: var(--button-color); color: var(--button-text-color); border: none;
@@ -237,10 +235,6 @@
             <h2 style="margin-bottom: 0;">Блокнот Шефа</h2>
             <span id="syncStatus" style="font-size: 18px; margin-left: 8px; cursor: help;" title="Состояние синхронизации">☁️</span>
         </div>
-        <div class="mode-switch">
-            <button class="mode-btn active" id="btnSimple" onclick="setMode('simple')">Дом</button>
-            <button class="mode-btn" id="btnPro" onclick="setMode('pro')">Pro</button>
-        </div>
     </div>
 
     <div id="navControlsContainer">
@@ -393,7 +387,6 @@ function setSyncStatus(status) {
 // ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ
 // ==========================================
 
-let currentMode = 'simple';
 let editingRecipeId = null;
 let activeFilter = 'Все';
 let recipes = [];
@@ -591,24 +584,13 @@ window.addEventListener('DOMContentLoaded', async () => {
 });
 
 // ==========================================
-// РЕЖИМ
+// КОНСТРУКТОР
 // ==========================================
-
-function setMode(mode) {
-    currentMode = mode;
-    document.getElementById('btnSimple').classList.toggle('active', mode === 'simple');
-    document.getElementById('btnPro').classList.toggle('active', mode === 'pro');
-    rebuildIngredientsUI();
-}
 
 function toggleConstructorFields() {
     const titleVal = document.getElementById('recipeTitle').value.trim();
     document.getElementById('hiddenFieldsContainer').style.display = titleVal.length > 0 ? 'block' : 'none';
 }
-
-// ==========================================
-// КОНСТРУКТОР
-// ==========================================
 
 function openConstructor(recipe = null) {
     document.getElementById('navControlsContainer').style.display = 'none';
@@ -684,25 +666,15 @@ function addIngredientRow(data = {}) {
     const div = document.createElement('div');
     div.className = 'ingredient-row';
     
-    let fieldsHtml = '';
-    if (currentMode === 'pro') {
-        const gross = data.gross || '';
-        const net = data.net || '';
-        fieldsHtml = `
-            <div class="pro-fields">
-                <input type="number" placeholder="Брутто (г)" value="${gross}" class="ing-gross" oninput="updateRowLoss(this); updateSummary();">
-                <input type="number" placeholder="Нетто (г)" value="${net}" class="ing-net" oninput="updateRowLoss(this); updateSummary();">
-            </div>
-            <div class="loss-info">Потери: <span class="loss-percent">0%</span></div>
-        `;
-    } else {
-        const weight = data.gross || data.weight || '';
-        fieldsHtml = `
-            <div class="pro-fields">
-                <input type="number" placeholder="Вес (г)" value="${weight}" class="ing-weight" oninput="updateSummary()">
-            </div>
-        `;
-    }
+    const gross = data.gross || '';
+    const net = data.net || '';
+    const fieldsHtml = `
+        <div class="pro-fields">
+            <input type="number" placeholder="Брутто (г)" value="${gross}" class="ing-gross" oninput="updateRowLoss(this); updateSummary();">
+            <input type="number" placeholder="Нетто (г)" value="${net}" class="ing-net" oninput="updateRowLoss(this); updateSummary();">
+        </div>
+        <div class="loss-info">Потери: <span class="loss-percent">0%</span></div>
+    `;
 
     div.innerHTML = `
         <input type="text" placeholder="Название продукта" value="${data.name || ''}" class="ing-name">
@@ -710,7 +682,7 @@ function addIngredientRow(data = {}) {
         <button type="button" class="delete-ing-btn" onclick="this.parentElement.remove(); updateSummary();">Удалить ингредиент</button>
     `;
     container.appendChild(div);
-    if (currentMode === 'pro') updateRowLoss(div.querySelector('.ing-gross'));
+    updateRowLoss(div.querySelector('.ing-gross'));
     updateSummary();
 }
 
@@ -734,30 +706,10 @@ function updateSummary() {
     let totalGross = 0;
     let totalNet = 0;
     document.querySelectorAll('.ingredient-row').forEach(row => {
-        if (currentMode === 'pro') {
-            totalGross += parseFloat(row.querySelector('.ing-gross')?.value) || 0;
-            totalNet += parseFloat(row.querySelector('.ing-net')?.value) || 0;
-        } else {
-            const w = parseFloat(row.querySelector('.ing-weight')?.value) || 0;
-            totalGross += w;
-            totalNet += w;
-        }
+        totalGross += parseFloat(row.querySelector('.ing-gross')?.value) || 0;
+        totalNet += parseFloat(row.querySelector('.ing-net')?.value) || 0;
     });
     document.getElementById('summaryValues').innerText = `${totalGross} г / ${totalNet} г`;
-}
-
-function rebuildIngredientsUI() {
-    const rows = document.querySelectorAll('.ingredient-row');
-    const data = [];
-    rows.forEach(r => {
-        data.push({
-            name: r.querySelector('.ing-name')?.value || '',
-            gross: r.querySelector('.ing-gross')?.value || r.querySelector('.ing-weight')?.value || '',
-            net: r.querySelector('.ing-net')?.value || ''
-        });
-    });
-    document.getElementById('ingredientsList').innerHTML = '';
-    data.forEach(d => addIngredientRow(d));
 }
 
 function addStepRow(data = {}) {
@@ -821,31 +773,18 @@ async function saveRecipe() {
     document.querySelectorAll('.ingredient-row').forEach(row => {
         const name = row.querySelector('.ing-name')?.value.trim();
         if (!name) return;
-        if (currentMode === 'pro') {
-            const gross = parseFloat(row.querySelector('.ing-gross')?.value) || 0;
-            const net = parseFloat(row.querySelector('.ing-net')?.value) || 0;
-            const loss = gross > 0 ? ((gross - net) / gross) * 100 : 0;
-            ingredients.push({
-                name,
-                gross,
-                net,
-                loss_percent: loss,
-                unit: 'г',
-                type: 'product',
-                linked_recipe_id: null
-            });
-        } else {
-            const w = parseFloat(row.querySelector('.ing-weight')?.value) || 0;
-            ingredients.push({
-                name,
-                gross: w,
-                net: w,
-                loss_percent: 0,
-                unit: 'г',
-                type: 'product',
-                linked_recipe_id: null
-            });
-        }
+        const gross = parseFloat(row.querySelector('.ing-gross')?.value) || 0;
+        const net = parseFloat(row.querySelector('.ing-net')?.value) || 0;
+        const loss = gross > 0 ? ((gross - net) / gross) * 100 : 0;
+        ingredients.push({
+            name,
+            gross,
+            net,
+            loss_percent: loss,
+            unit: 'г',
+            type: 'product',
+            linked_recipe_id: null
+        });
     });
 
     const steps = [];
