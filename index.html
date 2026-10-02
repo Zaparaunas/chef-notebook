@@ -90,7 +90,8 @@
         }
 
         #portionsRange,
-        #portionsInput {
+        #portionsInput,
+        #outputInput {
             background: #ffffff !important;
             color: #000000 !important;
             border: 1px solid #cccccc !important;
@@ -319,6 +320,13 @@
                 </div>
             </div>
 
+            <div style="display: flex; gap: 8px; align-items: center; margin-bottom: 8px;">
+                <div style="flex: 1;">
+                    <label style="font-size: 11px; color: var(--hint-color);">Выход готового блюда (г, на 1 порцию):</label>
+                    <input type="number" id="outputInput" min="0" placeholder="например, 320" style="margin-bottom:0;">
+                </div>
+            </div>
+
             <h4>Ингредиенты:</h4>
             <div id="ingredientsList"></div>
             <button class="mode-btn" style="width: 100%; margin-bottom: 8px;" onclick="addIngredientRow()">+ Добавить ингредиент</button>
@@ -397,6 +405,7 @@
             } else {
                 document.getElementById('portionsRange').style.display = 'none';
             }
+            document.getElementById('outputInput').value = recipe.output || '';
 
             (recipe.ingredients || []).forEach(i => addIngredientRow(i));
             (recipe.steps || []).forEach(s => addStepRow(s));
@@ -409,6 +418,7 @@
             document.getElementById('portionsRange').value = 4;
             document.getElementById('portionsRange').style.display = 'block';
             document.getElementById('portionsInput').value = 4;
+            document.getElementById('outputInput').value = '';
             addIngredientRow();
             addStepRow();
         }
@@ -569,6 +579,7 @@
         const title = document.getElementById('recipeTitle').value.trim();
         const category = document.getElementById('recipeCategory').value;
         const portions = parseInt(document.getElementById('portionsInput').value) || 4;
+        const output = parseFloat(document.getElementById('outputInput').value) || 0;
         
         if (!title) { alert('Введите название блюда!'); return; }
         if (!category) { alert('Выберите категорию!'); return; }
@@ -605,10 +616,10 @@
         if (editingRecipeId) {
             const idx = recipes.findIndex(r => r.id === editingRecipeId);
             if (idx !== -1) {
-                recipes[idx] = { id: editingRecipeId, title, category, portions, ingredients, steps, updated_at: now };
+                recipes[idx] = { id: editingRecipeId, title, category, portions, output, ingredients, steps, updated_at: now };
             }
         } else {
-            const newRecipe = { id: Date.now().toString(), title, category, portions, ingredients, steps, updated_at: now };
+            const newRecipe = { id: Date.now().toString(), title, category, portions, output, ingredients, steps, updated_at: now };
             recipes.unshift(newRecipe);
         }
 
@@ -878,6 +889,8 @@
                 return `<li>Шаг ${idx+1}: ${s.desc} <br><span style="color:var(--hint-color);">Метод: ${s.method}${tempLabel}${humidityLabel}</span></li>`;
             }).join('');
 
+            const outputLabel = recipe.output ? ` | Выход: ${recipe.output} г` : '';
+
             const checkboxHtml = selectionMode 
                 ? `<input type="checkbox" class="card-checkbox" ${selectedIds.has(recipe.id) ? 'checked' : ''} onchange="toggleCardSelection('${recipe.id}', this)">`
                 : '';
@@ -892,7 +905,7 @@
             card.innerHTML = `
                 ${checkboxHtml}
                 <h3 style="margin-bottom: 4px;">${recipe.title}</h3>
-                <div style="font-size: 11px; color: var(--hint-color); margin-bottom: 8px;">Категория: ${recipe.category} | Порций: ${recipe.portions || 4}</div>
+                <div style="font-size: 11px; color: var(--hint-color); margin-bottom: 8px;">Категория: ${recipe.category} | Порций: ${recipe.portions || 4}${outputLabel}</div>
                 <div style="font-size: 12px; margin-bottom: 8px; background: var(--bg-color); padding: 6px; border-radius: 4px;">
                     Итого брутто/нетто: <b>${totalGross} г / ${totalNet} г</b>
                 </div>
