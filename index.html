@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Блокнот Шефа</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         :root {
             --bg-color: var(--tg-theme-bg-color, #12161c);
@@ -26,6 +27,7 @@
         }
         h2, h3, h4 { margin-top: 0; }
         .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+        .header-left { display: flex; align-items: center; }
         .mode-switch { display: flex; gap: 6px; }
         .mode-btn {
             padding: 6px 12px; border: 1px solid var(--button-color);
@@ -231,7 +233,10 @@
 <body>
 
     <div class="header">
-        <h2>Блокнот Шефа</h2>
+        <div class="header-left">
+            <h2 style="margin-bottom: 0;">Блокнот Шефа</h2>
+            <span id="syncStatus" style="font-size: 18px; margin-left: 8px; cursor: help;" title="Состояние синхронизации">☁️</span>
+        </div>
         <div class="mode-switch">
             <button class="mode-btn active" id="btnSimple" onclick="setMode('simple')">Дом</button>
             <button class="mode-btn" id="btnPro" onclick="setMode('pro')">Pro</button>
@@ -267,7 +272,7 @@
     </div>
 
     <div id="recipesContainer">
-        <p style="color: var(--hint-color); text-align: center;">Рецепты пока не добавлены...</p>
+        <p style="color: var(--hint-color); text-align: center;">Загрузка…</p>
     </div>
 
     <div class="bottom-controls" id="bottomControls" style="display: none;">
@@ -350,584 +355,829 @@
     </div>
 
 <script>
-    let currentMode = 'simple';
-    let editingRecipeId = null;
-    let activeFilter = 'Все';
-    let recipes = [];
-    let selectionMode = false;
-    let selectedIds = new Set();
+// ==========================================
+// ПОДКЛЮЧЕНИЕ К SUPABASE
+// ==========================================
 
-    if (!localStorage.getItem('alpha1_cleaned')) {
-        localStorage.removeItem('chef_recipes');
-        localStorage.setItem('alpha1_cleaned', 'true');
+const SUPABASE_URL = 'https://fxvporgpgpxudzlbauty.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_kcUT9hJ_k8e-2sj0j8BbAA_QvG8Wc-p';
+
+const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+function getCurrentUserId() {
+    try {
+        const tgUser = window.Telegram?.WebApp?.initDataUnsafe?.user;
+        if (tgUser && tgUser.id) {
+            return String(tgUser.id);
+        }
+    } catch(e) {}
+    return 'local';
+}
+
+function setSyncStatus(status) {
+    const el = document.getElementById('syncStatus');
+    if (!el) return;
+    if (status === 'ok') {
+        el.textContent = '☁️';
+        el.title = 'Синхронизировано';
+    } else if (status === 'progress') {
+        el.textContent = '⏳';
+        el.title = 'Синхронизация…';
+    } else {
+        el.textContent = '⚠️';
+        el.title = 'Ошибка синхронизации';
+    }
+}
+
+// ==========================================
+// ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ
+// ==========================================
+
+let currentMode = 'simple';
+let editingRecipeId = null;
+let activeFilter = 'Все';
+let recipes = [];
+let selectionMode = false;
+let selectedIds = new Set();
+
+// ==========================================
+// ЗАГРУЗКА ИЗ SUPABASE
+// ==========================================
+
+async function loadRecipesFromSupabase() {
+    setSyncStatus('progress');
+    try {
+        const userId = getCurrentUserId();
+        const { data: recipesData, error: recError } = await supabaseClient
+            .from('recipes')
+            .select('*')
+            .eq('user_id', userId)
+            .order('updated_at', { ascending: false });
+
+        if (recError) throw recError;
+
+        if (!recipesData || recipesData.length === 0) {
+            setSyncStatus('ok');
+            return [];
+        }
+
+        const recipeIds = recipesData.map(r => r.id);
+        const { data: ingData, error: ingError } = await supabaseClient
+            .from('ingredients')
+            .select('*')
+            .in('recipe_id', recipeIds);
+
+        if (ingError) throw ingError;
+
+        const ingredientsByRecipe = {};
+        (ingData || []).forEach(ing => {
+            if (!ingredientsByRecipe[ing.recipe_id]) {
+                ingredientsByRecipe[ing.recipe_id] = [];
+            }
+            ingredientsByRecipe[ing.recipe_id].push({
+                name: ing.name || '',
+                gross: ing.gross || 0,
+                net: ing.net || 0,
+                loss_percent: ing.loss_percent || 0,
+                unit: ing.unit || 'г',
+                type: ing.type || 'product',
+                linked_recipe_id: ing.linked_recipe_id || null
+            });
+        });
+
+        const result = recipesData.map(r => ({
+            id: r.id,
+            title: r.title || '',
+            category: r.category || '',
+            portions: r.base_portion || 4,
+            output: r.output || 0,
+            ingredients: ingredientsByRecipe[r.id] || [],
+            steps: typeof r.steps === 'string' ? JSON.parse(r.steps || '[]') : (r.steps || []),
+            updated_at: r.updated_at || new Date().toISOString()
+        }));
+
+        setSyncStatus('ok');
+        return result;
+    } catch(e) {
+        console.error('Ошибка загрузки из Supabase:', e);
+        setSyncStatus('error');
+        return null;
+    }
+}
+
+// ==========================================
+// СОХРАНЕНИЕ В SUPABASE
+// ==========================================
+
+async function saveRecipeToSupabase(recipe) {
+    setSyncStatus('progress');
+    try {
+        const userId = getCurrentUserId();
+
+        const recipeRow = {
+            id: recipe.id,
+            user_id: userId,
+            title: recipe.title,
+            category: recipe.category,
+            base_portion: recipe.portions || 4,
+            output: recipe.output || 0,
+            steps: recipe.steps || [],
+            updated_at: new Date().toISOString()
+        };
+
+        const { error: upsertError } = await supabaseClient
+            .from('recipes')
+            .upsert(recipeRow, { onConflict: 'id' });
+
+        if (upsertError) throw upsertError;
+
+        const { error: delError } = await supabaseClient
+            .from('ingredients')
+            .delete()
+            .eq('recipe_id', recipe.id);
+
+        if (delError) throw delError;
+
+        if (recipe.ingredients && recipe.ingredients.length > 0) {
+            const ingRows = recipe.ingredients.map(ing => ({
+                recipe_id: recipe.id,
+                name: ing.name || '',
+                gross: ing.gross || 0,
+                net: ing.net || 0,
+                loss_percent: ing.loss_percent || 0,
+                unit: ing.unit || 'г',
+                type: ing.type || 'product',
+                linked_recipe_id: ing.linked_recipe_id || null
+            }));
+
+            const { error: insError } = await supabaseClient
+                .from('ingredients')
+                .insert(ingRows);
+
+            if (insError) throw insError;
+        }
+
+        setSyncStatus('ok');
+        return true;
+    } catch(e) {
+        console.error('Ошибка сохранения в Supabase:', e);
+        setSyncStatus('error');
+        return false;
+    }
+}
+
+// ==========================================
+// УДАЛЕНИЕ ИЗ SUPABASE
+// ==========================================
+
+async function deleteRecipeFromSupabase(recipeId) {
+    setSyncStatus('progress');
+    try {
+        const { error } = await supabaseClient
+            .from('recipes')
+            .delete()
+            .eq('id', recipeId);
+
+        if (error) throw error;
+
+        setSyncStatus('ok');
+        return true;
+    } catch(e) {
+        console.error('Ошибка удаления из Supabase:', e);
+        setSyncStatus('error');
+        return false;
+    }
+}
+
+// ==========================================
+// ЛОКАЛЬНОЕ ХРАНИЛИЩЕ
+// ==========================================
+
+function loadRecipesFromLocal() {
+    try {
+        const data = localStorage.getItem('chef_recipes');
+        return data ? JSON.parse(data) : [];
+    } catch(e) { return []; }
+}
+
+function saveRecipesToLocal() {
+    try {
+        localStorage.setItem('chef_recipes', JSON.stringify(recipes));
+    } catch(e) {}
+}
+
+// ==========================================
+// ИНИЦИАЛИЗАЦИЯ
+// ==========================================
+
+window.addEventListener('DOMContentLoaded', async () => {
+    const local = loadRecipesFromLocal();
+    recipes = local;
+    renderRecipes();
+
+    const cloud = await loadRecipesFromSupabase();
+    if (cloud !== null) {
+        if (cloud.length > 0) {
+            recipes = cloud;
+        } else if (local.length > 0) {
+            for (const r of local) {
+                await saveRecipeToSupabase(r);
+            }
+            recipes = local;
+        }
+        saveRecipesToLocal();
+        renderRecipes();
+    }
+});
+
+// ==========================================
+// РЕЖИМ
+// ==========================================
+
+function setMode(mode) {
+    currentMode = mode;
+    document.getElementById('btnSimple').classList.toggle('active', mode === 'simple');
+    document.getElementById('btnPro').classList.toggle('active', mode === 'pro');
+    rebuildIngredientsUI();
+}
+
+function toggleConstructorFields() {
+    const titleVal = document.getElementById('recipeTitle').value.trim();
+    document.getElementById('hiddenFieldsContainer').style.display = titleVal.length > 0 ? 'block' : 'none';
+}
+
+// ==========================================
+// КОНСТРУКТОР
+// ==========================================
+
+function openConstructor(recipe = null) {
+    document.getElementById('navControlsContainer').style.display = 'none';
+    document.getElementById('recipesContainer').style.display = 'none';
+    document.getElementById('selectionPanel').classList.remove('active');
+    document.getElementById('bottomControls').style.display = 'none';
+    document.getElementById('recipeConstructor').style.display = 'block';
+
+    document.getElementById('ingredientsList').innerHTML = '';
+    document.getElementById('stepsList').innerHTML = '';
+
+    if (recipe) {
+        editingRecipeId = recipe.id;
+        document.getElementById('constructorTitle').textContent = '✏️ Редактирование техкарты';
+        document.getElementById('recipeTitle').value = recipe.title || '';
+        toggleConstructorFields();
+        document.getElementById('recipeCategory').value = recipe.category || '';
+        const p = recipe.portions || 4;
+        document.getElementById('portionsInput').value = p;
+        if(p <= 20) {
+            document.getElementById('portionsRange').value = p;
+            document.getElementById('portionsRange').style.display = 'block';
+        } else {
+            document.getElementById('portionsRange').style.display = 'none';
+        }
+        document.getElementById('outputInput').value = recipe.output || '';
+
+        (recipe.ingredients || []).forEach(i => addIngredientRow(i));
+        (recipe.steps || []).forEach(s => addStepRow(s));
+    } else {
+        editingRecipeId = null;
+        document.getElementById('constructorTitle').textContent = '➕ Новая техкарта';
+        document.getElementById('recipeTitle').value = '';
+        toggleConstructorFields();
+        document.getElementById('recipeCategory').selectedIndex = 0;
+        document.getElementById('portionsRange').value = 4;
+        document.getElementById('portionsRange').style.display = 'block';
+        document.getElementById('portionsInput').value = 4;
+        document.getElementById('outputInput').value = '';
+        addIngredientRow();
+        addStepRow();
+    }
+    updateSummary();
+}
+
+function closeConstructor() {
+    document.getElementById('recipeConstructor').style.display = 'none';
+    document.getElementById('navControlsContainer').style.display = 'block';
+    document.getElementById('recipesContainer').style.display = 'block';
+    editingRecipeId = null;
+    renderRecipes();
+}
+
+function onRangeInput(val) {
+    document.getElementById('portionsInput').value = val;
+    updateSummary();
+}
+
+function onNumberInput(val) {
+    const num = parseInt(val) || 1;
+    const range = document.getElementById('portionsRange');
+    if (num <= 20) {
+        range.value = num;
+        range.style.display = 'block';
+    } else {
+        range.style.display = 'none';
+    }
+    updateSummary();
+}
+
+function addIngredientRow(data = {}) {
+    const container = document.getElementById('ingredientsList');
+    const div = document.createElement('div');
+    div.className = 'ingredient-row';
+    
+    let fieldsHtml = '';
+    if (currentMode === 'pro') {
+        const gross = data.gross || '';
+        const net = data.net || '';
+        fieldsHtml = `
+            <div class="pro-fields">
+                <input type="number" placeholder="Брутто (г)" value="${gross}" class="ing-gross" oninput="updateRowLoss(this); updateSummary();">
+                <input type="number" placeholder="Нетто (г)" value="${net}" class="ing-net" oninput="updateRowLoss(this); updateSummary();">
+            </div>
+            <div class="loss-info">Потери: <span class="loss-percent">0%</span></div>
+        `;
+    } else {
+        const weight = data.gross || data.weight || '';
+        fieldsHtml = `
+            <div class="pro-fields">
+                <input type="number" placeholder="Вес (г)" value="${weight}" class="ing-weight" oninput="updateSummary()">
+            </div>
+        `;
     }
 
-    window.addEventListener('DOMContentLoaded', () => {
-        loadRecipes();
-        recipes = recipes.filter(r => !r.isDemo);
-        saveRecipes();
-        renderRecipes();
+    div.innerHTML = `
+        <input type="text" placeholder="Название продукта" value="${data.name || ''}" class="ing-name">
+        ${fieldsHtml}
+        <button type="button" class="delete-ing-btn" onclick="this.parentElement.remove(); updateSummary();">Удалить ингредиент</button>
+    `;
+    container.appendChild(div);
+    if (currentMode === 'pro') updateRowLoss(div.querySelector('.ing-gross'));
+    updateSummary();
+}
+
+function updateRowLoss(el) {
+    const row = el.closest('.ingredient-row');
+    if (!row) return;
+    const gross = parseFloat(row.querySelector('.ing-gross')?.value) || 0;
+    const net = parseFloat(row.querySelector('.ing-net')?.value) || 0;
+    const lossSpan = row.querySelector('.loss-percent');
+    if (lossSpan) {
+        if (gross > 0 && gross >= net) {
+            const loss = ((gross - net) / gross) * 100;
+            lossSpan.innerText = loss.toFixed(1) + '%';
+        } else {
+            lossSpan.innerText = '0%';
+        }
+    }
+}
+
+function updateSummary() {
+    let totalGross = 0;
+    let totalNet = 0;
+    document.querySelectorAll('.ingredient-row').forEach(row => {
+        if (currentMode === 'pro') {
+            totalGross += parseFloat(row.querySelector('.ing-gross')?.value) || 0;
+            totalNet += parseFloat(row.querySelector('.ing-net')?.value) || 0;
+        } else {
+            const w = parseFloat(row.querySelector('.ing-weight')?.value) || 0;
+            totalGross += w;
+            totalNet += w;
+        }
+    });
+    document.getElementById('summaryValues').innerText = `${totalGross} г / ${totalNet} г`;
+}
+
+function rebuildIngredientsUI() {
+    const rows = document.querySelectorAll('.ingredient-row');
+    const data = [];
+    rows.forEach(r => {
+        data.push({
+            name: r.querySelector('.ing-name')?.value || '',
+            gross: r.querySelector('.ing-gross')?.value || r.querySelector('.ing-weight')?.value || '',
+            net: r.querySelector('.ing-net')?.value || ''
+        });
+    });
+    document.getElementById('ingredientsList').innerHTML = '';
+    data.forEach(d => addIngredientRow(d));
+}
+
+function addStepRow(data = {}) {
+    const container = document.getElementById('stepsList');
+    const div = document.createElement('div');
+    div.className = 'step-row';
+    
+    const methods = ['бланшировать', 'варить', 'тушить', 'пар', 'жар/пар', 'жар', 'жарить', 'колеровать', 'гриль', 'фритюр', 'до готовности'];
+    const currentMethod = data.method || 'тушить';
+    let optionsHtml = methods.map(m => `<option value="${m}" ${currentMethod === m ? 'selected' : ''}>${m}</option>`).join('');
+
+    const temps = ['-18', '-5', '0', '4', '60', '75', '80', '85', '90', '95', '98', '100', '120', '125', '130', '140', '150', '160', '175', '180', '190', '200', '210', '240'];
+    const currentTemp = data.temp || '';
+    let tempOptionsHtml = '<option value="">— °C —</option>' + temps.map(t => `<option value="${t}" ${String(currentTemp) === String(t) ? 'selected' : ''}>${t} °C</option>`).join('');
+
+    const humidities = ['10', '20', '30', '40', '50', '60', '70', '80', '90', '100'];
+    const currentHumidity = data.humidity || '';
+    let humidityOptionsHtml = '<option value="">— % —</option>' + humidities.map(h => `<option value="${h}" ${String(currentHumidity) === String(h) ? 'selected' : ''}>${h} %</option>`).join('');
+
+    div.innerHTML = `
+        <textarea placeholder="Описание шага..." rows="2" class="step-desc">${data.desc || ''}</textarea>
+        <label style="font-size: 11px; color: var(--hint-color);">Метод приготовления:</label>
+        <div class="method-temp-row">
+            <select class="step-method" onchange="onMethodChange(this)">${optionsHtml}</select>
+            <select class="step-temp">${tempOptionsHtml}</select>
+            <select class="step-humidity" style="display:none;">${humidityOptionsHtml}</select>
+        </div>
+        <button type="button" class="delete-ing-btn" onclick="this.parentElement.remove();">Удалить шаг</button>
+    `;
+    container.appendChild(div);
+    onMethodChange(div.querySelector('.step-method'));
+}
+
+function onMethodChange(selectEl) {
+    const row = selectEl.closest('.method-temp-row');
+    if (!row) return;
+    const humidity = row.querySelector('.step-humidity');
+    if (!humidity) return;
+    if (selectEl.value === 'жар/пар') {
+        humidity.style.display = 'block';
+    } else {
+        humidity.style.display = 'none';
+        humidity.value = '';
+    }
+}
+
+// ==========================================
+// СОХРАНЕНИЕ РЕЦЕПТА
+// ==========================================
+
+async function saveRecipe() {
+    const title = document.getElementById('recipeTitle').value.trim();
+    const category = document.getElementById('recipeCategory').value;
+    const portions = parseInt(document.getElementById('portionsInput').value) || 4;
+    const output = parseFloat(document.getElementById('outputInput').value) || 0;
+    
+    if (!title) { alert('Введите название блюда!'); return; }
+    if (!category) { alert('Выберите категорию!'); return; }
+
+    const ingredients = [];
+    document.querySelectorAll('.ingredient-row').forEach(row => {
+        const name = row.querySelector('.ing-name')?.value.trim();
+        if (!name) return;
+        if (currentMode === 'pro') {
+            const gross = parseFloat(row.querySelector('.ing-gross')?.value) || 0;
+            const net = parseFloat(row.querySelector('.ing-net')?.value) || 0;
+            const loss = gross > 0 ? ((gross - net) / gross) * 100 : 0;
+            ingredients.push({
+                name,
+                gross,
+                net,
+                loss_percent: loss,
+                unit: 'г',
+                type: 'product',
+                linked_recipe_id: null
+            });
+        } else {
+            const w = parseFloat(row.querySelector('.ing-weight')?.value) || 0;
+            ingredients.push({
+                name,
+                gross: w,
+                net: w,
+                loss_percent: 0,
+                unit: 'г',
+                type: 'product',
+                linked_recipe_id: null
+            });
+        }
     });
 
-    function setMode(mode) {
-        currentMode = mode;
-        document.getElementById('btnSimple').classList.toggle('active', mode === 'simple');
-        document.getElementById('btnPro').classList.toggle('active', mode === 'pro');
-        rebuildIngredientsUI();
+    const steps = [];
+    document.querySelectorAll('.step-row').forEach(row => {
+        const method = row.querySelector('.step-method')?.value || 'тушить';
+        steps.push({
+            desc: row.querySelector('.step-desc')?.value.trim() || '',
+            method: method,
+            temp: row.querySelector('.step-temp')?.value || '',
+            humidity: method === 'жар/пар' ? (row.querySelector('.step-humidity')?.value || '') : ''
+        });
+    });
+
+    const now = new Date().toISOString();
+    let recipe;
+    if (editingRecipeId) {
+        const idx = recipes.findIndex(r => r.id === editingRecipeId);
+        recipe = { id: editingRecipeId, title, category, portions, output, ingredients, steps, updated_at: now };
+        if (idx !== -1) recipes[idx] = recipe;
+    } else {
+        recipe = { id: crypto.randomUUID(), title, category, portions, output, ingredients, steps, updated_at: now };
+        recipes.unshift(recipe);
     }
 
-    function toggleConstructorFields() {
-        const titleVal = document.getElementById('recipeTitle').value.trim();
-        document.getElementById('hiddenFieldsContainer').style.display = titleVal.length > 0 ? 'block' : 'none';
+    saveRecipesToLocal();
+    await saveRecipeToSupabase(recipe);
+    closeConstructor();
+    renderRecipes();
+}
+
+async function deleteRecipe(id) {
+    if (!confirm('Точно удалить эту техкарту?')) return;
+    recipes = recipes.filter(r => r.id !== id);
+    saveRecipesToLocal();
+    await deleteRecipeFromSupabase(id);
+    renderRecipes();
+}
+
+function editRecipe(id) {
+    const recipe = recipes.find(r => r.id === id);
+    if (recipe) openConstructor(recipe);
+}
+
+// ==========================================
+// ФИЛЬТРЫ И РЕНДЕР
+// ==========================================
+
+function filterCategory(cat) {
+    activeFilter = cat;
+    document.querySelectorAll('.category-chip').forEach(chip => {
+        chip.classList.toggle('active', chip.textContent.includes(cat) || (cat === 'Все' && chip.textContent === 'Все'));
+    });
+    renderRecipes();
+}
+
+function getFilteredRecipes() {
+    if (activeFilter === 'Все') return recipes;
+    return recipes.filter(r => r.category === activeFilter);
+}
+
+function renderRecipes() {
+    const container = document.getElementById('recipesContainer');
+    container.innerHTML = '';
+
+    const filtered = getFilteredRecipes();
+
+    const bottom = document.getElementById('bottomControls');
+    bottom.style.display = recipes.length > 0 ? 'block' : 'none';
+
+    if (filtered.length === 0) {
+        container.innerHTML = `<p style="text-align: center; color: var(--hint-color);">Техкарт пока нет в категории «${activeFilter}».</p>`;
+        return;
     }
 
-    function openConstructor(recipe = null) {
-        document.getElementById('navControlsContainer').style.display = 'none';
-        document.getElementById('recipesContainer').style.display = 'none';
-        document.getElementById('selectionPanel').classList.remove('active');
-        document.getElementById('bottomControls').style.display = 'none';
-        document.getElementById('recipeConstructor').style.display = 'block';
-
-        document.getElementById('ingredientsList').innerHTML = '';
-        document.getElementById('stepsList').innerHTML = '';
-
-        if (recipe) {
-            editingRecipeId = recipe.id;
-            document.getElementById('constructorTitle').textContent = '✏️ Редактирование техкарты';
-            document.getElementById('recipeTitle').value = recipe.title || '';
-            toggleConstructorFields();
-            document.getElementById('recipeCategory').value = recipe.category || '';
-            const p = recipe.portions || 4;
-            document.getElementById('portionsInput').value = p;
-            if(p <= 20) {
-                document.getElementById('portionsRange').value = p;
-                document.getElementById('portionsRange').style.display = 'block';
-            } else {
-                document.getElementById('portionsRange').style.display = 'none';
-            }
-            document.getElementById('outputInput').value = recipe.output || '';
-
-            (recipe.ingredients || []).forEach(i => addIngredientRow(i));
-            (recipe.steps || []).forEach(s => addStepRow(s));
-        } else {
-            editingRecipeId = null;
-            document.getElementById('constructorTitle').textContent = '➕ Новая техкарта';
-            document.getElementById('recipeTitle').value = '';
-            toggleConstructorFields();
-            document.getElementById('recipeCategory').selectedIndex = 0;
-            document.getElementById('portionsRange').value = 4;
-            document.getElementById('portionsRange').style.display = 'block';
-            document.getElementById('portionsInput').value = 4;
-            document.getElementById('outputInput').value = '';
-            addIngredientRow();
-            addStepRow();
-        }
-        updateSummary();
-    }
-
-    function closeConstructor() {
-        document.getElementById('recipeConstructor').style.display = 'none';
-        document.getElementById('navControlsContainer').style.display = 'block';
-        document.getElementById('recipesContainer').style.display = 'block';
-        editingRecipeId = null;
-        renderRecipes();
-    }
-
-    function onRangeInput(val) {
-        document.getElementById('portionsInput').value = val;
-        updateSummary();
-    }
-
-    function onNumberInput(val) {
-        const num = parseInt(val) || 1;
-        const range = document.getElementById('portionsRange');
-        if (num <= 20) {
-            range.value = num;
-            range.style.display = 'block';
-        } else {
-            range.style.display = 'none';
-        }
-        updateSummary();
-    }
-
-    function addIngredientRow(data = {}) {
-        const container = document.getElementById('ingredientsList');
-        const div = document.createElement('div');
-        div.className = 'ingredient-row';
+    filtered.forEach(recipe => {
+        const card = document.createElement('div');
+        card.className = 'card';
+        if (selectionMode) card.classList.add('selectable');
+        if (selectedIds.has(recipe.id)) card.classList.add('selected');
         
-        let fieldsHtml = '';
-        if (currentMode === 'pro') {
-            const gross = data.gross || '';
-            const net = data.net || '';
-            fieldsHtml = `
-                <div class="pro-fields">
-                    <input type="number" placeholder="Брутто (г)" value="${gross}" class="ing-gross" oninput="updateRowLoss(this); updateSummary();">
-                    <input type="number" placeholder="Нетто (г)" value="${net}" class="ing-net" oninput="updateRowLoss(this); updateSummary();">
-                </div>
-                <div class="loss-info">Потери: <span class="loss-percent">0%</span></div>
-            `;
-        } else {
-            const weight = data.gross || data.weight || '';
-            fieldsHtml = `
-                <div class="pro-fields">
-                    <input type="number" placeholder="Вес (г)" value="${weight}" class="ing-weight" oninput="updateSummary()">
-                </div>
-            `;
-        }
-
-        div.innerHTML = `
-            <input type="text" placeholder="Название продукта" value="${data.name || ''}" class="ing-name">
-            ${fieldsHtml}
-            <button type="button" class="delete-ing-btn" onclick="this.parentElement.remove(); updateSummary();">Удалить ингредиент</button>
-        `;
-        container.appendChild(div);
-        if (currentMode === 'pro') updateRowLoss(div.querySelector('.ing-gross'));
-        updateSummary();
-    }
-
-    function updateRowLoss(el) {
-        const row = el.closest('.ingredient-row');
-        if (!row) return;
-        const gross = parseFloat(row.querySelector('.ing-gross')?.value) || 0;
-        const net = parseFloat(row.querySelector('.ing-net')?.value) || 0;
-        const lossSpan = row.querySelector('.loss-percent');
-        if (lossSpan) {
-            if (gross > 0 && gross >= net) {
-                const loss = ((gross - net) / gross) * 100;
-                lossSpan.innerText = loss.toFixed(1) + '%';
-            } else {
-                lossSpan.innerText = '0%';
-            }
-        }
-    }
-
-    function updateSummary() {
         let totalGross = 0;
         let totalNet = 0;
-        document.querySelectorAll('.ingredient-row').forEach(row => {
-            if (currentMode === 'pro') {
-                totalGross += parseFloat(row.querySelector('.ing-gross')?.value) || 0;
-                totalNet += parseFloat(row.querySelector('.ing-net')?.value) || 0;
-            } else {
-                const w = parseFloat(row.querySelector('.ing-weight')?.value) || 0;
-                totalGross += w;
-                totalNet += w;
-            }
-        });
-        document.getElementById('summaryValues').innerText = `${totalGross} г / ${totalNet} г`;
-    }
+        let ingHtml = (recipe.ingredients || []).map(i => {
+            totalGross += i.gross || 0;
+            totalNet += i.net || 0;
+            return `<li>${i.name} — Брутто: ${i.gross}г, Нетто: ${i.net}г</li>`;
+        }).join('');
 
-    function rebuildIngredientsUI() {
-        const rows = document.querySelectorAll('.ingredient-row');
-        const data = [];
-        rows.forEach(r => {
-            data.push({
-                name: r.querySelector('.ing-name')?.value || '',
-                gross: r.querySelector('.ing-gross')?.value || r.querySelector('.ing-weight')?.value || '',
-                net: r.querySelector('.ing-net')?.value || ''
-            });
-        });
-        document.getElementById('ingredientsList').innerHTML = '';
-        data.forEach(d => addIngredientRow(d));
-    }
+        let stepsHtml = (recipe.steps || []).map((s, idx) => {
+            const tempLabel = s.temp ? ` | Темп: ${s.temp} °C` : '';
+            const humidityLabel = (s.method === 'жар/пар' && s.humidity) ? ` | Влажн: ${s.humidity} %` : '';
+            return `<li>Шаг ${idx+1}: ${s.desc} <br><span style="color:var(--hint-color);">Метод: ${s.method}${tempLabel}${humidityLabel}</span></li>`;
+        }).join('');
 
-    function addStepRow(data = {}) {
-        const container = document.getElementById('stepsList');
-        const div = document.createElement('div');
-        div.className = 'step-row';
-        
-        const methods = ['бланшировать', 'варить', 'тушить', 'пар', 'жар/пар', 'жар', 'жарить', 'колеровать', 'гриль', 'фритюр', 'до готовности'];
-        const currentMethod = data.method || 'тушить';
-        let optionsHtml = methods.map(m => `<option value="${m}" ${currentMethod === m ? 'selected' : ''}>${m}</option>`).join('');
+        const outputLabel = recipe.output ? ` | Выход: ${recipe.output} г` : '';
 
-        const temps = ['-18', '-5', '0', '4', '60', '75', '80', '85', '90', '95', '98', '100', '120', '125', '130', '140', '150', '160', '175', '180', '190', '200', '210', '240'];
-        const currentTemp = data.temp || '';
-        let tempOptionsHtml = '<option value="">— °C —</option>' + temps.map(t => `<option value="${t}" ${String(currentTemp) === String(t) ? 'selected' : ''}>${t} °C</option>`).join('');
+        const checkboxHtml = selectionMode 
+            ? `<input type="checkbox" class="card-checkbox" ${selectedIds.has(recipe.id) ? 'checked' : ''} onchange="toggleCardSelection('${recipe.id}', this)">`
+            : '';
 
-        const humidities = ['10', '20', '30', '40', '50', '60', '70', '80', '90', '100'];
-        const currentHumidity = data.humidity || '';
-        let humidityOptionsHtml = '<option value="">— % —</option>' + humidities.map(h => `<option value="${h}" ${String(currentHumidity) === String(h) ? 'selected' : ''}>${h} %</option>`).join('');
+        const buttonsHtml = selectionMode
+            ? ''
+            : `<div style="display: flex; gap: 8px;">
+                <button class="mode-btn" style="flex: 2;" onclick="editRecipe('${recipe.id}')">Редактировать</button>
+                <button class="mode-btn" style="flex: 1; color: #ff5252; border-color: #ff5252;" onclick="deleteRecipe('${recipe.id}')">Удалить</button>
+            </div>`;
 
-        div.innerHTML = `
-            <textarea placeholder="Описание шага..." rows="2" class="step-desc">${data.desc || ''}</textarea>
-            <label style="font-size: 11px; color: var(--hint-color);">Метод приготовления:</label>
-            <div class="method-temp-row">
-                <select class="step-method" onchange="onMethodChange(this)">${optionsHtml}</select>
-                <select class="step-temp">${tempOptionsHtml}</select>
-                <select class="step-humidity" style="display:none;">${humidityOptionsHtml}</select>
+        card.innerHTML = `
+            ${checkboxHtml}
+            <h3 style="margin-bottom: 4px;">${recipe.title}</h3>
+            <div style="font-size: 11px; color: var(--hint-color); margin-bottom: 8px;">Категория: ${recipe.category} | Порций: ${recipe.portions || 4}${outputLabel}</div>
+            <div style="font-size: 12px; margin-bottom: 8px; background: var(--bg-color); padding: 6px; border-radius: 4px;">
+                Итого брутто/нетто: <b>${totalGross} г / ${totalNet} г</b>
             </div>
-            <button type="button" class="delete-ing-btn" onclick="this.parentElement.remove();">Удалить шаг</button>
+            <div style="font-size: 13px; margin-bottom: 6px;"><b>Ингредиенты:</b><ul>${ingHtml || '<li>Нет ингредиентов</li>'}</ul></div>
+            <div style="font-size: 13px; margin-bottom: 10px;"><b>Шаги:</b><ol>${stepsHtml || '<li>Нет шагов</li>'}</ol></div>
+            ${buttonsHtml}
         `;
-        container.appendChild(div);
-        onMethodChange(div.querySelector('.step-method'));
+        container.appendChild(card);
+    });
+
+    if (selectionMode) {
+        const panel = document.getElementById('selectionPanel');
+        const oldButtons = panel.querySelector('.selection-buttons');
+        oldButtons.innerHTML = `
+            <button class="mode-btn" onclick="selectAll()">Все</button>
+            <button class="mode-btn" onclick="clearSelection()">Ничего</button>
+            <button class="mode-btn" onclick="exportSelectedToFile()">Файл</button>
+            <button class="mode-btn" onclick="exportSelectedToClipboard()">Буфер</button>
+            <button class="mode-btn" onclick="exitSelectionMode()">Выйти</button>
+        `;
     }
+}
 
-    function onMethodChange(selectEl) {
-        const row = selectEl.closest('.method-temp-row');
-        if (!row) return;
-        const humidity = row.querySelector('.step-humidity');
-        if (!humidity) return;
-        if (selectEl.value === 'жар/пар') {
-            humidity.style.display = 'block';
-        } else {
-            humidity.style.display = 'none';
-            humidity.value = '';
-        }
+// ==========================================
+// ВЫБОР РЕЦЕПТОВ
+// ==========================================
+
+function toggleCardSelection(id, checkbox) {
+    if (checkbox.checked) {
+        selectedIds.add(id);
+    } else {
+        selectedIds.delete(id);
     }
+    const card = checkbox.closest('.card');
+    if (card) card.classList.toggle('selected', checkbox.checked);
+    updateSelectionInfo();
+}
 
-    function saveRecipe() {
-        const title = document.getElementById('recipeTitle').value.trim();
-        const category = document.getElementById('recipeCategory').value;
-        const portions = parseInt(document.getElementById('portionsInput').value) || 4;
-        const output = parseFloat(document.getElementById('outputInput').value) || 0;
-        
-        if (!title) { alert('Введите название блюда!'); return; }
-        if (!category) { alert('Выберите категорию!'); return; }
+function updateSelectionInfo() {
+    document.getElementById('selectionInfo').textContent = `Выбрано: ${selectedIds.size}`;
+}
 
-        const ingredients = [];
-        document.querySelectorAll('.ingredient-row').forEach(row => {
-            const name = row.querySelector('.ing-name')?.value.trim();
-            if (!name) return;
-            if (currentMode === 'pro') {
-                ingredients.push({
-                    name,
-                    gross: parseFloat(row.querySelector('.ing-gross')?.value) || 0,
-                    net: parseFloat(row.querySelector('.ing-net')?.value) || 0
-                });
-            } else {
-                const w = parseFloat(row.querySelector('.ing-weight')?.value) || 0;
-                ingredients.push({ name, gross: w, net: w });
+function startSelectionMode() {
+    selectionMode = true;
+    selectedIds.clear();
+    document.getElementById('exportMenu').classList.remove('active');
+    document.getElementById('selectionPanel').classList.add('active');
+    renderRecipes();
+}
+
+function exitSelectionMode() {
+    selectionMode = false;
+    selectedIds.clear();
+    document.getElementById('selectionPanel').classList.remove('active');
+    renderRecipes();
+}
+
+function selectAll() {
+    const filtered = getFilteredRecipes();
+    filtered.forEach(r => selectedIds.add(r.id));
+    renderRecipes();
+    updateSelectionInfo();
+}
+
+function clearSelection() {
+    selectedIds.clear();
+    renderRecipes();
+    updateSelectionInfo();
+}
+
+// ==========================================
+// ЭКСПОРТ / ИМПОРТ
+// ==========================================
+
+function toggleExportMenu() {
+    document.getElementById('importMenu').classList.remove('active');
+    document.getElementById('exportMenu').classList.toggle('active');
+}
+
+function toggleImportMenu() {
+    document.getElementById('exportMenu').classList.remove('active');
+    document.getElementById('importMenu').classList.toggle('active');
+}
+
+function downloadJson(data, filename) {
+    const blob = new Blob([data], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+}
+
+async function copyToClipboard(text) {
+    try {
+        await navigator.clipboard.writeText(text);
+        return true;
+    } catch(e) {
+        return false;
+    }
+}
+
+function exportAllToFile() {
+    document.getElementById('exportMenu').classList.remove('active');
+    if (recipes.length === 0) { alert('Нет рецептов для экспорта.'); return; }
+    const data = JSON.stringify(recipes, null, 2);
+    const stamp = new Date().toISOString().slice(0, 10);
+    downloadJson(data, `chef_recipes_${stamp}.json`);
+}
+
+async function exportAllToClipboard() {
+    document.getElementById('exportMenu').classList.remove('active');
+    if (recipes.length === 0) { alert('Нет рецептов для экспорта.'); return; }
+    const data = JSON.stringify(recipes);
+    const ok = await copyToClipboard(data);
+    if (ok) {
+        alert(`Скопировано рецептов: ${recipes.length}`);
+    } else {
+        alert('Не удалось скопировать. Попробуйте экспорт в файл.');
+    }
+}
+
+function exportSelectedToFile() {
+    if (selectedIds.size === 0) { alert('Ничего не выбрано.'); return; }
+    const selected = recipes.filter(r => selectedIds.has(r.id));
+    const data = JSON.stringify(selected, null, 2);
+    const stamp = new Date().toISOString().slice(0, 10);
+    downloadJson(data, `chef_recipes_selected_${stamp}.json`);
+}
+
+async function exportSelectedToClipboard() {
+    if (selectedIds.size === 0) { alert('Ничего не выбрано.'); return; }
+    const selected = recipes.filter(r => selectedIds.has(r.id));
+    const data = JSON.stringify(selected);
+    const ok = await copyToClipboard(data);
+    if (ok) {
+        alert(`Скопировано рецептов: ${selected.length}`);
+    } else {
+        alert('Не удалось скопировать. Попробуйте экспорт в файл.');
+    }
+}
+
+function importFromFilePrompt() {
+    document.getElementById('importMenu').classList.remove('active');
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.json,application/json';
+    input.onchange = (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = (ev) => {
+            try {
+                const data = JSON.parse(ev.target.result);
+                handleImport(data);
+            } catch(err) {
+                alert('Не удалось прочитать файл. Возможно, это не JSON.');
             }
-        });
-
-        const steps = [];
-        document.querySelectorAll('.step-row').forEach(row => {
-            const method = row.querySelector('.step-method')?.value || 'тушить';
-            steps.push({
-                desc: row.querySelector('.step-desc')?.value.trim() || '',
-                method: method,
-                temp: row.querySelector('.step-temp')?.value || '',
-                humidity: method === 'жар/пар' ? (row.querySelector('.step-humidity')?.value || '') : ''
-            });
-        });
-
-        loadRecipes();
-        const now = new Date().toISOString();
-        if (editingRecipeId) {
-            const idx = recipes.findIndex(r => r.id === editingRecipeId);
-            if (idx !== -1) {
-                recipes[idx] = { id: editingRecipeId, title, category, portions, output, ingredients, steps, updated_at: now };
-            }
-        } else {
-            const newRecipe = { id: Date.now().toString(), title, category, portions, output, ingredients, steps, updated_at: now };
-            recipes.unshift(newRecipe);
-        }
-
-        saveRecipes();
-        closeConstructor();
-        renderRecipes();
-    }
-
-    function deleteRecipe(id) {
-        if (!confirm('Точно удалить эту техкарту?')) return;
-        loadRecipes();
-        recipes = recipes.filter(r => r.id !== id);
-        saveRecipes();
-        renderRecipes();
-    }
-
-    function editRecipe(id) {
-        loadRecipes();
-        const recipe = recipes.find(r => r.id === id);
-        if (recipe) openConstructor(recipe);
-    }
-
-    function filterCategory(cat) {
-        activeFilter = cat;
-        document.querySelectorAll('.category-chip').forEach(chip => {
-            chip.classList.toggle('active', chip.textContent.includes(cat) || (cat === 'Все' && chip.textContent === 'Все'));
-        });
-        renderRecipes();
-    }
-
-    function loadRecipes() {
-        try {
-            const data = localStorage.getItem('chef_recipes');
-            recipes = data ? JSON.parse(data) : [];
-        } catch(e) { recipes = []; }
-    }
-
-    function saveRecipes() {
-        localStorage.setItem('chef_recipes', JSON.stringify(recipes));
-    }
-
-    function toggleCardSelection(id, checkbox) {
-        if (checkbox.checked) {
-            selectedIds.add(id);
-        } else {
-            selectedIds.delete(id);
-        }
-        const card = checkbox.closest('.card');
-        if (card) card.classList.toggle('selected', checkbox.checked);
-        updateSelectionInfo();
-    }
-
-    function updateSelectionInfo() {
-        document.getElementById('selectionInfo').textContent = `Выбрано: ${selectedIds.size}`;
-    }
-
-    function startSelectionMode() {
-        selectionMode = true;
-        selectedIds.clear();
-        document.getElementById('exportMenu').classList.remove('active');
-        document.getElementById('selectionPanel').classList.add('active');
-        renderRecipes();
-    }
-
-    function exitSelectionMode() {
-        selectionMode = false;
-        selectedIds.clear();
-        document.getElementById('selectionPanel').classList.remove('active');
-        renderRecipes();
-    }
-
-    function selectAll() {
-        const filtered = getFilteredRecipes();
-        filtered.forEach(r => selectedIds.add(r.id));
-        renderRecipes();
-        updateSelectionInfo();
-    }
-
-    function clearSelection() {
-        selectedIds.clear();
-        renderRecipes();
-        updateSelectionInfo();
-    }
-
-    function getFilteredRecipes() {
-        if (activeFilter === 'Все') return recipes;
-        return recipes.filter(r => r.category === activeFilter);
-    }
-
-    function toggleExportMenu() {
-        document.getElementById('importMenu').classList.remove('active');
-        document.getElementById('exportMenu').classList.toggle('active');
-    }
-
-    function toggleImportMenu() {
-        document.getElementById('exportMenu').classList.remove('active');
-        document.getElementById('importMenu').classList.toggle('active');
-    }
-
-    function downloadJson(data, filename) {
-        const blob = new Blob([data], { type: 'application/json' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = filename;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-    }
-
-    async function copyToClipboard(text) {
-        try {
-            await navigator.clipboard.writeText(text);
-            return true;
-        } catch(e) {
-            return false;
-        }
-    }
-
-    function exportAllToFile() {
-        document.getElementById('exportMenu').classList.remove('active');
-        if (recipes.length === 0) { alert('Нет рецептов для экспорта.'); return; }
-        const data = JSON.stringify(recipes, null, 2);
-        const stamp = new Date().toISOString().slice(0, 10);
-        downloadJson(data, `chef_recipes_${stamp}.json`);
-    }
-
-    async function exportAllToClipboard() {
-        document.getElementById('exportMenu').classList.remove('active');
-        if (recipes.length === 0) { alert('Нет рецептов для экспорта.'); return; }
-        const data = JSON.stringify(recipes);
-        const ok = await copyToClipboard(data);
-        if (ok) {
-            alert(`Скопировано рецептов: ${recipes.length}`);
-        } else {
-            alert('Не удалось скопировать. Попробуйте экспорт в файл.');
-        }
-    }
-
-    function exportSelectedToFile() {
-        if (selectedIds.size === 0) { alert('Ничего не выбрано.'); return; }
-        const selected = recipes.filter(r => selectedIds.has(r.id));
-        const data = JSON.stringify(selected, null, 2);
-        const stamp = new Date().toISOString().slice(0, 10);
-        downloadJson(data, `chef_recipes_selected_${stamp}.json`);
-    }
-
-    async function exportSelectedToClipboard() {
-        if (selectedIds.size === 0) { alert('Ничего не выбрано.'); return; }
-        const selected = recipes.filter(r => selectedIds.has(r.id));
-        const data = JSON.stringify(selected);
-        const ok = await copyToClipboard(data);
-        if (ok) {
-            alert(`Скопировано рецептов: ${selected.length}`);
-        } else {
-            alert('Не удалось скопировать. Попробуйте экспорт в файл.');
-        }
-    }
-
-    function mergeRecipes(incoming) {
-        if (!Array.isArray(incoming)) return { added: 0, updated: 0, skipped: 0 };
-        let added = 0, updated = 0, skipped = 0;
-        const current = recipes.slice();
-        const map = new Map(current.map(r => [r.id, r]));
-
-        incoming.forEach(inc => {
-            if (!inc || typeof inc !== 'object' || !inc.id || !inc.title) { skipped++; return; }
-            if (!inc.updated_at) inc.updated_at = new Date(0).toISOString();
-            const existing = map.get(inc.id);
-            if (!existing) {
-                map.set(inc.id, inc);
-                added++;
-            } else {
-                const existingTime = new Date(existing.updated_at || 0).getTime();
-                const incomingTime = new Date(inc.updated_at || 0).getTime();
-                if (incomingTime >= existingTime) {
-                    map.set(inc.id, inc);
-                    updated++;
-                } else {
-                    skipped++;
-                }
-            }
-        });
-
-        recipes = Array.from(map.values());
-        recipes.sort((a, b) => new Date(b.updated_at || 0) - new Date(a.updated_at || 0));
-        saveRecipes();
-        return { added, updated, skipped };
-    }
-
-    function importFromFilePrompt() {
-        document.getElementById('importMenu').classList.remove('active');
-        const input = document.createElement('input');
-        input.type = 'file';
-        input.accept = '.json,application/json';
-        input.onchange = (e) => {
-            const file = e.target.files[0];
-            if (!file) return;
-            const reader = new FileReader();
-            reader.onload = (ev) => {
-                try {
-                    const data = JSON.parse(ev.target.result);
-                    handleImport(data);
-                } catch(err) {
-                    alert('Не удалось прочитать файл. Возможно, это не JSON.');
-                }
-            };
-            reader.readAsText(file);
         };
-        input.click();
-    }
+        reader.readAsText(file);
+    };
+    input.click();
+}
 
-    async function importFromClipboardPrompt() {
-        document.getElementById('importMenu').classList.remove('active');
-        try {
-            const text = await navigator.clipboard.readText();
-            if (!text) { alert('Буфер обмена пуст.'); return; }
-            const data = JSON.parse(text);
-            handleImport(data);
-        } catch(err) {
-            alert('Не удалось прочитать буфер или это не JSON.');
+async function importFromClipboardPrompt() {
+    document.getElementById('importMenu').classList.remove('active');
+    try {
+        const text = await navigator.clipboard.readText();
+        if (!text) { alert('Буфер обмена пуст.'); return; }
+        const data = JSON.parse(text);
+        handleImport(data);
+    } catch(err) {
+        alert('Не удалось прочитать буфер или это не JSON.');
+    }
+}
+
+async function handleImport(data) {
+    const incoming = Array.isArray(data) ? data : [data];
+    const ok = confirm(`Импортировать рецептов: ${incoming.length}?\n\nОК — добавить к существующим.`);
+    if (!ok) return;
+
+    let added = 0, updated = 0, skipped = 0;
+    const map = new Map(recipes.map(r => [r.id, r]));
+
+    incoming.forEach(inc => {
+        if (!inc || typeof inc !== 'object' || !inc.id || !inc.title) { skipped++; return; }
+        if (!inc.updated_at) inc.updated_at = new Date(0).toISOString();
+        const existing = map.get(inc.id);
+        if (!existing) {
+            map.set(inc.id, inc);
+            added++;
+        } else {
+            const existingTime = new Date(existing.updated_at || 0).getTime();
+            const incomingTime = new Date(inc.updated_at || 0).getTime();
+            if (incomingTime >= existingTime) {
+                map.set(inc.id, inc);
+                updated++;
+            } else {
+                skipped++;
+            }
         }
+    });
+
+    recipes = Array.from(map.values());
+    recipes.sort((a, b) => new Date(b.updated_at || 0) - new Date(a.updated_at || 0));
+    saveRecipesToLocal();
+    renderRecipes();
+
+    const toSync = recipes.filter(r => {
+        const inc = incoming.find(i => i.id === r.id);
+        return inc !== undefined;
+    });
+    for (const r of toSync) {
+        await saveRecipeToSupabase(r);
     }
 
-    function handleImport(data) {
-        const incoming = Array.isArray(data) ? data : [data];
-        const ok = confirm(`Импортировать рецептов: ${incoming.length}?\n\nОК — добавить к существующим.\nОтмена — отменить импорт.`);
-        if (!ok) return;
-        const result = mergeRecipes(incoming);
-        renderRecipes();
-        alert(`Готово.\nДобавлено: ${result.added}\nОбновлено: ${result.updated}\nПропущено: ${result.skipped}`);
-    }
-
-    function renderRecipes() {
-        loadRecipes();
-        const container = document.getElementById('recipesContainer');
-        container.innerHTML = '';
-
-        const filtered = getFilteredRecipes();
-
-        const bottom = document.getElementById('bottomControls');
-        bottom.style.display = recipes.length > 0 ? 'block' : 'none';
-
-        if (filtered.length === 0) {
-            container.innerHTML = `<p style="text-align: center; color: var(--hint-color);">Техкарт пока нет в категории «${activeFilter}».</p>`;
-            return;
-        }
-
-        filtered.forEach(recipe => {
-            const card = document.createElement('div');
-            card.className = 'card';
-            if (selectionMode) card.classList.add('selectable');
-            if (selectedIds.has(recipe.id)) card.classList.add('selected');
-            
-            let totalGross = 0;
-            let totalNet = 0;
-            let ingHtml = (recipe.ingredients || []).map(i => {
-                totalGross += i.gross || 0;
-                totalNet += i.net || 0;
-                return `<li>${i.name} — Брутто: ${i.gross}г, Нетто: ${i.net}г</li>`;
-            }).join('');
-
-            let stepsHtml = (recipe.steps || []).map((s, idx) => {
-                const tempLabel = s.temp ? ` | Темп: ${s.temp} °C` : '';
-                const humidityLabel = (s.method === 'жар/пар' && s.humidity) ? ` | Влажн: ${s.humidity} %` : '';
-                return `<li>Шаг ${idx+1}: ${s.desc} <br><span style="color:var(--hint-color);">Метод: ${s.method}${tempLabel}${humidityLabel}</span></li>`;
-            }).join('');
-
-            const outputLabel = recipe.output ? ` | Выход: ${recipe.output} г` : '';
-
-            const checkboxHtml = selectionMode 
-                ? `<input type="checkbox" class="card-checkbox" ${selectedIds.has(recipe.id) ? 'checked' : ''} onchange="toggleCardSelection('${recipe.id}', this)">`
-                : '';
-
-            const buttonsHtml = selectionMode
-                ? ''
-                : `<div style="display: flex; gap: 8px;">
-                    <button class="mode-btn" style="flex: 2;" onclick="editRecipe('${recipe.id}')">Редактировать</button>
-                    <button class="mode-btn" style="flex: 1; color: #ff5252; border-color: #ff5252;" onclick="deleteRecipe('${recipe.id}')">Удалить</button>
-                </div>`;
-
-            card.innerHTML = `
-                ${checkboxHtml}
-                <h3 style="margin-bottom: 4px;">${recipe.title}</h3>
-                <div style="font-size: 11px; color: var(--hint-color); margin-bottom: 8px;">Категория: ${recipe.category} | Порций: ${recipe.portions || 4}${outputLabel}</div>
-                <div style="font-size: 12px; margin-bottom: 8px; background: var(--bg-color); padding: 6px; border-radius: 4px;">
-                    Итого брутто/нетто: <b>${totalGross} г / ${totalNet} г</b>
-                </div>
-                <div style="font-size: 13px; margin-bottom: 6px;"><b>Ингредиенты:</b><ul>${ingHtml || '<li>Нет ингредиентов</li>'}</ul></div>
-                <div style="font-size: 13px; margin-bottom: 10px;"><b>Шаги:</b><ol>${stepsHtml || '<li>Нет шагов</li>'}</ol></div>
-                ${buttonsHtml}
-            `;
-            container.appendChild(card);
-        });
-
-        if (selectionMode) {
-            const panel = document.getElementById('selectionPanel');
-            const oldButtons = panel.querySelector('.selection-buttons');
-            oldButtons.innerHTML = `
-                <button class="mode-btn" onclick="selectAll()">Все</button>
-                <button class="mode-btn" onclick="clearSelection()">Ничего</button>
-                <button class="mode-btn" onclick="exportSelectedToFile()">Файл</button>
-                <button class="mode-btn" onclick="exportSelectedToClipboard()">Буфер</button>
-                <button class="mode-btn" onclick="exitSelectionMode()">Выйти</button>
-            `;
-        }
-    }
+    alert(`Готово.\nДобавлено: ${added}\nОбновлено: ${updated}\nПропущено: ${skipped}`);
+}
 </script>
 </body>
 </html>
