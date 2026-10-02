@@ -127,6 +127,9 @@
         .method-temp-row .step-temp {
             flex: 1;
         }
+        .method-temp-row .step-humidity {
+            flex: 1;
+        }
 
         .summary-box {
             background: var(--bg-color); border: 1px dashed var(--button-color);
@@ -415,16 +418,35 @@
         const currentTemp = data.temp || '';
         let tempOptionsHtml = '<option value="">— °C —</option>' + temps.map(t => `<option value="${t}" ${String(currentTemp) === String(t) ? 'selected' : ''}>${t} °C</option>`).join('');
 
+        const humidities = ['10', '20', '30', '40', '50', '60', '70', '80', '90', '100'];
+        const currentHumidity = data.humidity || '';
+        let humidityOptionsHtml = '<option value="">— % —</option>' + humidities.map(h => `<option value="${h}" ${String(currentHumidity) === String(h) ? 'selected' : ''}>${h} %</option>`).join('');
+
         div.innerHTML = `
             <textarea placeholder="Описание шага..." rows="2" class="step-desc">${data.desc || ''}</textarea>
             <label style="font-size: 11px; color: var(--hint-color);">Метод приготовления:</label>
             <div class="method-temp-row">
-                <select class="step-method">${optionsHtml}</select>
+                <select class="step-method" onchange="onMethodChange(this)">${optionsHtml}</select>
                 <select class="step-temp">${tempOptionsHtml}</select>
+                <select class="step-humidity" style="display:none;">${humidityOptionsHtml}</select>
             </div>
             <button type="button" class="delete-ing-btn" onclick="this.parentElement.remove();">Удалить шаг</button>
         `;
         container.appendChild(div);
+        onMethodChange(div.querySelector('.step-method'));
+    }
+
+    function onMethodChange(selectEl) {
+        const row = selectEl.closest('.method-temp-row');
+        if (!row) return;
+        const humidity = row.querySelector('.step-humidity');
+        if (!humidity) return;
+        if (selectEl.value === 'жар/пар') {
+            humidity.style.display = 'block';
+        } else {
+            humidity.style.display = 'none';
+            humidity.value = '';
+        }
     }
 
     function saveRecipe() {
@@ -453,10 +475,12 @@
 
         const steps = [];
         document.querySelectorAll('.step-row').forEach(row => {
+            const method = row.querySelector('.step-method')?.value || 'тушить';
             steps.push({
                 desc: row.querySelector('.step-desc')?.value.trim() || '',
-                method: row.querySelector('.step-method')?.value || 'тушить',
-                temp: row.querySelector('.step-temp')?.value || ''
+                method: method,
+                temp: row.querySelector('.step-temp')?.value || '',
+                humidity: method === 'жар/пар' ? (row.querySelector('.step-humidity')?.value || '') : ''
             });
         });
 
@@ -538,7 +562,8 @@
 
             let stepsHtml = (recipe.steps || []).map((s, idx) => {
                 const tempLabel = s.temp ? ` | Темп: ${s.temp} °C` : '';
-                return `<li>Шаг ${idx+1}: ${s.desc} <br><span style="color:var(--hint-color);">Метод: ${s.method}${tempLabel}</span></li>`;
+                const humidityLabel = (s.method === 'жар/пар' && s.humidity) ? ` | Влажн: ${s.humidity} %` : '';
+                return `<li>Шаг ${idx+1}: ${s.desc} <br><span style="color:var(--hint-color);">Метод: ${s.method}${tempLabel}${humidityLabel}</span></li>`;
             }).join('');
 
             card.innerHTML = `
