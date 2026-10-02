@@ -33,6 +33,7 @@
             background: transparent; color: var(--button-color); border-radius: 6px;
             font-weight: 600; cursor: pointer; font-size: 13px;
         }
+        .mode-btn.danger { color: #ff5252; border-color: #ff5252; }
         
         button.primary {
             background: var(--button-color); color: var(--button-text-color); border: none;
@@ -157,6 +158,20 @@
             padding: 8px; border-radius: 6px; margin-bottom: 6px; border: 1px solid var(--border-color);
         }
         .pro-fields { display: flex; gap: 6px; }
+        .weight-group {
+            display: flex;
+            gap: 4px;
+            flex: 1;
+        }
+        .weight-group input {
+            flex: 1;
+            margin-bottom: 0;
+        }
+        .weight-group select {
+            width: 70px;
+            flex: 0 0 auto;
+            margin-bottom: 0;
+        }
         .loss-info { font-size: 11px; color: var(--hint-color); }
         
         .method-temp-row {
@@ -244,7 +259,7 @@
             display: flex;
             align-items: center;
             gap: 8px;
-            margin-bottom: 12px;
+            margin-bottom: 8px;
         }
         .back-btn {
             background: transparent;
@@ -253,6 +268,16 @@
             font-size: 20px;
             cursor: pointer;
             padding: 4px 8px;
+        }
+        .view-title {
+            font-size: 20px;
+            font-weight: 700;
+            flex: 1;
+        }
+        .view-actions {
+            display: flex;
+            gap: 6px;
+            margin-bottom: 12px;
         }
         .view-section {
             background: var(--secondary-bg-color);
@@ -333,6 +358,20 @@
         }
         .view-output-row b { color: var(--text-color); }
         .view-output-row .warn { color: #ff9800; }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: var(--hint-color);
+        }
+        .empty-state .icon {
+            font-size: 48px;
+            margin-bottom: 12px;
+        }
+        .empty-state h3 {
+            color: var(--text-color);
+            margin-bottom: 8px;
+        }
     </style>
 </head>
 <body>
@@ -345,7 +384,7 @@
     </div>
 
     <div id="navControlsContainer">
-        <button class="primary" onclick="openConstructor()">+ Новая техкарта</button>
+        <button class="primary" id="btnNewRecipe" onclick="openConstructor()">+ Новая техкарта</button>
         
         <div class="category-nav" id="categoryNav">
             <div class="category-chip active" onclick="filterCategory('Все')">Все</div>
@@ -379,7 +418,7 @@
     <div class="bottom-controls" id="bottomControls" style="display: none;">
         <div class="controls-row">
             <button class="mode-btn" onclick="toggleExportMenu()">Экспорт ▾</button>
-            <button class="mode-btn" onclick="toggleImportMenu()">Импорт ▾</button>
+            <button class="mode-btn" id="btnImportMenu" onclick="toggleImportMenu()">Импорт ▾</button>
         </div>
         <div class="dropdown-menu" id="exportMenu">
             <button class="mode-btn" onclick="startSelectionMode()">Выбрать рецепты…</button>
@@ -463,13 +502,16 @@
 
 <script>
 // ==========================================
-// ПОДКЛЮЧЕНИЕ К SUPABASE
+// КОНСТАНТЫ И РОЛИ
 // ==========================================
 
 const SUPABASE_URL = 'https://fxvporgpgpxudzlbauty.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_kcUT9hJ_k8e-2sj0j8BbAA_QvG8Wc-p';
+const OWNER_TELEGRAM_ID = '1655438557';
 
 const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+let currentUserRole = 'cook';
 
 function getCurrentUserId() {
     try {
@@ -480,6 +522,80 @@ function getCurrentUserId() {
     } catch(e) {}
     return 'local';
 }
+
+async function loadUserRole() {
+    const userId = getCurrentUserId();
+    if (userId === OWNER_TELEGRAM_ID) {
+        currentUserRole = 'chef';
+        return;
+    }
+    try {
+        const { data, error } = await supabaseClient
+            .from('users')
+            .select('role')
+            .eq('telegram_id', userId)
+            .maybeSingle();
+        if (!error && data && data.role) {
+            currentUserRole = data.role;
+        } else {
+            currentUserRole = 'cook';
+        }
+    } catch(e) {
+        currentUserRole = 'cook';
+    }
+}
+
+function isChef() {
+    return currentUserRole === 'chef' || currentUserRole === 'admin';
+}
+
+function applyRoleUI() {
+    const btnNew = document.getElementById('btnNewRecipe');
+    const btnImport = document.getElementById('btnImportMenu');
+    if (!isChef()) {
+        if (btnNew) btnNew.style.display = 'none';
+        if (btnImport) btnImport.style.display = 'none';
+    } else {
+        if (btnNew) btnNew.style.display = 'block';
+        if (btnImport) btnImport.style.display = 'block';
+    }
+}
+
+// ==========================================
+// ЕДИНИЦЫ И ФОРМАТИРОВАНИЕ
+// ==========================================
+
+const UNITS = ['г', 'кг', 'мл', 'л', 'шт'];
+
+function formatWeight(value, unit) {
+    if (value === undefined || value === null || isNaN(value)) return '0 ' + (unit || 'г');
+    const num = Number(value);
+    if (unit === 'г' && num >= 1000) {
+        return formatNum(num / 1000) + ' кг';
+    }
+    if (unit === 'мл' && num >= 1000) {
+        return formatNum(num / 1000) + ' л';
+    }
+    return formatNum(num) + ' ' + (unit || 'г');
+}
+
+function formatNum(n) {
+    if (n === undefined || n === null) return '0';
+    const num = Number(n);
+    if (Number.isInteger(num)) return String(num);
+    return num.toFixed(1);
+}
+
+function roundPieces(n) {
+    if (Number.isInteger(n)) return n;
+    const frac = n - Math.floor(n);
+    if (frac > 0.5) return Math.ceil(n);
+    return Math.floor(n);
+}
+
+// ==========================================
+// СИНХРОНИЗАЦИЯ
+// ==========================================
 
 function setSyncStatus(status) {
     const el = document.getElementById('syncStatus');
@@ -574,10 +690,6 @@ async function loadRecipesFromSupabase() {
     }
 }
 
-// ==========================================
-// СОХРАНЕНИЕ В SUPABASE
-// ==========================================
-
 async function saveRecipeToSupabase(recipe) {
     setSyncStatus('progress');
     try {
@@ -635,10 +747,6 @@ async function saveRecipeToSupabase(recipe) {
     }
 }
 
-// ==========================================
-// УДАЛЕНИЕ ИЗ SUPABASE
-// ==========================================
-
 async function deleteRecipeFromSupabase(recipeId) {
     setSyncStatus('progress');
     try {
@@ -680,6 +788,9 @@ function saveRecipesToLocal() {
 // ==========================================
 
 window.addEventListener('DOMContentLoaded', async () => {
+    await loadUserRole();
+    applyRoleUI();
+
     const local = loadRecipesFromLocal();
     recipes = local;
     renderRecipes();
@@ -688,7 +799,7 @@ window.addEventListener('DOMContentLoaded', async () => {
     if (cloud !== null) {
         if (cloud.length > 0) {
             recipes = cloud;
-        } else if (local.length > 0) {
+        } else if (local.length > 0 && isChef()) {
             for (const r of local) {
                 await saveRecipeToSupabase(r);
             }
@@ -709,6 +820,8 @@ function toggleConstructorFields() {
 }
 
 function openConstructor(recipe = null) {
+    if (!isChef()) return;
+
     document.getElementById('navControlsContainer').style.display = 'none';
     document.getElementById('recipesContainer').style.display = 'none';
     document.getElementById('selectionPanel').classList.remove('active');
@@ -788,17 +901,24 @@ function addIngredientRow(data = {}) {
     
     const gross = data.gross || '';
     const net = data.net || '';
-    const fieldsHtml = `
-        <div class="pro-fields">
-            <input type="number" placeholder="Брутто (г)" value="${gross}" class="ing-gross" oninput="updateRowLoss(this); updateSummary();">
-            <input type="number" placeholder="Нетто (г)" value="${net}" class="ing-net" oninput="updateRowLoss(this); updateSummary();">
-        </div>
-        <div class="loss-info">Потери: <span class="loss-percent">0%</span></div>
-    `;
+    const unit = data.unit || 'г';
+
+    const unitOptions = UNITS.map(u => `<option value="${u}" ${u === unit ? 'selected' : ''}>${u}</option>`).join('');
 
     div.innerHTML = `
         <input type="text" placeholder="Название продукта" value="${data.name || ''}" class="ing-name">
-        ${fieldsHtml}
+        <div class="pro-fields">
+            <div class="weight-group">
+                <input type="number" placeholder="Брутто" value="${gross}" class="ing-gross" oninput="updateRowLoss(this); updateSummary();">
+                <select class="ing-unit" onchange="updateSummary()">${unitOptions}</select>
+            </div>
+        </div>
+        <div class="pro-fields">
+            <div class="weight-group">
+                <input type="number" placeholder="Нетто" value="${net}" class="ing-net" oninput="updateRowLoss(this); updateSummary();">
+            </div>
+        </div>
+        <div class="loss-info">Потери: <span class="loss-percent">0%</span></div>
         <button type="button" class="delete-ing-btn" onclick="this.parentElement.remove(); updateSummary();">Удалить ингредиент</button>
     `;
     container.appendChild(div);
@@ -822,26 +942,24 @@ function updateRowLoss(el) {
     }
 }
 
-function getTotalNet() {
+function getTotals() {
+    let totalGross = 0;
     let totalNet = 0;
     document.querySelectorAll('.ingredient-row').forEach(row => {
-        totalNet += parseFloat(row.querySelector('.ing-net')?.value) || 0;
-    });
-    return totalNet;
-}
+        const unit = row.querySelector('.ing-unit')?.value || 'г';
+        const gross = parseFloat(row.querySelector('.ing-gross')?.value) || 0;
+        const net = parseFloat(row.querySelector('.ing-net')?.value) || 0;
 
-function getTotalGross() {
-    let totalGross = 0;
-    document.querySelectorAll('.ingredient-row').forEach(row => {
-        totalGross += parseFloat(row.querySelector('.ing-gross')?.value) || 0;
+        const factor = (unit === 'кг' || unit === 'л') ? 1000 : 1;
+        totalGross += gross * factor;
+        totalNet += net * factor;
     });
-    return totalGross;
+    return { totalGross, totalNet };
 }
 
 function updateSummary() {
-    const totalGross = getTotalGross();
-    const totalNet = getTotalNet();
-    document.getElementById('summaryValues').innerText = `${totalGross} г / ${totalNet} г`;
+    const { totalGross, totalNet } = getTotals();
+    document.getElementById('summaryValues').innerText = `${formatWeight(totalGross, 'г')} / ${formatWeight(totalNet, 'г')}`;
     updateOutputSummary();
 }
 
@@ -851,7 +969,7 @@ function updateOutputSummary() {
 
     const portions = parseInt(document.getElementById('portionsInput')?.value) || 0;
     const outputPerPortion = parseFloat(document.getElementById('outputInput')?.value) || 0;
-    const totalNet = getTotalNet();
+    const { totalNet } = getTotals();
 
     const resultWeight = portions * outputPerPortion;
 
@@ -862,11 +980,11 @@ function updateOutputSummary() {
         uvarText = uvar.toFixed(1) + '%';
         if (uvar < 0) {
             uvarClass = 'warn';
-            uvarText = '⚠️ ' + uvarText + ' (выход > нетто)';
+            uvarText = '⚠️ ' + uvarText;
         }
     }
 
-    el.innerHTML = `Результирующий вес: <b>${resultWeight} г</b> · Уварка: <b class="${uvarClass}">${uvarText}</b>`;
+    el.innerHTML = `Результирующий вес: <b>${formatWeight(resultWeight, 'г')}</b> · Уварка: <b class="${uvarClass}">${uvarText}</b>`;
 }
 
 function addStepRow(data = {}) {
@@ -913,11 +1031,9 @@ function onMethodChange(selectEl) {
     }
 }
 
-// ==========================================
-// СОХРАНЕНИЕ РЕЦЕПТА
-// ==========================================
-
 async function saveRecipe() {
+    if (!isChef()) return;
+
     const title = document.getElementById('recipeTitle').value.trim();
     const category = document.getElementById('recipeCategory').value;
     const portions = parseInt(document.getElementById('portionsInput').value) || 4;
@@ -932,13 +1048,14 @@ async function saveRecipe() {
         if (!name) return;
         const gross = parseFloat(row.querySelector('.ing-gross')?.value) || 0;
         const net = parseFloat(row.querySelector('.ing-net')?.value) || 0;
+        const unit = row.querySelector('.ing-unit')?.value || 'г';
         const loss = gross > 0 ? ((gross - net) / gross) * 100 : 0;
         ingredients.push({
             name,
             gross,
             net,
             loss_percent: loss,
-            unit: 'г',
+            unit,
             type: 'product',
             linked_recipe_id: null
         });
@@ -973,6 +1090,7 @@ async function saveRecipe() {
 }
 
 async function deleteRecipe(id) {
+    if (!isChef()) return;
     if (!confirm('Точно удалить эту техкарту?')) return;
     recipes = recipes.filter(r => r.id !== id);
     saveRecipesToLocal();
@@ -981,6 +1099,7 @@ async function deleteRecipe(id) {
 }
 
 function editRecipe(id) {
+    if (!isChef()) return;
     const recipe = recipes.find(r => r.id === id);
     if (recipe) openConstructor(recipe);
 }
@@ -1017,17 +1136,17 @@ function closeRecipeView() {
 }
 
 function onViewPortionsChange(val) {
-    let p = parseFloat(val) || 1;
-    if (p < 0.01) p = 0.01;
+    let p = parseFloat(val);
+    if (isNaN(p) || p < 0.01) p = 0.01;
     viewPortions = p;
-    renderRecipeView();
+    updateViewNumbers();
 }
 
 function onViewOutputChange(val) {
-    let o = parseFloat(val) || 0;
-    if (o < 0) o = 0;
+    let o = parseFloat(val);
+    if (isNaN(o) || o < 0) o = 0;
     viewOutput = o;
-    renderRecipeView();
+    updateViewNumbers();
 }
 
 function resetViewValues() {
@@ -1035,7 +1154,63 @@ function resetViewValues() {
     if (!recipe) return;
     viewPortions = recipe.portions || 4;
     viewOutput = recipe.output || 0;
-    renderRecipeView();
+    document.getElementById('viewPortionsInput').value = viewPortions;
+    document.getElementById('viewOutputInput').value = viewOutput;
+    updateViewNumbers();
+}
+
+function updateViewNumbers() {
+    const recipe = recipes.find(r => r.id === viewingRecipeId);
+    if (!recipe) return;
+
+    const basePortions = recipe.portions || 4;
+    const baseOutput = recipe.output || 0;
+    const currentPortions = viewPortions;
+    const currentOutput = viewOutput;
+
+    const ratioPortions = currentPortions / basePortions;
+    const ratioOutput = baseOutput > 0 ? currentOutput / baseOutput : 1;
+    const ratio = ratioPortions * ratioOutput;
+
+    const currentResultWeight = currentPortions * currentOutput;
+
+    let totalGross = 0, totalNet = 0;
+    const rows = document.querySelectorAll('.view-ing-row');
+    (recipe.ingredients || []).forEach((i, idx) => {
+        const unit = i.unit || 'г';
+        const isWeight = (unit === 'г' || unit === 'кг' || unit === 'мл' || unit === 'л');
+        const factor = (unit === 'кг' || unit === 'л') ? 1000 : 1;
+
+        let g = (i.gross || 0) * factor * ratio;
+        let n = (i.net || 0) * factor * ratio;
+
+        if (unit === 'шт') {
+            g = roundPieces((i.gross || 0) * ratio);
+            n = roundPieces((i.net || 0) * ratio);
+        } else {
+            g = g / factor;
+            n = n / factor;
+        }
+
+        totalGross += (i.gross || 0) * factor * ratio;
+        totalNet += (i.net || 0) * factor * ratio;
+
+        const row = rows[idx];
+        if (row) {
+            const cells = row.querySelectorAll('.num');
+            if (cells[0]) cells[0].textContent = formatWeight(g, unit);
+            if (cells[1]) cells[1].textContent = formatWeight(n, unit);
+        }
+    });
+
+    const resultEl = document.getElementById('viewResultWeight');
+    if (resultEl) resultEl.textContent = formatWeight(currentResultWeight, 'г');
+
+    const netEl = document.getElementById('viewTotalNet');
+    if (netEl) netEl.textContent = formatWeight(totalNet, 'г');
+
+    const grossEl = document.getElementById('viewTotalGross');
+    if (grossEl) grossEl.textContent = formatWeight(totalGross, 'г');
 }
 
 function renderRecipeView() {
@@ -1048,22 +1223,35 @@ function renderRecipeView() {
     const currentPortions = viewPortions;
     const currentOutput = viewOutput;
 
-    const ratio = currentPortions / basePortions;
+    const ratio = (currentPortions / basePortions) * (baseOutput > 0 ? currentOutput / baseOutput : 1);
     const currentResultWeight = currentPortions * currentOutput;
-    const baseResultWeight = basePortions * baseOutput;
 
     let totalGross = 0, totalNet = 0;
     let ingRows = '';
     (recipe.ingredients || []).forEach(i => {
-        const g = (i.gross || 0) * ratio;
-        const n = (i.net || 0) * ratio;
-        totalGross += g;
-        totalNet += n;
+        const unit = i.unit || 'г';
+        const factor = (unit === 'кг' || unit === 'л') ? 1000 : 1;
+        const isPieces = unit === 'шт';
+
+        let g = (i.gross || 0) * factor * ratio;
+        let n = (i.net || 0) * factor * ratio;
+
+        if (isPieces) {
+            g = roundPieces((i.gross || 0) * ratio);
+            n = roundPieces((i.net || 0) * ratio);
+        } else {
+            g = g / factor;
+            n = n / factor;
+        }
+
+        totalGross += (i.gross || 0) * factor * ratio;
+        totalNet += (i.net || 0) * factor * ratio;
+
         ingRows += `
-            <tr>
+            <tr class="view-ing-row">
                 <td>${i.name || ''}</td>
-                <td class="num">${formatNum(g)}</td>
-                <td class="num">${formatNum(n)}</td>
+                <td class="num">${formatWeight(g, unit)}</td>
+                <td class="num">${formatWeight(n, unit)}</td>
             </tr>
         `;
     });
@@ -1081,23 +1269,35 @@ function renderRecipeView() {
     });
 
     let uvarText = '—';
-    if (baseResultWeight > 0 && basePortions > 0) {
-        const baseNetSum = (recipe.ingredients || []).reduce((sum, i) => sum + (i.net || 0), 0);
+    if (baseOutput > 0 && basePortions > 0) {
+        const baseNetSum = (recipe.ingredients || []).reduce((sum, i) => {
+            const factor = (i.unit === 'кг' || i.unit === 'л') ? 1000 : 1;
+            return sum + (i.net || 0) * factor;
+        }, 0);
         if (baseNetSum > 0) {
+            const baseResultWeight = basePortions * baseOutput;
             const uvar = (1 - baseResultWeight / baseNetSum) * 100;
             uvarText = uvar.toFixed(1) + '%';
         }
     }
 
+    const actionsHtml = isChef()
+        ? `<div class="view-actions">
+            <button class="mode-btn" style="flex: 1;" onclick="editRecipe('${recipe.id}')">Редактировать</button>
+            <button class="mode-btn danger" style="flex: 1;" onclick="deleteRecipeFromView('${recipe.id}')">Удалить</button>
+           </div>`
+        : '';
+
     view.innerHTML = `
         <div class="view-header">
             <button class="back-btn" onclick="closeRecipeView()">←</button>
-            <h2 style="margin-bottom: 0; flex: 1;">${recipe.title}</h2>
+        </div>
+        <div style="margin-bottom: 8px;">
+            <div class="view-title">${recipe.title}</div>
+            <div style="font-size: 12px; color: var(--hint-color);">${recipe.category} · базово: ${basePortions} порц. по ${baseOutput} г</div>
         </div>
 
-        <div style="font-size: 12px; color: var(--hint-color); margin-bottom: 12px;">
-            ${recipe.category} · базово: ${basePortions} порц. по ${baseOutput} г
-        </div>
+        ${actionsHtml}
 
         <div class="view-section">
             <h4>Параметры</h4>
@@ -1112,10 +1312,10 @@ function renderRecipeView() {
                 </div>
             </div>
             <div class="view-output-row">
-                Результирующий вес: <b>${formatNum(currentResultWeight)} г</b> · Уварка: <b>${uvarText}</b>
+                Результирующий вес: <b id="viewResultWeight">${formatWeight(currentResultWeight, 'г')}</b> · Уварка: <b>${uvarText}</b>
             </div>
             <div class="view-output-row">
-                Итого нетто: <b>${formatNum(totalNet)} г</b> · Брутто: <b>${formatNum(totalGross)} г</b>
+                Итого нетто: <b id="viewTotalNet">${formatWeight(totalNet, 'г')}</b> · Брутто: <b id="viewTotalGross">${formatWeight(totalGross, 'г')}</b>
             </div>
             <button class="mode-btn" style="width: 100%; margin-top: 6px;" onclick="resetViewValues()">Сбросить к базовым</button>
         </div>
@@ -1126,8 +1326,8 @@ function renderRecipeView() {
                 <thead>
                     <tr>
                         <th>Продукт</th>
-                        <th class="num">Брутто, г</th>
-                        <th class="num">Нетто, г</th>
+                        <th class="num">Брутто</th>
+                        <th class="num">Нетто</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -1140,11 +1340,6 @@ function renderRecipeView() {
             <h4>Приготовление</h4>
             ${stepsHtml || '<p style="color: var(--hint-color);">Нет шагов</p>'}
         </div>
-
-        <div style="display: flex; gap: 8px; margin-top: 12px;">
-            <button class="primary" style="flex: 2; margin-bottom: 0;" onclick="editRecipe('${recipe.id}')">Редактировать</button>
-            <button class="mode-btn" style="flex: 1; color: #ff5252; border-color: #ff5252;" onclick="deleteRecipeFromView('${recipe.id}')">Удалить</button>
-        </div>
     `;
 }
 
@@ -1153,15 +1348,8 @@ async function deleteRecipeFromView(id) {
     closeRecipeView();
 }
 
-function formatNum(n) {
-    if (n === undefined || n === null) return '0';
-    const num = Number(n);
-    if (Number.isInteger(num)) return String(num);
-    return num.toFixed(1);
-}
-
 // ==========================================
-// ФИЛЬТРЫ И РЕНДЕР
+// СПИСОК РЕЦЕПТОВ
 // ==========================================
 
 function filterCategory(cat) {
@@ -1188,7 +1376,17 @@ function renderRecipes() {
     bottom.style.display = recipes.length > 0 ? 'block' : 'none';
 
     if (filtered.length === 0) {
-        container.innerHTML = `<p style="text-align: center; color: var(--hint-color);">Техкарт пока нет в категории «${activeFilter}».</p>`;
+        if (recipes.length === 0) {
+            container.innerHTML = `
+                <div class="empty-state">
+                    <div class="icon">📓</div>
+                    <h3>Пока нет ни одной техкарты</h3>
+                    <p>Нажмите «+ Новая техкарта» сверху, чтобы создать первую.</p>
+                </div>
+            `;
+        } else {
+            container.innerHTML = `<p style="text-align: center; color: var(--hint-color);">Техкарт пока нет в категории «${activeFilter}».</p>`;
+        }
         return;
     }
 
@@ -1295,6 +1493,7 @@ function toggleExportMenu() {
 }
 
 function toggleImportMenu() {
+    if (!isChef()) return;
     document.getElementById('exportMenu').classList.remove('active');
     document.getElementById('importMenu').classList.toggle('active');
 }
@@ -1361,6 +1560,7 @@ async function exportSelectedToClipboard() {
 }
 
 function importFromFilePrompt() {
+    if (!isChef()) return;
     document.getElementById('importMenu').classList.remove('active');
     const input = document.createElement('input');
     input.type = 'file';
@@ -1383,6 +1583,7 @@ function importFromFilePrompt() {
 }
 
 async function importFromClipboardPrompt() {
+    if (!isChef()) return;
     document.getElementById('importMenu').classList.remove('active');
     try {
         const text = await navigator.clipboard.readText();
@@ -1395,6 +1596,7 @@ async function importFromClipboardPrompt() {
 }
 
 async function handleImport(data) {
+    if (!isChef()) return;
     const incoming = Array.isArray(data) ? data : [data];
     const ok = confirm(`Импортировать рецептов: ${incoming.length}?\n\nОК — добавить к существующим.`);
     if (!ok) return;
