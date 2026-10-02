@@ -17,6 +17,7 @@
             --border-color: #2a3442;
             --success-color: #2e7d32;
             --error-color: #ff5252;
+            --money-color: #4caf50;
         }
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
@@ -49,10 +50,7 @@
             border-radius: 8px; box-sizing: border-box; background: var(--secondary-bg-color);
             color: var(--text-color); font-size: 14px;
         }
-        .search-input:focus {
-            outline: none;
-            border-color: var(--button-color);
-        }
+        .search-input:focus { outline: none; border-color: var(--button-color); }
 
         .accordion-group {
             background: var(--secondary-bg-color);
@@ -62,107 +60,56 @@
             overflow: hidden;
         }
         .accordion-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 12px 14px;
-            cursor: pointer;
-            font-size: 14px;
-            font-weight: 600;
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 12px 14px; cursor: pointer; font-size: 14px; font-weight: 600;
             user-select: none;
         }
         .accordion-header:hover { background: rgba(36, 129, 204, 0.08); }
         .accordion-title { display: flex; align-items: center; gap: 8px; }
-        .accordion-count {
-            color: var(--hint-color);
-            font-weight: 400;
-            font-size: 13px;
-        }
-        .accordion-arrow {
-            color: var(--hint-color);
-            font-size: 12px;
-            transition: transform 0.2s;
-        }
+        .accordion-count { color: var(--hint-color); font-weight: 400; font-size: 13px; }
+        .accordion-arrow { color: var(--hint-color); font-size: 12px; transition: transform 0.2s; }
         .accordion-arrow.open { transform: rotate(90deg); }
-        .accordion-body {
-            display: none;
-            border-top: 1px solid var(--border-color);
-        }
+        .accordion-body { display: none; border-top: 1px solid var(--border-color); }
         .accordion-body.open { display: block; }
-        .accordion-empty {
-            padding: 12px 14px;
-            color: var(--hint-color);
-            font-size: 12px;
-        }
+        .accordion-empty { padding: 12px 14px; color: var(--hint-color); font-size: 12px; }
 
         .recipe-compact {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 10px 14px;
-            border-bottom: 1px solid var(--border-color);
-            cursor: pointer;
-            gap: 8px;
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 10px 14px; border-bottom: 1px solid var(--border-color);
+            cursor: pointer; gap: 8px;
         }
         .recipe-compact:last-child { border-bottom: none; }
         .recipe-compact:active { background: rgba(36, 129, 204, 0.08); }
         .recipe-compact-title {
-            font-size: 14px;
-            font-weight: 500;
-            flex: 1;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
+            font-size: 14px; font-weight: 500; flex: 1;
+            overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
         }
-        .recipe-compact-meta {
-            font-size: 12px;
-            color: var(--hint-color);
-            white-space: nowrap;
-        }
+        .recipe-compact-meta { font-size: 12px; color: var(--hint-color); white-space: nowrap; }
         .recipe-compact.selectable { padding-left: 40px; position: relative; }
         .recipe-compact .card-checkbox {
-            position: absolute;
-            left: 14px;
-            top: 50%;
-            transform: translateY(-50%);
-            width: 18px;
-            height: 18px;
-            cursor: pointer;
-            margin: 0;
+            position: absolute; left: 14px; top: 50%; transform: translateY(-50%);
+            width: 18px; height: 18px; cursor: pointer; margin: 0;
         }
 
         .product-row {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 12px 14px;
-            border-bottom: 1px solid var(--border-color);
-            cursor: pointer;
-            gap: 8px;
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 12px 14px; border-bottom: 1px solid var(--border-color);
+            cursor: pointer; gap: 8px;
         }
         .product-row:last-child { border-bottom: none; }
         .product-row:active { background: rgba(36, 129, 204, 0.08); }
         .product-row-left { flex: 1; min-width: 0; }
         .product-row-name {
-            font-size: 14px;
-            font-weight: 500;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
+            font-size: 14px; font-weight: 500;
+            overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
         }
         .product-row-supplier {
-            font-size: 11px;
-            color: var(--hint-color);
-            margin-top: 2px;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
+            font-size: 11px; color: var(--hint-color); margin-top: 2px;
+            overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
         }
         .product-row-price {
-            font-size: 14px;
-            font-weight: 700;
-            color: var(--success-color);
-            white-space: nowrap;
+            font-size: 14px; font-weight: 700;
+            color: var(--money-color); white-space: nowrap;
         }
 
         input, select, textarea {
@@ -175,95 +122,46 @@
             background: rgba(255, 82, 82, 0.1) !important;
         }
         .field-warning {
-            font-size: 11px;
-            color: var(--error-color);
-            margin-top: -4px;
-            margin-bottom: 6px;
-            display: none;
+            font-size: 11px; color: var(--error-color);
+            margin-top: -4px; margin-bottom: 6px; display: none;
         }
         .field-warning.show { display: block; }
 
         .recipe-title-input { font-size: 16px; font-weight: bold; border: 2px solid var(--button-color); }
-
-        .title-row {
-            display: flex;
-            gap: 6px;
-            align-items: stretch;
-            margin-bottom: 8px;
-        }
-        .title-row .recipe-title-input {
-            flex: 1;
-            margin-bottom: 0;
-        }
+        .title-row { display: flex; gap: 6px; align-items: stretch; margin-bottom: 8px; }
+        .title-row .recipe-title-input { flex: 1; margin-bottom: 0; }
         .cancel-title-btn {
-            background: transparent;
-            color: var(--button-color);
-            border: 1px solid var(--button-color);
-            border-radius: 6px;
-            padding: 9px 12px;
-            font-size: 13px;
-            font-weight: 600;
-            cursor: pointer;
-            white-space: nowrap;
+            background: transparent; color: var(--button-color);
+            border: 1px solid var(--button-color); border-radius: 6px;
+            padding: 9px 12px; font-size: 13px; font-weight: 600;
+            cursor: pointer; white-space: nowrap;
         }
 
-        #portionsRange,
-        #portionsInput,
-        #viewPortionsInput,
-        #viewOutputInput {
-            background: #ffffff !important;
-            color: #000000 !important;
-            border: 1px solid #cccccc !important;
-            font-weight: 600;
+        #portionsRange, #portionsInput, #viewPortionsInput, #viewOutputInput {
+            background: #ffffff !important; color: #000000 !important;
+            border: 1px solid #cccccc !important; font-weight: 600;
         }
-
         #portionsRange {
-            -webkit-appearance: none;
-            appearance: none;
-            height: 8px;
-            padding: 0;
-            border-radius: 4px;
-            background: #ffffff !important;
-            cursor: pointer;
-            accent-color: #2481cc;
+            -webkit-appearance: none; appearance: none;
+            height: 8px; padding: 0; border-radius: 4px;
+            background: #ffffff !important; cursor: pointer; accent-color: #2481cc;
         }
-        #portionsRange::-webkit-slider-runnable-track {
-            height: 8px;
-            background: #e0e0e0;
-            border-radius: 4px;
-        }
+        #portionsRange::-webkit-slider-runnable-track { height: 8px; background: #e0e0e0; border-radius: 4px; }
         #portionsRange::-webkit-slider-thumb {
-            -webkit-appearance: none;
-            appearance: none;
-            width: 20px;
-            height: 20px;
-            background: #2481cc;
-            border-radius: 50%;
-            margin-top: -6px;
-            cursor: pointer;
-            border: 2px solid #ffffff;
+            -webkit-appearance: none; appearance: none;
+            width: 20px; height: 20px; background: #2481cc; border-radius: 50%;
+            margin-top: -6px; cursor: pointer; border: 2px solid #ffffff;
             box-shadow: 0 1px 3px rgba(0,0,0,0.3);
         }
-        #portionsRange::-moz-range-track {
-            height: 8px;
-            background: #e0e0e0;
-            border-radius: 4px;
-        }
+        #portionsRange::-moz-range-track { height: 8px; background: #e0e0e0; border-radius: 4px; }
         #portionsRange::-moz-range-thumb {
-            width: 20px;
-            height: 20px;
-            background: #2481cc;
-            border-radius: 50%;
-            border: 2px solid #ffffff;
-            cursor: pointer;
+            width: 20px; height: 20px; background: #2481cc; border-radius: 50%;
+            border: 2px solid #ffffff; cursor: pointer;
         }
 
         .output-summary {
-            font-size: 12px;
-            color: var(--hint-color);
-            margin-top: -4px;
-            margin-bottom: 12px;
-            padding-left: 2px;
+            font-size: 12px; color: var(--hint-color);
+            margin-top: -4px; margin-bottom: 12px; padding-left: 2px;
         }
         .output-summary b { color: var(--text-color); font-weight: 600; }
         .output-summary .warn { color: #ff9800; }
@@ -273,239 +171,155 @@
             padding: 8px; border-radius: 6px; margin-bottom: 6px; border: 1px solid var(--border-color);
         }
         .pro-fields { display: flex; gap: 6px; }
-        .weight-group {
-            display: flex;
-            gap: 4px;
-            flex: 1;
-        }
-        .weight-group input {
-            flex: 1;
-            margin-bottom: 0;
-        }
-        .weight-group select {
-            width: 80px;
-            flex: 0 0 auto;
-            margin-bottom: 0;
-        }
+        .weight-group { display: flex; gap: 4px; flex: 1; }
+        .weight-group input { flex: 1; margin-bottom: 0; }
+        .weight-group select { width: 80px; flex: 0 0 auto; margin-bottom: 0; }
         .loss-info { font-size: 11px; color: var(--hint-color); }
+        .ing-cost-info {
+            font-size: 11px; color: var(--money-color);
+            margin-top: 2px; padding: 3px 6px;
+            background: rgba(76, 175, 80, 0.08);
+            border-radius: 4px; display: none;
+        }
+        .ing-cost-info.show { display: block; }
+        .ing-cost-info.no-price {
+            color: var(--hint-color);
+            background: rgba(142, 153, 164, 0.08);
+        }
         .step-loss-row {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            margin-top: 4px;
+            display: flex; align-items: center; gap: 8px; margin-top: 4px;
         }
-        .step-loss-row label {
-            font-size: 11px;
-            color: var(--hint-color);
-            white-space: nowrap;
-        }
-        .step-loss-row input {
-            flex: 1;
-            margin-bottom: 0;
-        }
+        .step-loss-row label { font-size: 11px; color: var(--hint-color); white-space: nowrap; }
+        .step-loss-row input { flex: 1; margin-bottom: 0; }
 
-        .ing-type-row {
-            display: flex;
-            gap: 8px;
-            align-items: center;
-            margin-bottom: 4px;
-        }
-        .ing-type-row label {
-            font-size: 11px;
-            color: var(--hint-color);
-            white-space: nowrap;
-        }
-        .ing-type-row select {
-            flex: 1;
-            margin-bottom: 0;
-        }
+        .ing-type-row { display: flex; gap: 8px; align-items: center; margin-bottom: 4px; }
+        .ing-type-row label { font-size: 11px; color: var(--hint-color); white-space: nowrap; }
+        .ing-type-row select { flex: 1; margin-bottom: 0; }
 
-        .recipe-picker {
-            position: relative;
-            margin-bottom: 4px;
-        }
-        .recipe-picker .recipe-search-input {
-            margin-bottom: 0;
-        }
+        .recipe-picker { position: relative; margin-bottom: 4px; }
+        .recipe-picker .recipe-search-input { margin-bottom: 0; }
         .recipe-picker .recipe-search-input.selected {
             border-color: var(--button-color);
             background: rgba(36, 129, 204, 0.08);
         }
         .recipe-search-results {
-            position: absolute;
-            top: calc(100% + 2px);
-            left: 0;
-            right: 0;
-            background: var(--bg-color);
-            border: 1px solid var(--button-color);
-            border-radius: 6px;
-            max-height: 260px;
-            overflow-y: auto;
-            z-index: 100;
-            box-shadow: 0 6px 16px rgba(0,0,0,0.4);
-            display: none;
+            position: absolute; top: calc(100% + 2px); left: 0; right: 0;
+            background: var(--bg-color); border: 1px solid var(--button-color);
+            border-radius: 6px; max-height: 260px; overflow-y: auto;
+            z-index: 100; box-shadow: 0 6px 16px rgba(0,0,0,0.4); display: none;
         }
         .recipe-search-results.open { display: block; }
         .recipe-search-item {
-            padding: 10px 12px;
-            border-bottom: 1px solid var(--border-color);
-            cursor: pointer;
-            font-size: 14px;
+            padding: 10px 12px; border-bottom: 1px solid var(--border-color);
+            cursor: pointer; font-size: 14px;
         }
         .recipe-search-item:last-child { border-bottom: none; }
         .recipe-search-item:active { background: rgba(36, 129, 204, 0.15); }
-        .recipe-search-item-cat {
-            font-size: 11px;
-            color: var(--hint-color);
-            margin-top: 2px;
-        }
+        .recipe-search-item-cat { font-size: 11px; color: var(--hint-color); margin-top: 2px; }
         .recipe-search-empty {
-            padding: 12px;
-            color: var(--hint-color);
-            font-size: 12px;
-            text-align: center;
+            padding: 12px; color: var(--hint-color);
+            font-size: 12px; text-align: center;
         }
 
-        .method-temp-row {
-            display: flex;
-            gap: 6px;
-            align-items: center;
-        }
-        .method-temp-row select {
-            margin-bottom: 0;
-        }
-        .method-temp-row .step-method {
-            flex: 2;
-        }
-        .method-temp-row .step-temp {
-            flex: 1;
-        }
-        .method-temp-row .step-humidity {
-            flex: 1;
-        }
+        .method-temp-row { display: flex; gap: 6px; align-items: center; }
+        .method-temp-row select { margin-bottom: 0; }
+        .method-temp-row .step-method { flex: 2; }
+        .method-temp-row .step-temp { flex: 1; }
+        .method-temp-row .step-humidity { flex: 1; }
 
         .summary-box {
             background: var(--bg-color); border: 1px dashed var(--button-color);
             padding: 8px; border-radius: 6px; margin-bottom: 10px; font-size: 13px;
         }
-        .summary-row { display: flex; justify-content: space-between; font-weight: bold; margin-bottom: 3px; }
+        .summary-row {
+            display: flex; justify-content: space-between;
+            font-weight: bold; margin-bottom: 3px;
+        }
+        .summary-row:last-child { margin-bottom: 0; }
+
+        .cost-box {
+            background: linear-gradient(135deg, rgba(76,175,80,0.1), rgba(76,175,80,0.05));
+            border: 1px solid rgba(76,175,80,0.4);
+            padding: 10px; border-radius: 6px; margin-bottom: 10px; font-size: 13px;
+        }
+        .cost-box .summary-row { font-weight: 600; }
+        .cost-box .summary-row b { color: var(--money-color); font-size: 15px; }
 
         .delete-ing-btn {
             background-color: #e0e0e0; color: #333; border: 1px solid #ccc;
-            padding: 4px 8px; border-radius: 4px; font-size: 12px; cursor: pointer; align-self: flex-end;
+            padding: 4px 8px; border-radius: 4px; font-size: 12px;
+            cursor: pointer; align-self: flex-end;
         }
         .save-db-btn { background-color: var(--success-color) !important; color: #fff !important; }
 
         .selection-panel {
             background: var(--secondary-bg-color);
             border: 1px solid var(--button-color);
-            border-radius: 10px;
-            padding: 10px;
-            margin-bottom: 12px;
-            display: none;
+            border-radius: 10px; padding: 10px;
+            margin-bottom: 12px; display: none;
         }
         .selection-panel.active { display: block; }
         .selection-panel .selection-info {
-            font-size: 13px;
-            font-weight: 600;
-            margin-bottom: 8px;
-            text-align: center;
+            font-size: 13px; font-weight: 600;
+            margin-bottom: 8px; text-align: center;
         }
-        .selection-panel .selection-buttons {
-            display: flex;
-            gap: 6px;
-        }
-        .selection-panel .selection-buttons .mode-btn {
-            flex: 1;
-        }
+        .selection-panel .selection-buttons { display: flex; gap: 6px; }
+        .selection-panel .selection-buttons .mode-btn { flex: 1; }
 
         .bottom-controls {
-            margin-top: 20px;
-            padding-top: 16px;
+            margin-top: 20px; padding-top: 16px;
             border-top: 1px solid var(--border-color);
         }
         .bottom-controls .controls-row {
-            display: flex;
-            gap: 6px;
-            margin-bottom: 6px;
+            display: flex; gap: 6px; margin-bottom: 6px;
         }
-        .bottom-controls .controls-row .mode-btn {
-            flex: 1;
-        }
+        .bottom-controls .controls-row .mode-btn { flex: 1; }
         .dropdown-menu {
             background: var(--secondary-bg-color);
             border: 1px solid var(--button-color);
-            border-radius: 8px;
-            padding: 6px;
-            margin-bottom: 8px;
-            display: none;
+            border-radius: 8px; padding: 6px;
+            margin-bottom: 8px; display: none;
         }
         .dropdown-menu.active { display: block; }
-        .dropdown-menu .mode-btn {
-            width: 100%;
-            margin-bottom: 4px;
-        }
+        .dropdown-menu .mode-btn { width: 100%; margin-bottom: 4px; }
         .dropdown-menu .mode-btn:last-child { margin-bottom: 0; }
 
         .view-header {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            margin-bottom: 8px;
+            display: flex; align-items: center; gap: 8px; margin-bottom: 8px;
         }
         .back-btn {
-            background: transparent;
-            border: none;
-            color: var(--button-color);
-            font-size: 20px;
-            cursor: pointer;
-            padding: 4px 8px;
+            background: transparent; border: none;
+            color: var(--button-color); font-size: 20px;
+            cursor: pointer; padding: 4px 8px;
         }
-        .view-title {
-            font-size: 20px;
-            font-weight: 700;
-            flex: 1;
-        }
-        .view-actions {
-            display: flex;
-            gap: 6px;
-            margin-bottom: 12px;
-        }
+        .view-title { font-size: 20px; font-weight: 700; flex: 1; }
+        .view-actions { display: flex; gap: 6px; margin-bottom: 12px; }
         .view-section {
             background: var(--secondary-bg-color);
             border: 1px solid var(--border-color);
-            border-radius: 10px;
-            padding: 12px;
+            border-radius: 10px; padding: 12px;
             margin-bottom: 12px;
         }
         .view-section h4 {
-            margin-bottom: 8px;
-            color: var(--hint-color);
-            font-size: 12px;
-            text-transform: uppercase;
+            margin-bottom: 8px; color: var(--hint-color);
+            font-size: 12px; text-transform: uppercase;
             letter-spacing: 0.5px;
         }
         .view-ing-table {
-            width: 100%;
-            border-collapse: collapse;
-            font-size: 13px;
+            width: 100%; border-collapse: collapse; font-size: 13px;
         }
         .view-ing-table th, .view-ing-table td {
-            text-align: left;
-            padding: 6px 4px;
+            text-align: left; padding: 6px 4px;
             border-bottom: 1px solid var(--border-color);
         }
         .view-ing-table th {
-            color: var(--hint-color);
-            font-weight: 600;
-            font-size: 11px;
-            text-transform: uppercase;
+            color: var(--hint-color); font-weight: 600;
+            font-size: 11px; text-transform: uppercase;
         }
         .view-ing-table tr:last-child td { border-bottom: none; }
         .view-ing-table .num { text-align: right; font-variant-numeric: tabular-nums; }
         .view-step {
-            margin-bottom: 12px;
-            padding-bottom: 12px;
+            margin-bottom: 12px; padding-bottom: 12px;
             border-bottom: 1px solid var(--border-color);
         }
         .view-step:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
@@ -513,39 +327,25 @@
             display: inline-block;
             background: var(--button-color);
             color: var(--button-text-color);
-            width: 22px;
-            height: 22px;
-            line-height: 22px;
-            text-align: center;
-            border-radius: 50%;
-            font-size: 12px;
-            font-weight: 700;
-            margin-right: 6px;
+            width: 22px; height: 22px; line-height: 22px;
+            text-align: center; border-radius: 50%;
+            font-size: 12px; font-weight: 700; margin-right: 6px;
         }
         .view-step-meta {
-            font-size: 11px;
-            color: var(--hint-color);
-            margin-top: 4px;
-            padding-left: 28px;
+            font-size: 11px; color: var(--hint-color);
+            margin-top: 4px; padding-left: 28px;
         }
         .view-fields-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 8px;
-            margin-bottom: 10px;
+            display: grid; grid-template-columns: 1fr 1fr;
+            gap: 8px; margin-bottom: 10px;
         }
         .view-fields-grid label {
-            font-size: 11px;
-            color: var(--hint-color);
-            display: block;
-            margin-bottom: 4px;
+            font-size: 11px; color: var(--hint-color);
+            display: block; margin-bottom: 4px;
         }
-        .view-fields-grid input {
-            margin-bottom: 0;
-        }
+        .view-fields-grid input { margin-bottom: 0; }
         .view-output-row {
-            font-size: 13px;
-            color: var(--hint-color);
+            font-size: 13px; color: var(--hint-color);
             margin-bottom: 6px;
         }
         .view-output-row b { color: var(--text-color); }
@@ -554,67 +354,41 @@
         .linked-badge {
             display: inline-block;
             background: var(--button-color);
-            color: white;
-            font-size: 9px;
-            padding: 1px 5px;
-            border-radius: 8px;
-            margin-left: 4px;
-            vertical-align: middle;
-            text-transform: uppercase;
-            letter-spacing: 0.3px;
+            color: white; font-size: 9px;
+            padding: 1px 5px; border-radius: 8px;
+            margin-left: 4px; vertical-align: middle;
+            text-transform: uppercase; letter-spacing: 0.3px;
         }
         .open-link-btn {
             display: inline-block;
             background: transparent;
             border: 1px solid var(--button-color);
-            color: var(--button-color);
-            font-size: 10px;
-            padding: 2px 6px;
-            border-radius: 4px;
-            cursor: pointer;
-            margin-left: 4px;
-            vertical-align: middle;
+            color: var(--button-color); font-size: 10px;
+            padding: 2px 6px; border-radius: 4px;
+            cursor: pointer; margin-left: 4px; vertical-align: middle;
         }
 
         .empty-state {
-            text-align: center;
-            padding: 40px 20px;
+            text-align: center; padding: 40px 20px;
             color: var(--hint-color);
         }
-        .empty-state .icon {
-            font-size: 48px;
-            margin-bottom: 12px;
-        }
-        .empty-state h3 {
-            color: var(--text-color);
-            margin-bottom: 8px;
-        }
+        .empty-state .icon { font-size: 48px; margin-bottom: 12px; }
+        .empty-state h3 { color: var(--text-color); margin-bottom: 8px; }
 
         .tab-bar {
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            right: 0;
+            position: fixed; bottom: 0; left: 0; right: 0;
             background: var(--secondary-bg-color);
             border-top: 1px solid var(--border-color);
-            display: flex;
-            z-index: 500;
+            display: flex; z-index: 500;
             padding-bottom: env(safe-area-inset-bottom, 0);
         }
         .tab-btn {
-            flex: 1;
-            background: transparent;
-            border: none;
-            color: var(--hint-color);
-            padding: 8px 6px 10px;
-            font-size: 11px;
-            font-weight: 600;
-            cursor: pointer;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 2px;
-            font-family: inherit;
+            flex: 1; background: transparent; border: none;
+            color: var(--hint-color); padding: 8px 6px 10px;
+            font-size: 11px; font-weight: 600;
+            cursor: pointer; display: flex;
+            flex-direction: column; align-items: center;
+            gap: 2px; font-family: inherit;
         }
         .tab-btn .tab-icon { font-size: 20px; line-height: 1.1; }
         .tab-btn.active { color: var(--button-color); }
@@ -632,7 +406,6 @@
     <div id="tabRecipesContent">
         <div id="navControlsContainer">
             <button class="primary" id="btnNewRecipe" onclick="openConstructor()">+ Новая техкарта</button>
-            
             <div class="search-container">
                 <input type="text" id="searchInput" class="search-input" placeholder="🔍 Поиск по названию..." oninput="onSearchInput(this.value)">
             </div>
@@ -731,6 +504,17 @@
                 </div>
             </div>
 
+            <div class="cost-box" id="constructorCostBox" style="display:none;">
+                <div class="summary-row">
+                    <span>Себестоимость блюда:</span>
+                    <b id="totalRecipeCost">0 ₽</b>
+                </div>
+                <div class="summary-row">
+                    <span>Себестоимость порции:</span>
+                    <b id="recipeCostPerPortion">0 ₽</b>
+                </div>
+            </div>
+
             <h4>Шаги приготовления:</h4>
             <div id="stepsList"></div>
             <button class="mode-btn" style="width: 100%; margin-bottom: 8px;" onclick="addStepRow()">+ Добавить шаг</button>
@@ -815,21 +599,14 @@ const SUPABASE_KEY = 'sb_publishable_kcUT9hJ_k8e-2sj0j8BbAA_QvG8Wc-p';
 const OWNER_TELEGRAM_ID = '1655438557';
 
 const CATEGORIES = [
-    'Мясо и птица',
-    'Рыба и морепродукты',
-    'Овощи и грибы',
-    'Крупы, макароны и бобовые',
-    'Супы',
-    'Холодные блюда и закуски',
-    'Соусы, маринады и заправки',
-    'Полуфабрикаты и заготовки',
-    'Выпечка и десерты',
-    'Напитки',
-    'Другое'
+    'Мясо и птица','Рыба и морепродукты','Овощи и грибы',
+    'Крупы, макароны и бобовые','Супы','Холодные блюда и закуски',
+    'Соусы, маринады и заправки','Полуфабрикаты и заготовки',
+    'Выпечка и десерты','Напитки','Другое'
 ];
 
-const UNITS = ['г', 'кг', 'мл', 'л'];
-const PRICE_UNITS = ['кг', 'л', 'шт', 'г', 'мл'];
+const UNITS = ['г','кг','мл','л'];
+const PRICE_UNITS = ['кг','л','шт','г','мл'];
 
 const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
@@ -838,33 +615,20 @@ let currentUserRole = 'cook';
 function getCurrentUserId() {
     try {
         const tgUser = window.Telegram?.WebApp?.initDataUnsafe?.user;
-        if (tgUser && tgUser.id) {
-            return String(tgUser.id);
-        }
+        if (tgUser && tgUser.id) return String(tgUser.id);
     } catch(e) {}
     return 'local';
 }
 
 async function loadUserRole() {
     const userId = getCurrentUserId();
-    if (userId === OWNER_TELEGRAM_ID) {
-        currentUserRole = 'chef';
-        return;
-    }
+    if (userId === OWNER_TELEGRAM_ID) { currentUserRole = 'chef'; return; }
     try {
         const { data, error } = await supabaseClient
-            .from('users')
-            .select('role')
-            .eq('telegram_id', userId)
-            .maybeSingle();
-        if (!error && data && data.role) {
-            currentUserRole = data.role;
-        } else {
-            currentUserRole = 'cook';
-        }
-    } catch(e) {
-        currentUserRole = 'cook';
-    }
+            .from('users').select('role').eq('telegram_id', userId).maybeSingle();
+        if (!error && data && data.role) currentUserRole = data.role;
+        else currentUserRole = 'cook';
+    } catch(e) { currentUserRole = 'cook'; }
 }
 
 function isChef() {
@@ -899,18 +663,14 @@ function applyRoleUI() {
 }
 
 // ==========================================
-// ЕДИНИЦЫ И ФОРМАТИРОВАНИЕ
+// ФОРМАТИРОВАНИЕ
 // ==========================================
 
 function formatWeight(value, unit) {
     if (value === undefined || value === null || isNaN(value)) return '0 ' + (unit || 'г');
     const num = Number(value);
-    if (unit === 'г' && num >= 1000) {
-        return formatNum(num / 1000) + ' кг';
-    }
-    if (unit === 'мл' && num >= 1000) {
-        return formatNum(num / 1000) + ' л';
-    }
+    if (unit === 'г' && num >= 1000) return formatNum(num / 1000) + ' кг';
+    if (unit === 'мл' && num >= 1000) return formatNum(num / 1000) + ' л';
     return formatNum(num) + ' ' + (unit || 'г');
 }
 
@@ -935,12 +695,8 @@ function unitToGrams(value, unit) {
 
 function escapeHtml(str) {
     if (str === undefined || str === null) return '';
-    return String(str)
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;')
-        .replace(/'/g, '&#39;');
+    return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
 }
 
 // ==========================================
@@ -965,8 +721,7 @@ function hasPath(fromId, toId, visited) {
 
 function getAvailableRecipesForIngredient() {
     const currentId = editingRecipeId;
-    return recipes
-        .slice()
+    return recipes.slice()
         .sort((a, b) => (a.title || '').localeCompare(b.title || ''))
         .filter(r => {
             if (!currentId) return true;
@@ -977,26 +732,151 @@ function getAvailableRecipesForIngredient() {
 }
 
 // ==========================================
+// СЕБЕСТОИМОСТЬ
+// ==========================================
+
+function findProductByName(name) {
+    if (!name) return null;
+    const lower = name.toLowerCase().trim();
+    return products.find(p => (p.name || '').toLowerCase().trim() === lower) || null;
+}
+
+// Стоимость ингредиента-продукта: net в его единице, продукт с ценой
+function calcProductCost(net, unit, product) {
+    if (!product || !product.price_per_unit) return 0;
+    const netInBase = unitToGrams(net, unit); // в г или мл
+    let amountInProductUnit;
+    if (product.unit === 'кг' || product.unit === 'л') {
+        amountInProductUnit = netInBase / 1000;
+    } else if (product.unit === 'г' || product.unit === 'мл') {
+        amountInProductUnit = netInBase;
+    } else {
+        amountInProductUnit = net;
+    }
+    return amountInProductUnit * product.price_per_unit;
+}
+
+// Полная себестоимость рецепта (рекурсивно по полуфабрикатам)
+function calcRecipeCost(recipe, visited) {
+    if (!recipe) return 0;
+    visited = visited || new Set();
+    if (visited.has(recipe.id)) return 0;
+    visited.add(recipe.id);
+
+    let total = 0;
+    (recipe.ingredients || []).forEach(ing => {
+        if (ing.type === 'product') {
+            const prod = findProductByName(ing.name);
+            if (prod) total += calcProductCost(ing.net || 0, ing.unit || 'г', prod);
+        } else if (ing.type === 'preparation' && ing.linked_recipe_id) {
+            const sub = recipes.find(r => r.id === ing.linked_recipe_id);
+            if (sub) {
+                const subTotal = calcRecipeCost(sub, visited);
+                const subBatch = (sub.portions || 1) * (sub.output || 0);
+                if (subBatch > 0) {
+                    const netGrams = unitToGrams(ing.net || 0, ing.unit || 'г');
+                    total += netGrams * (subTotal / subBatch);
+                }
+            }
+        }
+    });
+    return total;
+}
+
+// Обновить инфо-строку себестоимости у одного ингредиента (в конструкторе)
+function updateIngredientCostInfo(row) {
+    if (!canSeeProducts()) return;
+    const info = row.querySelector('.ing-cost-info');
+    if (!info) return;
+
+    const type = row.querySelector('.ing-type')?.value || 'product';
+    const net = parseFloat(row.querySelector('.ing-net')?.value) || 0;
+    const unit = row.querySelector('.ing-unit')?.value || 'г';
+
+    if (type === 'product') {
+        const name = row.querySelector('.ing-name')?.value.trim() || '';
+        if (!name) { info.classList.remove('show'); return; }
+        const prod = findProductByName(name);
+        if (!prod) {
+            info.textContent = '⚠️ Нет в справочнике продуктов';
+            info.classList.add('show', 'no-price');
+            info.classList.remove('money');
+            return;
+        }
+        const cost = calcProductCost(net, unit, prod);
+        info.textContent = `💰 ${formatPrice(prod.price_per_unit)}/${prod.unit} → ${formatPrice(cost)}`;
+        info.classList.add('show');
+        info.classList.remove('no-price');
+    } else {
+        // Полуфабрикат
+        const linkedId = row.querySelector('.ing-linked-recipe')?.value;
+        if (!linkedId) { info.classList.remove('show'); return; }
+        const sub = recipes.find(r => r.id === linkedId);
+        if (!sub) { info.classList.remove('show'); return; }
+        const subTotal = calcRecipeCost(sub);
+        const subBatch = (sub.portions || 1) * (sub.output || 0);
+        if (subBatch <= 0) { info.classList.remove('show'); return; }
+        const netGrams = unitToGrams(net, unit);
+        const cost = netGrams * (subTotal / subBatch);
+        info.textContent = `💰 ${formatPrice(cost)} (из полуфабриката)`;
+        info.classList.add('show');
+        info.classList.remove('no-price');
+    }
+}
+
+// Пересчитать всю себестоимость в конструкторе
+function updateConstructorCost() {
+    if (!canSeeProducts()) return;
+    const box = document.getElementById('constructorCostBox');
+    if (!box) return;
+    box.style.display = 'block';
+
+    let total = 0;
+    document.querySelectorAll('.ingredient-row').forEach(row => {
+        const type = row.querySelector('.ing-type')?.value || 'product';
+        const net = parseFloat(row.querySelector('.ing-net')?.value) || 0;
+        const unit = row.querySelector('.ing-unit')?.value || 'г';
+
+        if (type === 'product') {
+            const name = row.querySelector('.ing-name')?.value.trim() || '';
+            if (!name) return;
+            const prod = findProductByName(name);
+            if (prod) total += calcProductCost(net, unit, prod);
+        } else {
+            const linkedId = row.querySelector('.ing-linked-recipe')?.value;
+            if (!linkedId) return;
+            const sub = recipes.find(r => r.id === linkedId);
+            if (!sub) return;
+            const subTotal = calcRecipeCost(sub);
+            const subBatch = (sub.portions || 1) * (sub.output || 0);
+            if (subBatch > 0) {
+                const netGrams = unitToGrams(net, unit);
+                total += netGrams * (subTotal / subBatch);
+            }
+        }
+    });
+
+    const portions = parseInt(document.getElementById('portionsInput')?.value) || 1;
+    const perPortion = portions > 0 ? total / portions : total;
+
+    document.getElementById('totalRecipeCost').textContent = formatPrice(total);
+    document.getElementById('recipeCostPerPortion').textContent = formatPrice(perPortion);
+}
+
+// ==========================================
 // СИНХРОНИЗАЦИЯ
 // ==========================================
 
 function setSyncStatus(status) {
     const el = document.getElementById('syncStatus');
     if (!el) return;
-    if (status === 'ok') {
-        el.textContent = '☁️';
-        el.title = 'Синхронизировано';
-    } else if (status === 'progress') {
-        el.textContent = '⏳';
-        el.title = 'Синхронизация…';
-    } else {
-        el.textContent = '⚠️';
-        el.title = 'Ошибка синхронизации';
-    }
+    if (status === 'ok') { el.textContent = '☁️'; el.title = 'Синхронизировано'; }
+    else if (status === 'progress') { el.textContent = '⏳'; el.title = 'Синхронизация…'; }
+    else { el.textContent = '⚠️'; el.title = 'Ошибка синхронизации'; }
 }
 
 // ==========================================
-// ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ
+// ПЕРЕМЕННЫЕ
 // ==========================================
 
 let editingRecipeId = null;
@@ -1016,7 +896,7 @@ let expandedCategories = new Set();
 let searchQuery = '';
 
 // ==========================================
-// ЗАГРУЗКА ИЗ SUPABASE — РЕЦЕПТЫ
+// ЗАГРУЗКА РЕЦЕПТОВ
 // ==========================================
 
 async function loadRecipesFromSupabase() {
@@ -1024,31 +904,19 @@ async function loadRecipesFromSupabase() {
     try {
         const userId = getCurrentUserId();
         const { data: recipesData, error: recError } = await supabaseClient
-            .from('recipes')
-            .select('*')
-            .eq('user_id', userId)
+            .from('recipes').select('*').eq('user_id', userId)
             .order('updated_at', { ascending: false });
-
         if (recError) throw recError;
-
-        if (!recipesData || recipesData.length === 0) {
-            setSyncStatus('ok');
-            return [];
-        }
+        if (!recipesData || recipesData.length === 0) { setSyncStatus('ok'); return []; }
 
         const recipeIds = recipesData.map(r => r.id);
         const { data: ingData, error: ingError } = await supabaseClient
-            .from('ingredients')
-            .select('*')
-            .in('recipe_id', recipeIds);
-
+            .from('ingredients').select('*').in('recipe_id', recipeIds);
         if (ingError) throw ingError;
 
         const ingredientsByRecipe = {};
         (ingData || []).forEach(ing => {
-            if (!ingredientsByRecipe[ing.recipe_id]) {
-                ingredientsByRecipe[ing.recipe_id] = [];
-            }
+            if (!ingredientsByRecipe[ing.recipe_id]) ingredientsByRecipe[ing.recipe_id] = [];
             ingredientsByRecipe[ing.recipe_id].push({
                 name: ing.name || '',
                 gross: ing.gross || 0,
@@ -1061,11 +929,8 @@ async function loadRecipesFromSupabase() {
         });
 
         const result = recipesData.map(r => ({
-            id: r.id,
-            title: r.title || '',
-            category: r.category || '',
-            portions: r.base_portion || 4,
-            output: r.output || 0,
+            id: r.id, title: r.title || '', category: r.category || '',
+            portions: r.base_portion || 4, output: r.output || 0,
             ingredients: ingredientsByRecipe[r.id] || [],
             steps: typeof r.steps === 'string' ? JSON.parse(r.steps || '[]') : (r.steps || []),
             updated_at: r.updated_at || new Date().toISOString()
@@ -1074,7 +939,7 @@ async function loadRecipesFromSupabase() {
         setSyncStatus('ok');
         return result;
     } catch(e) {
-        console.error('Ошибка загрузки из Supabase:', e);
+        console.error('Ошибка загрузки:', e);
         setSyncStatus('error');
         return null;
     }
@@ -1084,54 +949,33 @@ async function saveRecipeToSupabase(recipe) {
     setSyncStatus('progress');
     try {
         const userId = getCurrentUserId();
-
         const recipeRow = {
-            id: recipe.id,
-            user_id: userId,
-            title: recipe.title,
-            category: recipe.category,
-            base_portion: recipe.portions || 4,
-            output: recipe.output || 0,
-            steps: recipe.steps || [],
-            updated_at: new Date().toISOString()
+            id: recipe.id, user_id: userId, title: recipe.title, category: recipe.category,
+            base_portion: recipe.portions || 4, output: recipe.output || 0,
+            steps: recipe.steps || [], updated_at: new Date().toISOString()
         };
-
-        const { error: upsertError } = await supabaseClient
-            .from('recipes')
+        const { error: upErr } = await supabaseClient.from('recipes')
             .upsert(recipeRow, { onConflict: 'id' });
+        if (upErr) throw upErr;
 
-        if (upsertError) throw upsertError;
-
-        const { error: delError } = await supabaseClient
-            .from('ingredients')
-            .delete()
-            .eq('recipe_id', recipe.id);
-
-        if (delError) throw delError;
+        const { error: delErr } = await supabaseClient.from('ingredients')
+            .delete().eq('recipe_id', recipe.id);
+        if (delErr) throw delErr;
 
         if (recipe.ingredients && recipe.ingredients.length > 0) {
-            const ingRows = recipe.ingredients.map(ing => ({
-                recipe_id: recipe.id,
-                name: ing.name || '',
-                gross: ing.gross || 0,
-                net: ing.net || 0,
-                loss_percent: ing.loss_percent || 0,
-                unit: ing.unit || 'г',
-                type: ing.type || 'product',
+            const rows = recipe.ingredients.map(ing => ({
+                recipe_id: recipe.id, name: ing.name || '', gross: ing.gross || 0,
+                net: ing.net || 0, loss_percent: ing.loss_percent || 0,
+                unit: ing.unit || 'г', type: ing.type || 'product',
                 linked_recipe_id: ing.linked_recipe_id || null
             }));
-
-            const { error: insError } = await supabaseClient
-                .from('ingredients')
-                .insert(ingRows);
-
-            if (insError) throw insError;
+            const { error: insErr } = await supabaseClient.from('ingredients').insert(rows);
+            if (insErr) throw insErr;
         }
-
         setSyncStatus('ok');
         return true;
     } catch(e) {
-        console.error('Ошибка сохранения в Supabase:', e);
+        console.error('Ошибка сохранения:', e);
         setSyncStatus('error');
         return false;
     }
@@ -1140,88 +984,53 @@ async function saveRecipeToSupabase(recipe) {
 async function deleteRecipeFromSupabase(recipeId) {
     setSyncStatus('progress');
     try {
-        const { error } = await supabaseClient
-            .from('recipes')
-            .delete()
-            .eq('id', recipeId);
-
+        const { error } = await supabaseClient.from('recipes').delete().eq('id', recipeId);
         if (error) throw error;
-
         setSyncStatus('ok');
         return true;
-    } catch(e) {
-        console.error('Ошибка удаления из Supabase:', e);
-        setSyncStatus('error');
-        return false;
-    }
+    } catch(e) { setSyncStatus('error'); return false; }
 }
 
 // ==========================================
-// ЗАГРУЗКА ИЗ SUPABASE — ПРОДУКТЫ
+// ЗАГРУЗКА ПРОДУКТОВ
 // ==========================================
 
 async function loadProductsFromSupabase() {
     try {
         const userId = getCurrentUserId();
-        const { data, error } = await supabaseClient
-            .from('products')
-            .select('*')
-            .eq('user_id', userId)
-            .order('name', { ascending: true });
-
+        const { data, error } = await supabaseClient.from('products').select('*')
+            .eq('user_id', userId).order('name', { ascending: true });
         if (error) throw error;
-
         return (data || []).map(p => ({
-            id: p.id,
-            name: p.name || '',
-            unit: p.unit || 'кг',
+            id: p.id, name: p.name || '', unit: p.unit || 'кг',
             price_per_unit: p.price_per_unit || 0,
-            supplier: p.supplier || '',
-            notes: p.notes || '',
+            supplier: p.supplier || '', notes: p.notes || '',
             updated_at: p.updated_at || new Date().toISOString()
         }));
-    } catch(e) {
-        console.error('Ошибка загрузки продуктов из Supabase:', e);
-        return [];
-    }
+    } catch(e) { console.error('Ошибка загрузки продуктов:', e); return []; }
 }
 
 async function saveProductToSupabase(product) {
     try {
         const userId = getCurrentUserId();
         const row = {
-            id: product.id,
-            user_id: userId,
-            name: product.name,
-            unit: product.unit || 'кг',
-            price_per_unit: product.price_per_unit || 0,
-            supplier: product.supplier || null,
-            notes: product.notes || null,
+            id: product.id, user_id: userId, name: product.name,
+            unit: product.unit || 'кг', price_per_unit: product.price_per_unit || 0,
+            supplier: product.supplier || null, notes: product.notes || null,
             updated_at: new Date().toISOString()
         };
-        const { error } = await supabaseClient
-            .from('products')
-            .upsert(row, { onConflict: 'id' });
+        const { error } = await supabaseClient.from('products').upsert(row, { onConflict: 'id' });
         if (error) throw error;
         return true;
-    } catch(e) {
-        console.error('Ошибка сохранения продукта:', e);
-        return false;
-    }
+    } catch(e) { console.error('Ошибка сохранения продукта:', e); return false; }
 }
 
 async function deleteProductFromSupabase(productId) {
     try {
-        const { error } = await supabaseClient
-            .from('products')
-            .delete()
-            .eq('id', productId);
+        const { error } = await supabaseClient.from('products').delete().eq('id', productId);
         if (error) throw error;
         return true;
-    } catch(e) {
-        console.error('Ошибка удаления продукта:', e);
-        return false;
-    }
+    } catch(e) { return false; }
 }
 
 // ==========================================
@@ -1229,29 +1038,18 @@ async function deleteProductFromSupabase(productId) {
 // ==========================================
 
 function loadRecipesFromLocal() {
-    try {
-        const data = localStorage.getItem('chef_recipes');
-        return data ? JSON.parse(data) : [];
-    } catch(e) { return []; }
+    try { const d = localStorage.getItem('chef_recipes'); return d ? JSON.parse(d) : []; }
+    catch(e) { return []; }
 }
-
 function saveRecipesToLocal() {
-    try {
-        localStorage.setItem('chef_recipes', JSON.stringify(recipes));
-    } catch(e) {}
+    try { localStorage.setItem('chef_recipes', JSON.stringify(recipes)); } catch(e) {}
 }
-
 function loadProductsFromLocal() {
-    try {
-        const data = localStorage.getItem('chef_products');
-        return data ? JSON.parse(data) : [];
-    } catch(e) { return []; }
+    try { const d = localStorage.getItem('chef_products'); return d ? JSON.parse(d) : []; }
+    catch(e) { return []; }
 }
-
 function saveProductsToLocal() {
-    try {
-        localStorage.setItem('chef_products', JSON.stringify(products));
-    } catch(e) {}
+    try { localStorage.setItem('chef_products', JSON.stringify(products)); } catch(e) {}
 }
 
 // ==========================================
@@ -1266,17 +1064,15 @@ window.addEventListener('DOMContentLoaded', async () => {
     recipes = localRecipes;
     renderRecipes();
 
+    // Продукты — сначала локально, чтобы себестоимость считалась сразу
     const localProducts = loadProductsFromLocal();
     products = localProducts;
 
     const cloudRecipes = await loadRecipesFromSupabase();
     if (cloudRecipes !== null) {
-        if (cloudRecipes.length > 0) {
-            recipes = cloudRecipes;
-        } else if (localRecipes.length > 0 && isChef()) {
-            for (const r of localRecipes) {
-                await saveRecipeToSupabase(r);
-            }
+        if (cloudRecipes.length > 0) recipes = cloudRecipes;
+        else if (localRecipes.length > 0 && isChef()) {
+            for (const r of localRecipes) await saveRecipeToSupabase(r);
             recipes = localRecipes;
         }
         saveRecipesToLocal();
@@ -1293,31 +1089,25 @@ window.addEventListener('DOMContentLoaded', async () => {
 
     document.addEventListener('click', function(e) {
         if (!e.target.closest('.recipe-picker')) {
-            document.querySelectorAll('.recipe-search-results.open').forEach(el => {
-                el.classList.remove('open');
-            });
+            document.querySelectorAll('.recipe-search-results.open').forEach(el => el.classList.remove('open'));
         }
     });
 });
 
 // ==========================================
-// ПЕРЕКЛЮЧЕНИЕ ВКЛАДОК
+// ВКЛАДКИ
 // ==========================================
 
 function switchTab(tab) {
     activeTab = tab;
-
     document.getElementById('tabBtnRecipes').classList.toggle('active', tab === 'recipes');
     document.getElementById('tabBtnProducts').classList.toggle('active', tab === 'products');
     document.getElementById('tabBtnMore').classList.toggle('active', tab === 'more');
-
     document.getElementById('tabRecipesContent').style.display = (tab === 'recipes') ? 'block' : 'none';
     document.getElementById('tabProductsContent').style.display = (tab === 'products') ? 'block' : 'none';
     document.getElementById('tabMoreContent').style.display = (tab === 'more') ? 'block' : 'none';
-
     if (tab === 'recipes') renderRecipes();
     if (tab === 'products') renderProducts();
-
     updateTabBarVisibility();
 }
 
@@ -1325,13 +1115,12 @@ function updateTabBarVisibility() {
     const constructorOpen = document.getElementById('recipeConstructor').style.display === 'block';
     const viewOpen = document.getElementById('recipeView').style.display === 'block';
     const productFormOpen = document.getElementById('productForm').style.display === 'block';
-
     const hide = constructorOpen || viewOpen || productFormOpen || selectionMode;
     document.getElementById('tabBar').style.display = hide ? 'none' : 'flex';
 }
 
 // ==========================================
-// КОНСТРУКТОР РЕЦЕПТА
+// КОНСТРУКТОР
 // ==========================================
 
 function toggleConstructorFields() {
@@ -1341,12 +1130,10 @@ function toggleConstructorFields() {
 
 function openConstructor(recipe = null) {
     if (!isChef()) return;
-
     document.getElementById('tabRecipesContent').style.display = 'none';
     document.getElementById('selectionPanel').classList.remove('active');
     document.getElementById('recipeView').style.display = 'none';
     document.getElementById('recipeConstructor').style.display = 'block';
-
     document.getElementById('ingredientsList').innerHTML = '';
     document.getElementById('stepsList').innerHTML = '';
 
@@ -1364,7 +1151,6 @@ function openConstructor(recipe = null) {
         } else {
             document.getElementById('portionsRange').style.display = 'none';
         }
-
         (recipe.ingredients || []).forEach(i => addIngredientRow(i));
         (recipe.steps || []).forEach(s => addStepRow(s));
     } else {
@@ -1402,12 +1188,8 @@ function onRangeInput(val) {
 function onNumberInput(val) {
     const num = parseInt(val) || 1;
     const range = document.getElementById('portionsRange');
-    if (num <= 20) {
-        range.value = num;
-        range.style.display = 'block';
-    } else {
-        range.style.display = 'none';
-    }
+    if (num <= 20) { range.value = num; range.style.display = 'block'; }
+    else { range.style.display = 'none'; }
     updateSummary();
     updateOutputSummary();
 }
@@ -1420,7 +1202,7 @@ function addIngredientRow(data = {}) {
     const container = document.getElementById('ingredientsList');
     const div = document.createElement('div');
     div.className = 'ingredient-row';
-    
+
     const gross = data.gross || '';
     const net = data.net || '';
     const unit = data.unit || 'г';
@@ -1433,7 +1215,6 @@ function addIngredientRow(data = {}) {
     }
 
     const unitOptions = UNITS.map(u => `<option value="${u}" ${u === unit ? 'selected' : ''}>${u}</option>`).join('');
-
     const productDisplay = type === 'product' ? '' : 'display:none;';
     const preparationDisplay = type === 'preparation' ? '' : 'display:none;';
 
@@ -1446,7 +1227,7 @@ function addIngredientRow(data = {}) {
             </select>
         </div>
         <div class="ing-product-fields" style="${productDisplay}">
-            <input type="text" placeholder="Название продукта" value="${type === 'product' ? (data.name || '') : ''}" class="ing-name">
+            <input type="text" placeholder="Название продукта" value="${type === 'product' ? escapeHtml(data.name || '') : ''}" class="ing-name" oninput="updateIngredientCostInfo(this.closest('.ingredient-row'))" onblur="updateIngredientCostInfo(this.closest('.ingredient-row')); updateConstructorCost();">
         </div>
         <div class="ing-preparation-fields recipe-picker" style="${preparationDisplay}">
             <input type="text" class="recipe-search-input ${linkedId ? 'selected' : ''}" placeholder="Начните вводить название..." value="${escapeHtml(linkedTitle)}" autocomplete="off" oninput="onRecipeSearchInput(this)" onfocus="onRecipeSearchFocus(this)">
@@ -1464,18 +1245,18 @@ function addIngredientRow(data = {}) {
                 <input type="number" placeholder="Нетто" value="${net}" class="ing-net" oninput="updateRowLoss(this); updateSummary();" onblur="validateIngredientRow(this)">
             </div>
         </div>
+        <div class="ing-cost-info"></div>
         <div class="field-warning">Нетто не может быть больше брутто</div>
         <div class="loss-info">Потери: <span class="loss-percent">0%</span></div>
         <button type="button" class="delete-ing-btn" onclick="this.parentElement.remove(); updateSummary(); validateStepChain();">Удалить ингредиент</button>
     `;
     container.appendChild(div);
     updateRowLoss(div.querySelector('.ing-gross'));
+    updateIngredientCostInfo(div);
     updateSummary();
 }
 
-function onRecipeSearchFocus(input) {
-    renderRecipePickerResults(input, true);
-}
+function onRecipeSearchFocus(input) { renderRecipePickerResults(input, true); }
 
 function onRecipeSearchInput(input) {
     const row = input.closest('.recipe-picker');
@@ -1490,12 +1271,8 @@ function renderRecipePickerResults(input, showAllOnFocus) {
     if (!picker) return;
     const results = picker.querySelector('.recipe-search-results');
     const query = (input.value || '').trim().toLowerCase();
-
     let available = getAvailableRecipesForIngredient();
-
-    if (query) {
-        available = available.filter(r => (r.title || '').toLowerCase().includes(query));
-    }
+    if (query) available = available.filter(r => (r.title || '').toLowerCase().includes(query));
 
     if (available.length === 0) {
         results.innerHTML = `<div class="recipe-search-empty">Ничего не найдено</div>`;
@@ -1505,12 +1282,10 @@ function renderRecipePickerResults(input, showAllOnFocus) {
 
     let html = '';
     available.slice(0, 50).forEach(r => {
-        html += `
-            <div class="recipe-search-item" onclick="selectRecipeForIngredient(this, '${r.id}', '${escapeHtml(r.title).replace(/'/g, "\\'")}')">
-                <div>${escapeHtml(r.title)}</div>
-                <div class="recipe-search-item-cat">${escapeHtml(r.category)}</div>
-            </div>
-        `;
+        html += `<div class="recipe-search-item" onclick="selectRecipeForIngredient(this, '${r.id}', '${escapeHtml(r.title).replace(/'/g, "\\'")}')">
+            <div>${escapeHtml(r.title)}</div>
+            <div class="recipe-search-item-cat">${escapeHtml(r.category)}</div>
+        </div>`;
     });
     results.innerHTML = html;
     results.classList.add('open');
@@ -1522,32 +1297,37 @@ function selectRecipeForIngredient(el, recipeId, recipeTitle) {
     const input = picker.querySelector('.recipe-search-input');
     const hidden = picker.querySelector('.ing-linked-recipe');
     const results = picker.querySelector('.recipe-search-results');
-
     input.value = recipeTitle;
     input.classList.add('selected');
     hidden.value = recipeId;
     results.classList.remove('open');
+    const row = picker.closest('.ingredient-row');
+    if (row) {
+        updateIngredientCostInfo(row);
+        updateConstructorCost();
+    }
 }
 
 function onIngredientTypeChange(selectEl) {
     const row = selectEl.closest('.ingredient-row');
     if (!row) return;
-    const productFields = row.querySelector('.ing-product-fields');
-    const preparationFields = row.querySelector('.ing-preparation-fields');
+    const pf = row.querySelector('.ing-product-fields');
+    const prep = row.querySelector('.ing-preparation-fields');
     if (selectEl.value === 'preparation') {
-        productFields.style.display = 'none';
-        preparationFields.style.display = 'block';
+        pf.style.display = 'none';
+        prep.style.display = 'block';
     } else {
-        productFields.style.display = 'block';
-        preparationFields.style.display = 'none';
+        pf.style.display = 'block';
+        prep.style.display = 'none';
     }
+    updateIngredientCostInfo(row);
+    updateConstructorCost();
 }
 
 function getIngredientDataFromRow(row) {
     const type = row.querySelector('.ing-type')?.value || 'product';
     let name = '';
     let linked_recipe_id = null;
-
     if (type === 'preparation') {
         const hidden = row.querySelector('.ing-linked-recipe');
         linked_recipe_id = hidden?.value || null;
@@ -1558,21 +1338,11 @@ function getIngredientDataFromRow(row) {
     } else {
         name = row.querySelector('.ing-name')?.value.trim() || '';
     }
-
     const gross = parseFloat(row.querySelector('.ing-gross')?.value) || 0;
     const net = parseFloat(row.querySelector('.ing-net')?.value) || 0;
     const unit = row.querySelector('.ing-unit')?.value || 'г';
     const loss = gross > 0 ? ((gross - net) / gross) * 100 : 0;
-
-    return {
-        name,
-        gross,
-        net,
-        loss_percent: loss,
-        unit,
-        type,
-        linked_recipe_id
-    };
+    return { name, gross, net, loss_percent: loss, unit, type, linked_recipe_id };
 }
 
 function updateRowLoss(el) {
@@ -1582,39 +1352,27 @@ function updateRowLoss(el) {
     const net = parseFloat(row.querySelector('.ing-net')?.value) || 0;
     const lossSpan = row.querySelector('.loss-percent');
     if (lossSpan) {
-        if (gross > 0 && gross >= net) {
-            const loss = ((gross - net) / gross) * 100;
-            lossSpan.innerText = loss.toFixed(1) + '%';
-        } else {
-            lossSpan.innerText = '0%';
-        }
+        if (gross > 0 && gross >= net) lossSpan.innerText = (((gross - net) / gross) * 100).toFixed(1) + '%';
+        else lossSpan.innerText = '0%';
     }
 }
 
 function validateIngredientRow(el) {
     const row = el.closest('.ingredient-row');
     if (!row) return;
-
-    const grossInput = row.querySelector('.ing-gross');
-    const netInput = row.querySelector('.ing-net');
-    const warning = row.querySelector('.field-warning');
-    if (!grossInput || !netInput) return;
-
-    const gross = parseFloat(grossInput.value) || 0;
-    const net = parseFloat(netInput.value) || 0;
-
-    if (gross > 0 && net > gross) {
-        grossInput.classList.add('invalid');
-        netInput.classList.add('invalid');
-        if (warning) {
-            warning.textContent = 'Нетто не может быть больше брутто';
-            warning.classList.add('show');
-        }
+    const gi = row.querySelector('.ing-gross');
+    const ni = row.querySelector('.ing-net');
+    const w = row.querySelector('.field-warning');
+    if (!gi || !ni) return;
+    const g = parseFloat(gi.value) || 0;
+    const n = parseFloat(ni.value) || 0;
+    if (g > 0 && n > g) {
+        gi.classList.add('invalid'); ni.classList.add('invalid');
+        if (w) { w.textContent = 'Нетто не может быть больше брутто'; w.classList.add('show'); }
         if (navigator.vibrate) navigator.vibrate(150);
     } else {
-        grossInput.classList.remove('invalid');
-        netInput.classList.remove('invalid');
-        if (warning) warning.classList.remove('show');
+        gi.classList.remove('invalid'); ni.classList.remove('invalid');
+        if (w) w.classList.remove('show');
     }
 }
 
@@ -1622,41 +1380,24 @@ function validateAllIngredients() {
     let allValid = true;
     document.querySelectorAll('.ingredient-row').forEach(row => {
         const type = row.querySelector('.ing-type')?.value || 'product';
-        const grossInput = row.querySelector('.ing-gross');
-        const netInput = row.querySelector('.ing-net');
-        const warning = row.querySelector('.field-warning');
-        if (!grossInput || !netInput) return;
-
-        const gross = parseFloat(grossInput.value) || 0;
-        const net = parseFloat(netInput.value) || 0;
-
-        let invalid = false;
-        let msg = '';
-
+        const gi = row.querySelector('.ing-gross');
+        const ni = row.querySelector('.ing-net');
+        const w = row.querySelector('.field-warning');
+        if (!gi || !ni) return;
+        const g = parseFloat(gi.value) || 0;
+        const n = parseFloat(ni.value) || 0;
+        let invalid = false, msg = '';
         if (type === 'product') {
-            const nameInput = row.querySelector('.ing-name');
-            const name = nameInput?.value.trim() || '';
+            const name = row.querySelector('.ing-name')?.value.trim() || '';
             if (!name) return;
-        } else if (type === 'preparation') {
+        } else {
             const linked = row.querySelector('.ing-linked-recipe')?.value;
-            if (!linked) {
-                invalid = true;
-                msg = 'Выберите полуфабрикат';
-            }
+            if (!linked) { invalid = true; msg = 'Выберите полуфабрикат'; }
         }
-
-        if (!invalid && gross > 0 && net > gross) {
-            invalid = true;
-            msg = 'Нетто не может быть больше брутто';
-        }
-
+        if (!invalid && g > 0 && n > g) { invalid = true; msg = 'Нетто не может быть больше брутто'; }
         if (invalid) {
-            grossInput.classList.add('invalid');
-            netInput.classList.add('invalid');
-            if (warning) {
-                warning.textContent = msg;
-                warning.classList.add('show');
-            }
+            gi.classList.add('invalid'); ni.classList.add('invalid');
+            if (w) { w.textContent = msg; w.classList.add('show'); }
             allValid = false;
         }
     });
@@ -1668,49 +1409,44 @@ function validateAllIngredients() {
 // ==========================================
 
 function getTotalNet() {
-    let totalNet = 0;
+    let t = 0;
     document.querySelectorAll('.ingredient-row').forEach(row => {
         const unit = row.querySelector('.ing-unit')?.value || 'г';
         const net = parseFloat(row.querySelector('.ing-net')?.value) || 0;
-        totalNet += unitToGrams(net, unit);
+        t += unitToGrams(net, unit);
     });
-    return totalNet;
+    return t;
 }
 
 function getTotalGross() {
-    let totalGross = 0;
+    let t = 0;
     document.querySelectorAll('.ingredient-row').forEach(row => {
         const unit = row.querySelector('.ing-unit')?.value || 'г';
-        const gross = parseFloat(row.querySelector('.ing-gross')?.value) || 0;
-        totalGross += unitToGrams(gross, unit);
+        const g = parseFloat(row.querySelector('.ing-gross')?.value) || 0;
+        t += unitToGrams(g, unit);
     });
-    return totalGross;
+    return t;
 }
 
 function getLastStepWeight() {
     const steps = document.querySelectorAll('.step-row');
-    let lastWeight = null;
     for (let i = steps.length - 1; i >= 0; i--) {
         const val = steps[i].querySelector('.step-weight')?.value;
         if (val !== '' && val !== null && val !== undefined) {
             const num = parseFloat(val);
-            if (!isNaN(num)) {
-                lastWeight = num;
-                break;
-            }
+            if (!isNaN(num)) return num;
         }
     }
-    return lastWeight;
+    return null;
 }
 
 function updateSummary() {
-    const totalGross = getTotalGross();
-    const totalNet = getTotalNet();
-    document.getElementById('summaryValues').innerText = `${formatWeight(totalGross, 'г')} / ${formatWeight(totalNet, 'г')}`;
-
+    const tg = getTotalGross(), tn = getTotalNet();
+    document.getElementById('summaryValues').innerText = `${formatWeight(tg, 'г')} / ${formatWeight(tn, 'г')}`;
     updateFirstStepFromNet();
-
     updateOutputSummary();
+    updateConstructorCost();
+    document.querySelectorAll('.ingredient-row').forEach(row => updateIngredientCostInfo(row));
 }
 
 function updateFirstStepFromNet() {
@@ -1719,29 +1455,21 @@ function updateFirstStepFromNet() {
     const firstStep = container.querySelector('.step-row');
     if (!firstStep) return;
     const input = firstStep.querySelector('.step-weight');
-    if (!input) return;
-    if (input.dataset.touched === 'true') return;
-
-    const totalNet = getTotalNet();
-    if (totalNet > 0) {
-        input.value = totalNet;
-        propagateStepChainFrom(input);
-    }
+    if (!input || input.dataset.touched === 'true') return;
+    const tn = getTotalNet();
+    if (tn > 0) { input.value = tn; propagateStepChainFrom(input); }
 }
 
 function propagateStepChainFrom(input) {
     const container = document.getElementById('stepsList');
     const allSteps = Array.from(container.querySelectorAll('.step-row'));
-    const row = input.closest('.step-row');
-    const idx = allSteps.indexOf(row);
+    const idx = allSteps.indexOf(input.closest('.step-row'));
     if (idx === -1) return;
-
     const val = input.value;
     for (let i = idx + 1; i < allSteps.length; i++) {
-        const nextInput = allSteps[i].querySelector('.step-weight');
-        if (!nextInput) break;
-        if (nextInput.dataset.touched === 'true') break;
-        nextInput.value = val;
+        const ni = allSteps[i].querySelector('.step-weight');
+        if (!ni || ni.dataset.touched === 'true') break;
+        ni.value = val;
     }
 }
 
@@ -1756,70 +1484,46 @@ function validateStepChain() {
     const container = document.getElementById('stepsList');
     if (!container) return true;
     const allSteps = Array.from(container.querySelectorAll('.step-row'));
-    let prevVal = null;
-    let allValid = true;
-
-    allSteps.forEach((step) => {
+    let prevVal = null, allValid = true;
+    allSteps.forEach(step => {
         const input = step.querySelector('.step-weight');
-        const warning = step.querySelector('.field-warning');
+        const w = step.querySelector('.field-warning');
         if (!input) return;
-
         const val = input.value === '' ? null : parseFloat(input.value);
-
-        let invalid = false;
-        let message = '';
-
-        if (val !== null && val < 0) {
-            invalid = true;
-            message = 'Вес не может быть отрицательным';
-        } else if (val !== null && prevVal !== null && val > prevVal) {
-            invalid = true;
-            message = 'Вес не может быть больше предыдущего шага';
-        }
-
+        let invalid = false, msg = '';
+        if (val !== null && val < 0) { invalid = true; msg = 'Вес не может быть отрицательным'; }
+        else if (val !== null && prevVal !== null && val > prevVal) { invalid = true; msg = 'Вес не может быть больше предыдущего шага'; }
         if (invalid) {
             input.classList.add('invalid');
-            if (warning) {
-                warning.textContent = message;
-                warning.classList.add('show');
-            }
+            if (w) { w.textContent = msg; w.classList.add('show'); }
             allValid = false;
         } else {
             input.classList.remove('invalid');
-            if (warning) warning.classList.remove('show');
+            if (w) w.classList.remove('show');
             if (val !== null) prevVal = val;
         }
     });
-
     return allValid;
 }
 
 function updateOutputSummary() {
     const el = document.getElementById('outputSummary');
     if (!el) return;
-
-    const totalNet = getTotalNet();
-    const lastWeight = getLastStepWeight();
-    const resultWeight = (lastWeight !== null && lastWeight > 0) ? lastWeight : totalNet;
-    const totalLoss = Math.max(0, totalNet - resultWeight);
-
-    let uvarText = '—';
-    let uvarClass = '';
-    if (totalNet > 0 && totalLoss > 0) {
-        const uvar = (totalLoss / totalNet) * 100;
-        uvarText = uvar.toFixed(1) + '%';
-    }
-
-    el.innerHTML = `Результирующий вес: <b>${formatWeight(resultWeight, 'г')}</b> · Уварка: <b class="${uvarClass}">${uvarText}</b>`;
-
-    const totalsBox = document.getElementById('constructorTotals');
-    if (totalsBox) {
-        const portions = parseInt(document.getElementById('portionsInput')?.value) || 0;
-        const portionSize = portions > 0 ? resultWeight / portions : 0;
-        document.getElementById('totalNet').textContent = formatWeight(totalNet, 'г');
-        document.getElementById('totalResult').textContent = formatWeight(resultWeight, 'г');
-        document.getElementById('totalLoss').textContent = formatWeight(totalLoss, 'г');
-        document.getElementById('totalPortionSize').textContent = formatWeight(portionSize, 'г');
+    const tn = getTotalNet();
+    const lw = getLastStepWeight();
+    const rw = (lw !== null && lw > 0) ? lw : tn;
+    const loss = Math.max(0, tn - rw);
+    let ut = '—', uc = '';
+    if (tn > 0 && loss > 0) ut = ((loss / tn) * 100).toFixed(1) + '%';
+    el.innerHTML = `Результирующий вес: <b>${formatWeight(rw, 'г')}</b> · Уварка: <b class="${uc}">${ut}</b>`;
+    const box = document.getElementById('constructorTotals');
+    if (box) {
+        const p = parseInt(document.getElementById('portionsInput')?.value) || 0;
+        const ps = p > 0 ? rw / p : 0;
+        document.getElementById('totalNet').textContent = formatWeight(tn, 'г');
+        document.getElementById('totalResult').textContent = formatWeight(rw, 'г');
+        document.getElementById('totalLoss').textContent = formatWeight(loss, 'г');
+        document.getElementById('totalPortionSize').textContent = formatWeight(ps, 'г');
     }
 }
 
@@ -1831,48 +1535,39 @@ function addStepRow(data = {}) {
     const container = document.getElementById('stepsList');
     const div = document.createElement('div');
     div.className = 'step-row';
-    
-    const methods = ['бланшировать', 'варить', 'тушить', 'пар', 'жар/пар', 'жар', 'жарить', 'колеровать', 'гриль', 'фритюр', 'до готовности'];
-    const currentMethod = data.method || 'тушить';
-    let optionsHtml = methods.map(m => `<option value="${m}" ${currentMethod === m ? 'selected' : ''}>${m}</option>`).join('');
-
-    const temps = ['-18', '-5', '0', '4', '60', '75', '80', '85', '90', '95', '98', '100', '120', '125', '130', '140', '150', '160', '175', '180', '190', '200', '210', '240'];
-    const currentTemp = data.temp || '';
-    let tempOptionsHtml = '<option value="">— °C —</option>' + temps.map(t => `<option value="${t}" ${String(currentTemp) === String(t) ? 'selected' : ''}>${t} °C</option>`).join('');
-
-    const humidities = ['10', '20', '30', '40', '50', '60', '70', '80', '90', '100'];
-    const currentHumidity = data.humidity || '';
-    let humidityOptionsHtml = '<option value="">— % —</option>' + humidities.map(h => `<option value="${h}" ${String(currentHumidity) === String(h) ? 'selected' : ''}>${h} %</option>`).join('');
-
-    let currentWeight = '';
-    let touched = false;
-
+    const methods = ['бланшировать','варить','тушить','пар','жар/пар','жар','жарить','колеровать','гриль','фритюр','до готовности'];
+    const cm = data.method || 'тушить';
+    let optH = methods.map(m => `<option value="${m}" ${cm === m ? 'selected' : ''}>${m}</option>`).join('');
+    const temps = ['-18','-5','0','4','60','75','80','85','90','95','98','100','120','125','130','140','150','160','175','180','190','200','210','240'];
+    const ct = data.temp || '';
+    let tH = '<option value="">— °C —</option>' + temps.map(t => `<option value="${t}" ${String(ct) === String(t) ? 'selected' : ''}>${t} °C</option>`).join('');
+    const hums = ['10','20','30','40','50','60','70','80','90','100'];
+    const ch = data.humidity || '';
+    let hH = '<option value="">— % —</option>' + hums.map(h => `<option value="${h}" ${String(ch) === String(h) ? 'selected' : ''}>${h} %</option>`).join('');
+    let cw = '', touched = false;
     if (data.weight !== undefined && data.weight !== null && data.weight !== '') {
-        currentWeight = data.weight;
-        touched = true;
+        cw = data.weight; touched = true;
     } else {
-        const existingSteps = container.querySelectorAll('.step-row');
-        if (existingSteps.length === 0) {
-            const totalNet = getTotalNet();
-            if (totalNet > 0) currentWeight = totalNet;
+        const es = container.querySelectorAll('.step-row');
+        if (es.length === 0) {
+            const tn = getTotalNet();
+            if (tn > 0) cw = tn;
         } else {
-            const lastStep = existingSteps[existingSteps.length - 1];
-            const prevVal = lastStep.querySelector('.step-weight')?.value;
-            if (prevVal) currentWeight = prevVal;
+            const last = es[es.length - 1].querySelector('.step-weight')?.value;
+            if (last) cw = last;
         }
     }
-
     div.innerHTML = `
-        <textarea placeholder="Описание шага..." rows="2" class="step-desc">${data.desc || ''}</textarea>
+        <textarea placeholder="Описание шага..." rows="2" class="step-desc">${escapeHtml(data.desc || '')}</textarea>
         <label style="font-size: 11px; color: var(--hint-color);">Метод приготовления:</label>
         <div class="method-temp-row">
-            <select class="step-method" onchange="onMethodChange(this)">${optionsHtml}</select>
-            <select class="step-temp">${tempOptionsHtml}</select>
-            <select class="step-humidity" style="display:none;">${humidityOptionsHtml}</select>
+            <select class="step-method" onchange="onMethodChange(this)">${optH}</select>
+            <select class="step-temp">${tH}</select>
+            <select class="step-humidity" style="display:none;">${hH}</select>
         </div>
         <div class="step-loss-row">
             <label>Вес после шага (г):</label>
-            <input type="number" class="step-weight" min="0" placeholder="0" value="${currentWeight}" data-touched="${touched ? 'true' : 'false'}" oninput="onStepWeightInput(this)">
+            <input type="number" class="step-weight" min="0" placeholder="0" value="${cw}" data-touched="${touched ? 'true' : 'false'}" oninput="onStepWeightInput(this)">
         </div>
         <div class="field-warning"></div>
         <button type="button" class="delete-ing-btn" onclick="this.parentElement.remove(); updateSummary(); validateStepChain();">Удалить шаг</button>
@@ -1884,14 +1579,10 @@ function addStepRow(data = {}) {
 function onMethodChange(selectEl) {
     const row = selectEl.closest('.method-temp-row');
     if (!row) return;
-    const humidity = row.querySelector('.step-humidity');
-    if (!humidity) return;
-    if (selectEl.value === 'жар/пар') {
-        humidity.style.display = 'block';
-    } else {
-        humidity.style.display = 'none';
-        humidity.value = '';
-    }
+    const h = row.querySelector('.step-humidity');
+    if (!h) return;
+    if (selectEl.value === 'жар/пар') h.style.display = 'block';
+    else { h.style.display = 'none'; h.value = ''; }
 }
 
 // ==========================================
@@ -1900,11 +1591,9 @@ function onMethodChange(selectEl) {
 
 async function saveRecipe() {
     if (!isChef()) return;
-
     const title = document.getElementById('recipeTitle').value.trim();
     const category = document.getElementById('recipeCategory').value;
     const portions = parseInt(document.getElementById('portionsInput').value) || 4;
-    
     if (!title) { alert('Введите название блюда!'); return; }
     if (!category) { alert('Выберите категорию!'); return; }
     if (!validateAllIngredients()) {
@@ -1913,7 +1602,7 @@ async function saveRecipe() {
         return;
     }
     if (!validateStepChain()) {
-        alert('Исправьте ошибки в шагах:\nвес не может быть больше веса предыдущего шага.');
+        alert('Исправьте ошибки в шагах.');
         if (navigator.vibrate) navigator.vibrate(200);
         return;
     }
@@ -1928,21 +1617,21 @@ async function saveRecipe() {
 
     const steps = [];
     document.querySelectorAll('.step-row').forEach(row => {
-        const method = row.querySelector('.step-method')?.value || 'тушить';
-        const weightVal = row.querySelector('.step-weight')?.value;
+        const m = row.querySelector('.step-method')?.value || 'тушить';
+        const wv = row.querySelector('.step-weight')?.value;
         steps.push({
             desc: row.querySelector('.step-desc')?.value.trim() || '',
-            method: method,
+            method: m,
             temp: row.querySelector('.step-temp')?.value || '',
-            humidity: method === 'жар/пар' ? (row.querySelector('.step-humidity')?.value || '') : '',
-            weight: weightVal !== '' ? (parseFloat(weightVal) || 0) : null
+            humidity: m === 'жар/пар' ? (row.querySelector('.step-humidity')?.value || '') : '',
+            weight: wv !== '' ? (parseFloat(wv) || 0) : null
         });
     });
 
     const totalNet = getTotalNet();
-    const lastWeight = getLastStepWeight();
-    const resultWeight = (lastWeight !== null && lastWeight > 0) ? lastWeight : totalNet;
-    const output = portions > 0 ? resultWeight / portions : 0;
+    const lw = getLastStepWeight();
+    const rw = (lw !== null && lw > 0) ? lw : totalNet;
+    const output = portions > 0 ? rw / portions : 0;
 
     const now = new Date().toISOString();
     let recipe;
@@ -1977,25 +1666,19 @@ function editRecipe(id) {
 }
 
 // ==========================================
-// ЭКРАН ПРОСМОТРА РЕЦЕПТА
+// ПРОСМОТР РЕЦЕПТА
 // ==========================================
 
 function openRecipeView(id) {
     const recipe = recipes.find(r => r.id === id);
     if (!recipe) return;
-
-    if (viewingRecipeId && viewingRecipeId !== id) {
-        viewStack.push(viewingRecipeId);
-    }
-
+    if (viewingRecipeId && viewingRecipeId !== id) viewStack.push(viewingRecipeId);
     viewingRecipeId = id;
     viewPortions = recipe.portions || 4;
     viewOutput = recipe.output || 0;
-
     document.getElementById('tabRecipesContent').style.display = 'none';
     document.getElementById('recipeConstructor').style.display = 'none';
-    const view = document.getElementById('recipeView');
-    view.style.display = 'block';
+    document.getElementById('recipeView').style.display = 'block';
     renderRecipeView();
     updateTabBarVisibility();
 }
@@ -2025,10 +1708,7 @@ function closeRecipeView() {
 function openLinkedFromView(linkedId) {
     if (!linkedId) return;
     const rec = recipes.find(r => r.id === linkedId);
-    if (!rec) {
-        alert('Рецепт полуфабриката не найден');
-        return;
-    }
+    if (!rec) { alert('Рецепт полуфабриката не найден'); return; }
     openRecipeView(linkedId);
 }
 
@@ -2057,138 +1737,115 @@ function resetViewValues() {
 }
 
 function calculateTotalLoss(recipe) {
-    let totalNet = 0;
+    let tn = 0;
     (recipe.ingredients || []).forEach(i => {
-        const factor = (i.unit === 'кг' || i.unit === 'л') ? 1000 : 1;
-        totalNet += (i.net || 0) * factor;
+        const f = (i.unit === 'кг' || i.unit === 'л') ? 1000 : 1;
+        tn += (i.net || 0) * f;
     });
-
-    let lastWeight = null;
+    let lw = null;
     (recipe.steps || []).forEach(s => {
-        if (s.weight !== null && s.weight !== undefined && s.weight > 0) {
-            lastWeight = s.weight;
-        }
+        if (s.weight !== null && s.weight !== undefined && s.weight > 0) lw = s.weight;
     });
-
-    const resultWeight = (lastWeight !== null) ? lastWeight : totalNet;
-    const loss = Math.max(0, totalNet - resultWeight);
-    return { totalNet, resultWeight, loss };
+    const rw = (lw !== null) ? lw : tn;
+    return { totalNet: tn, resultWeight: rw, loss: Math.max(0, tn - rw) };
 }
 
 function updateViewNumbers() {
     const recipe = recipes.find(r => r.id === viewingRecipeId);
     if (!recipe) return;
+    const bp = recipe.portions || 4;
+    const bo = recipe.output || 0;
+    const cp = viewPortions;
+    const co = viewOutput;
+    const ratio = (cp / bp) * (bo > 0 ? co / bo : 1);
+    const crw = cp * co;
 
-    const basePortions = recipe.portions || 4;
-    const baseOutput = recipe.output || 0;
-    const currentPortions = viewPortions;
-    const currentOutput = viewOutput;
-
-    const ratioPortions = currentPortions / basePortions;
-    const ratioOutput = baseOutput > 0 ? currentOutput / baseOutput : 1;
-    const ratio = ratioPortions * ratioOutput;
-
-    const currentResultWeight = currentPortions * currentOutput;
-
-    let totalGross = 0, totalNet = 0;
+    let tg = 0, tn = 0;
     const rows = document.querySelectorAll('.view-ing-row');
     (recipe.ingredients || []).forEach((i, idx) => {
-        const unit = i.unit || 'г';
-        const factor = (unit === 'кг' || unit === 'л') ? 1000 : 1;
-
-        let g = (i.gross || 0) * factor * ratio;
-        let n = (i.net || 0) * factor * ratio;
-
-        g = g / factor;
-        n = n / factor;
-
-        totalGross += (i.gross || 0) * factor * ratio;
-        totalNet += (i.net || 0) * factor * ratio;
-
+        const u = i.unit || 'г';
+        const f = (u === 'кг' || u === 'л') ? 1000 : 1;
+        let g = (i.gross || 0) * f * ratio / f;
+        let n = (i.net || 0) * f * ratio / f;
+        tg += (i.gross || 0) * f * ratio;
+        tn += (i.net || 0) * f * ratio;
         const row = rows[idx];
         if (row) {
             const cells = row.querySelectorAll('.num');
-            if (cells[0]) cells[0].textContent = formatWeight(g, unit);
-            if (cells[1]) cells[1].textContent = formatWeight(n, unit);
+            if (cells[0]) cells[0].textContent = formatWeight(g, u);
+            if (cells[1]) cells[1].textContent = formatWeight(n, u);
         }
     });
 
-    const { loss: baseLoss } = calculateTotalLoss(recipe);
-    const totalLoss = baseLoss * ratio;
+    const { loss: bl } = calculateTotalLoss(recipe);
+    const tl = bl * ratio;
 
-    const resultEl = document.getElementById('viewResultWeight');
-    if (resultEl) resultEl.textContent = formatWeight(currentResultWeight, 'г');
+    const rw = document.getElementById('viewResultWeight');
+    if (rw) rw.textContent = formatWeight(crw, 'г');
+    const le = document.getElementById('viewTotalLoss');
+    if (le) le.textContent = formatWeight(tl, 'г');
+    const ne = document.getElementById('viewTotalNet');
+    if (ne) ne.textContent = formatWeight(tn, 'г');
+    const ge = document.getElementById('viewTotalGross');
+    if (ge) ge.textContent = formatWeight(tg, 'г');
 
-    const lossEl = document.getElementById('viewTotalLoss');
-    if (lossEl) lossEl.textContent = formatWeight(totalLoss, 'г');
-
-    const netEl = document.getElementById('viewTotalNet');
-    if (netEl) netEl.textContent = formatWeight(totalNet, 'г');
-
-    const grossEl = document.getElementById('viewTotalGross');
-    if (grossEl) grossEl.textContent = formatWeight(totalGross, 'г');
+    // Себестоимость
+    if (canSeeProducts()) {
+        const totalCost = calcRecipeCost(recipe);
+        const costPortion = cp > 0 ? totalCost * (cp / bp) / cp : 0;
+        const costPerPortion = cp > 0 ? (totalCost * (cp / bp)) / cp : 0;
+        const costBox = document.getElementById('viewCostTotal');
+        const costPerPortionEl = document.getElementById('viewCostPerPortion');
+        if (costBox) costBox.textContent = formatPrice(totalCost * (cp / bp));
+        if (costPerPortionEl) costPerPortionEl.textContent = formatPrice(totalCost / bp);
+    }
 }
 
 function renderRecipeView() {
     const recipe = recipes.find(r => r.id === viewingRecipeId);
     if (!recipe) return;
-
     const view = document.getElementById('recipeView');
-    const basePortions = recipe.portions || 4;
-    const baseOutput = recipe.output || 0;
-    const currentPortions = viewPortions;
-    const currentOutput = viewOutput;
+    const bp = recipe.portions || 4;
+    const bo = recipe.output || 0;
+    const cp = viewPortions;
+    const co = viewOutput;
+    const ratio = (cp / bp) * (bo > 0 ? co / bo : 1);
+    const crw = cp * co;
 
-    const ratio = (currentPortions / basePortions) * (baseOutput > 0 ? currentOutput / baseOutput : 1);
-    const currentResultWeight = currentPortions * currentOutput;
-
-    let totalGross = 0, totalNet = 0;
+    let tg = 0, tn = 0;
     let ingRows = '';
     (recipe.ingredients || []).forEach(i => {
-        const unit = i.unit || 'г';
-        const factor = (unit === 'кг' || unit === 'л') ? 1000 : 1;
-
-        let g = (i.gross || 0) * factor * ratio;
-        let n = (i.net || 0) * factor * ratio;
-
-        g = g / factor;
-        n = n / factor;
-
-        totalGross += (i.gross || 0) * factor * ratio;
-        totalNet += (i.net || 0) * factor * ratio;
-
-        let nameCell = escapeHtml(i.name || '');
+        const u = i.unit || 'г';
+        const f = (u === 'кг' || u === 'л') ? 1000 : 1;
+        let g = (i.gross || 0) * f * ratio / f;
+        let n = (i.net || 0) * f * ratio / f;
+        tg += (i.gross || 0) * f * ratio;
+        tn += (i.net || 0) * f * ratio;
+        let nc = escapeHtml(i.name || '');
         if (i.type === 'preparation') {
             const hasLink = i.linked_recipe_id && recipes.find(r => r.id === i.linked_recipe_id);
-            nameCell += ` <span class="linked-badge">полуфаб.</span>`;
-            if (hasLink) {
-                nameCell += ` <button class="open-link-btn" onclick="openLinkedFromView('${i.linked_recipe_id}')">Открыть</button>`;
-            }
+            nc += ` <span class="linked-badge">полуфаб.</span>`;
+            if (hasLink) nc += ` <button class="open-link-btn" onclick="openLinkedFromView('${i.linked_recipe_id}')">Открыть</button>`;
         }
-
-        ingRows += `
-            <tr class="view-ing-row">
-                <td>${nameCell}</td>
-                <td class="num">${formatWeight(g, unit)}</td>
-                <td class="num">${formatWeight(n, unit)}</td>
-            </tr>
-        `;
+        ingRows += `<tr class="view-ing-row">
+            <td>${nc}</td>
+            <td class="num">${formatWeight(g, u)}</td>
+            <td class="num">${formatWeight(n, u)}</td>
+        </tr>`;
     });
 
-    const { loss: baseLoss } = calculateTotalLoss(recipe);
-    const totalLoss = baseLoss * ratio;
+    const { loss: bl } = calculateTotalLoss(recipe);
+    const tl = bl * ratio;
 
     let stepsHtml = '';
     (recipe.steps || []).forEach((s, idx) => {
-        const tempLabel = s.temp ? ` | Темп: ${s.temp} °C` : '';
-        const humidityLabel = (s.method === 'жар/пар' && s.humidity) ? ` | Влажн: ${s.humidity} %` : '';
-        const weightLabel = (s.weight !== null && s.weight !== undefined && s.weight > 0) ? ` | Вес: ${formatWeight(s.weight, 'г')}` : '';
-        stepsHtml += `
-            <div class="view-step">
-                <div><span class="view-step-num">${idx+1}</span>${escapeHtml(s.desc || '')}</div>
-                <div class="view-step-meta">Метод: ${escapeHtml(s.method)}${tempLabel}${humidityLabel}${weightLabel}</div>
-            </div>
-        `;
+        const tl2 = s.temp ? ` | Темп: ${s.temp} °C` : '';
+        const hl = (s.method === 'жар/пар' && s.humidity) ? ` | Влажн: ${s.humidity} %` : '';
+        const wl = (s.weight !== null && s.weight !== undefined && s.weight > 0) ? ` | Вес: ${formatWeight(s.weight, 'г')}` : '';
+        stepsHtml += `<div class="view-step">
+            <div><span class="view-step-num">${idx+1}</span>${escapeHtml(s.desc || '')}</div>
+            <div class="view-step-meta">Метод: ${escapeHtml(s.method)}${tl2}${hl}${wl}</div>
+        </div>`;
     });
 
     const actionsHtml = isChef()
@@ -2198,57 +1855,57 @@ function renderRecipeView() {
            </div>`
         : '';
 
+    // Блок себестоимости только для тех, кто видит продукты
+    let costBlockHtml = '';
+    if (canSeeProducts()) {
+        const totalCostBase = calcRecipeCost(recipe);
+        const scaledTotal = totalCostBase * (cp / bp);
+        const perPortion = totalCostBase / bp;
+        costBlockHtml = `
+            <div class="view-section" style="border-color: rgba(76,175,80,0.4); background: linear-gradient(135deg, rgba(76,175,80,0.08), rgba(76,175,80,0.03));">
+                <h4 style="color: var(--money-color);">Себестоимость</h4>
+                <div class="view-output-row">
+                    Блюдо целиком (${formatNum(cp)} порц.): <b id="viewCostTotal" style="color: var(--money-color); font-size: 16px;">${formatPrice(scaledTotal)}</b>
+                </div>
+                <div class="view-output-row">
+                    Одна порция: <b id="viewCostPerPortion" style="color: var(--money-color);">${formatPrice(perPortion)}</b>
+                </div>
+            </div>
+        `;
+    }
+
     view.innerHTML = `
         <div class="view-header">
             <button class="back-btn" onclick="closeRecipeView()">←</button>
         </div>
         <div style="margin-bottom: 8px;">
             <div class="view-title">${escapeHtml(recipe.title)}</div>
-            <div style="font-size: 12px; color: var(--hint-color);">${escapeHtml(recipe.category)} · базово: ${basePortions} порц. по ${formatWeight(baseOutput, 'г')}</div>
+            <div style="font-size: 12px; color: var(--hint-color);">${escapeHtml(recipe.category)} · базово: ${bp} порц. по ${formatWeight(bo, 'г')}</div>
         </div>
-
         ${actionsHtml}
-
         <div class="view-section">
             <h4>Параметры</h4>
             <div class="view-fields-grid">
-                <div>
-                    <label>Порций</label>
-                    <input type="number" id="viewPortionsInput" min="0.01" step="1" value="${currentPortions}" oninput="onViewPortionsChange(this.value)">
+                <div><label>Порций</label>
+                    <input type="number" id="viewPortionsInput" min="0.01" step="1" value="${cp}" oninput="onViewPortionsChange(this.value)">
                 </div>
-                <div>
-                    <label>Размер порции (г)</label>
-                    <input type="number" id="viewOutputInput" min="0" step="1" value="${currentOutput}" oninput="onViewOutputChange(this.value)">
+                <div><label>Размер порции (г)</label>
+                    <input type="number" id="viewOutputInput" min="0" step="1" value="${co}" oninput="onViewOutputChange(this.value)">
                 </div>
             </div>
-            <div class="view-output-row">
-                Чистый вес: <b id="viewResultWeight">${formatWeight(currentResultWeight, 'г')}</b>
-            </div>
-            <div class="view-output-row">
-                Потери: <b id="viewTotalLoss">${formatWeight(totalLoss, 'г')}</b>
-            </div>
-            <div class="view-output-row">
-                Нужно взять (нетто): <b id="viewTotalNet">${formatWeight(totalNet, 'г')}</b> · Брутто: <b id="viewTotalGross">${formatWeight(totalGross, 'г')}</b>
-            </div>
+            <div class="view-output-row">Чистый вес: <b id="viewResultWeight">${formatWeight(crw, 'г')}</b></div>
+            <div class="view-output-row">Потери: <b id="viewTotalLoss">${formatWeight(tl, 'г')}</b></div>
+            <div class="view-output-row">Нужно взять (нетто): <b id="viewTotalNet">${formatWeight(tn, 'г')}</b> · Брутто: <b id="viewTotalGross">${formatWeight(tg, 'г')}</b></div>
             <button class="mode-btn" style="width: 100%; margin-top: 6px;" onclick="resetViewValues()">Сбросить к базовым</button>
         </div>
-
+        ${costBlockHtml}
         <div class="view-section">
             <h4>Ингредиенты</h4>
             <table class="view-ing-table">
-                <thead>
-                    <tr>
-                        <th>Продукт</th>
-                        <th class="num">Нужно</th>
-                        <th class="num">Получится</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    ${ingRows || '<tr><td colspan="3" style="text-align:center; color: var(--hint-color);">Нет ингредиентов</td></tr>'}
-                </tbody>
+                <thead><tr><th>Продукт</th><th class="num">Нужно</th><th class="num">Получится</th></tr></thead>
+                <tbody>${ingRows || '<tr><td colspan="3" style="text-align:center; color: var(--hint-color);">Нет ингредиентов</td></tr>'}</tbody>
             </table>
         </div>
-
         <div class="view-section">
             <h4>Приготовление</h4>
             ${stepsHtml || '<p style="color: var(--hint-color);">Нет шагов</p>'}
@@ -2263,7 +1920,7 @@ async function deleteRecipeFromView(id) {
 }
 
 // ==========================================
-// СПИСОК РЕЦЕПТОВ — АККОРДЕОН + ПОИСК
+// СПИСОК РЕЦЕПТОВ
 // ==========================================
 
 function onSearchInput(val) {
@@ -2272,11 +1929,8 @@ function onSearchInput(val) {
 }
 
 function toggleCategory(cat) {
-    if (expandedCategories.has(cat)) {
-        expandedCategories.delete(cat);
-    } else {
-        expandedCategories.add(cat);
-    }
+    if (expandedCategories.has(cat)) expandedCategories.delete(cat);
+    else expandedCategories.add(cat);
     renderRecipes();
 }
 
@@ -2289,7 +1943,6 @@ function renderRecipes() {
     const container = document.getElementById('recipesContainer');
     if (!container) return;
     container.innerHTML = '';
-
     const bottom = document.getElementById('bottomControls');
     bottom.style.display = recipes.length > 0 ? 'block' : 'none';
 
@@ -2302,9 +1955,7 @@ function renderRecipes() {
         const wrap = document.createElement('div');
         wrap.className = 'accordion-group';
         wrap.style.padding = '0';
-        filtered.forEach(r => {
-            wrap.appendChild(buildCompactRow(r));
-        });
+        filtered.forEach(r => wrap.appendChild(buildCompactRow(r)));
         container.appendChild(wrap);
         return;
     }
@@ -2323,10 +1974,8 @@ function renderRecipes() {
     CATEGORIES.forEach(cat => {
         const inCat = recipes.filter(r => r.category === cat);
         const isOpen = expandedCategories.has(cat);
-
         const group = document.createElement('div');
         group.className = 'accordion-group';
-
         const header = document.createElement('div');
         header.className = 'accordion-header';
         header.onclick = () => toggleCategory(cat);
@@ -2338,18 +1987,11 @@ function renderRecipes() {
             </div>
         `;
         group.appendChild(header);
-
         const body = document.createElement('div');
         body.className = 'accordion-body' + (isOpen ? ' open' : '');
-        if (inCat.length === 0) {
-            body.innerHTML = `<div class="accordion-empty">Пусто</div>`;
-        } else {
-            inCat.forEach(r => {
-                body.appendChild(buildCompactRow(r));
-            });
-        }
+        if (inCat.length === 0) body.innerHTML = `<div class="accordion-empty">Пусто</div>`;
+        else inCat.forEach(r => body.appendChild(buildCompactRow(r)));
         group.appendChild(body);
-
         container.appendChild(group);
     });
 }
@@ -2359,20 +2001,14 @@ function buildCompactRow(recipe) {
     row.className = 'recipe-compact';
     if (selectionMode) row.classList.add('selectable');
     if (selectedIds.has(recipe.id)) row.style.background = 'rgba(36, 129, 204, 0.15)';
-
     const outputLabel = recipe.output ? ` · ${formatWeight(recipe.output, 'г')}/порц` : '';
     const meta = `${recipe.portions || 4} порц${outputLabel}`;
-
-    const checkboxHtml = selectionMode
+    const cbH = selectionMode
         ? `<input type="checkbox" class="card-checkbox" ${selectedIds.has(recipe.id) ? 'checked' : ''} onchange="event.stopPropagation(); toggleCardSelection('${recipe.id}', this)">`
         : '';
-
-    row.innerHTML = `
-        ${checkboxHtml}
+    row.innerHTML = `${cbH}
         <div class="recipe-compact-title">${escapeHtml(recipe.title)}</div>
-        <div class="recipe-compact-meta">${meta}</div>
-    `;
-
+        <div class="recipe-compact-meta">${meta}</div>`;
     if (selectionMode) {
         row.onclick = () => {
             const cb = row.querySelector('.card-checkbox');
@@ -2386,12 +2022,49 @@ function buildCompactRow(recipe) {
     } else {
         row.onclick = () => openRecipeView(recipe.id);
     }
-
     return row;
 }
 
 // ==========================================
-// ПРОДУКТЫ — СПИСОК, ФОРМА
+// ВЫБОР
+// ==========================================
+
+function toggleCardSelection(id, checkbox) {
+    if (checkbox.checked) selectedIds.add(id);
+    else selectedIds.delete(id);
+    updateSelectionInfo();
+}
+function updateSelectionInfo() {
+    document.getElementById('selectionInfo').textContent = `Выбрано: ${selectedIds.size}`;
+}
+function startSelectionMode() {
+    selectionMode = true;
+    selectedIds.clear();
+    document.getElementById('exportMenu').classList.remove('active');
+    document.getElementById('selectionPanel').classList.add('active');
+    renderRecipes();
+    updateTabBarVisibility();
+}
+function exitSelectionMode() {
+    selectionMode = false;
+    selectedIds.clear();
+    document.getElementById('selectionPanel').classList.remove('active');
+    renderRecipes();
+    updateTabBarVisibility();
+}
+function selectAll() {
+    getFilteredRecipes().forEach(r => selectedIds.add(r.id));
+    renderRecipes();
+    updateSelectionInfo();
+}
+function clearSelection() {
+    selectedIds.clear();
+    renderRecipes();
+    updateSelectionInfo();
+}
+
+// ==========================================
+// ПРОДУКТЫ
 // ==========================================
 
 function onProductSearchInput(val) {
@@ -2403,62 +2076,49 @@ function renderProducts() {
     const container = document.getElementById('productsContainer');
     if (!container) return;
     container.innerHTML = '';
-
     if (!canSeeProducts()) {
         container.innerHTML = '<p style="text-align: center; color: var(--hint-color);">Нет доступа.</p>';
         return;
     }
-
     let list = products.slice();
-    if (productSearchQuery) {
-        list = list.filter(p => (p.name || '').toLowerCase().includes(productSearchQuery));
-    }
+    if (productSearchQuery) list = list.filter(p => (p.name || '').toLowerCase().includes(productSearchQuery));
     list.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
 
     if (list.length === 0) {
         if (products.length === 0) {
-            container.innerHTML = `
-                <div class="empty-state">
-                    <div class="icon">📦</div>
-                    <h3>Справочник пуст</h3>
-                    <p>Добавьте первый продукт — нажмите «+ Добавить продукт».</p>
-                </div>
-            `;
+            container.innerHTML = `<div class="empty-state">
+                <div class="icon">📦</div>
+                <h3>Справочник пуст</h3>
+                <p>Добавьте первый продукт — нажмите «+ Добавить продукт».</p>
+            </div>`;
         } else {
-            container.innerHTML = `<p style="text-align: center; color: var(--hint-color);">Ничего не найдено по запросу «${escapeHtml(productSearchQuery)}».</p>`;
+            container.innerHTML = `<p style="text-align: center; color: var(--hint-color);">Ничего не найдено.</p>`;
         }
         return;
     }
-
     const group = document.createElement('div');
     group.className = 'accordion-group';
-
     list.forEach(p => {
         const row = document.createElement('div');
         row.className = 'product-row';
         row.onclick = () => openProductForm(p);
-
-        const supplier = p.supplier ? `<div class="product-row-supplier">${escapeHtml(p.supplier)}</div>` : '';
-
+        const sup = p.supplier ? `<div class="product-row-supplier">${escapeHtml(p.supplier)}</div>` : '';
         row.innerHTML = `
             <div class="product-row-left">
                 <div class="product-row-name">${escapeHtml(p.name)}</div>
-                ${supplier}
+                ${sup}
             </div>
             <div class="product-row-price">${formatPrice(p.price_per_unit)}/${escapeHtml(p.unit)}</div>
         `;
         group.appendChild(row);
     });
-
     container.appendChild(group);
 }
 
 function openProductForm(product = null) {
     if (!canSeeProducts()) return;
-
     document.getElementById('tabProductsContent').style.display = 'none';
     document.getElementById('productForm').style.display = 'block';
-
     if (product) {
         editingProductId = product.id;
         document.getElementById('productFormTitle').textContent = '✏️ Редактирование продукта';
@@ -2476,7 +2136,6 @@ function openProductForm(product = null) {
         document.getElementById('productSupplier').value = '';
         document.getElementById('productNotes').value = '';
     }
-
     updateTabBarVisibility();
 }
 
@@ -2490,13 +2149,11 @@ function closeProductForm() {
 
 async function saveProduct() {
     if (!canSeeProducts()) return;
-
     const name = document.getElementById('productName').value.trim();
     const price = parseFloat(document.getElementById('productPrice').value) || 0;
     const unit = document.getElementById('productUnit').value || 'кг';
     const supplier = document.getElementById('productSupplier').value.trim();
     const notes = document.getElementById('productNotes').value.trim();
-
     if (!name) { alert('Введите название продукта!'); return; }
     if (price < 0) { alert('Цена не может быть отрицательной'); return; }
 
@@ -2504,29 +2161,12 @@ async function saveProduct() {
     let product;
     if (editingProductId) {
         const idx = products.findIndex(p => p.id === editingProductId);
-        product = {
-            id: editingProductId,
-            name,
-            price_per_unit: price,
-            unit,
-            supplier,
-            notes,
-            updated_at: now
-        };
+        product = { id: editingProductId, name, price_per_unit: price, unit, supplier, notes, updated_at: now };
         if (idx !== -1) products[idx] = product;
     } else {
-        product = {
-            id: crypto.randomUUID(),
-            name,
-            price_per_unit: price,
-            unit,
-            supplier,
-            notes,
-            updated_at: now
-        };
+        product = { id: crypto.randomUUID(), name, price_per_unit: price, unit, supplier, notes, updated_at: now };
         products.unshift(product);
     }
-
     saveProductsToLocal();
     await saveProductToSupabase(product);
     closeProductForm();
@@ -2543,53 +2183,6 @@ async function deleteProduct(id) {
 }
 
 // ==========================================
-// ВЫБОР РЕЦЕПТОВ
-// ==========================================
-
-function toggleCardSelection(id, checkbox) {
-    if (checkbox.checked) {
-        selectedIds.add(id);
-    } else {
-        selectedIds.delete(id);
-    }
-    updateSelectionInfo();
-}
-
-function updateSelectionInfo() {
-    document.getElementById('selectionInfo').textContent = `Выбрано: ${selectedIds.size}`;
-}
-
-function startSelectionMode() {
-    selectionMode = true;
-    selectedIds.clear();
-    document.getElementById('exportMenu').classList.remove('active');
-    document.getElementById('selectionPanel').classList.add('active');
-    renderRecipes();
-    updateTabBarVisibility();
-}
-
-function exitSelectionMode() {
-    selectionMode = false;
-    selectedIds.clear();
-    document.getElementById('selectionPanel').classList.remove('active');
-    renderRecipes();
-    updateTabBarVisibility();
-}
-
-function selectAll() {
-    const filtered = getFilteredRecipes();
-    filtered.forEach(r => selectedIds.add(r.id));
-    renderRecipes();
-    updateSelectionInfo();
-}
-
-function clearSelection() {
-    selectedIds.clear();
-    renderRecipes();
-    updateSelectionInfo();
-}
-
-// ==========================================
 // ЭКСПОРТ / ИМПОРТ
 // ==========================================
 
@@ -2597,80 +2190,51 @@ function toggleExportMenu() {
     document.getElementById('importMenu').classList.remove('active');
     document.getElementById('exportMenu').classList.toggle('active');
 }
-
 function toggleImportMenu() {
     if (!isChef()) return;
     document.getElementById('exportMenu').classList.remove('active');
     document.getElementById('importMenu').classList.toggle('active');
 }
-
 function downloadJson(data, filename) {
     const blob = new Blob([data], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
-    a.href = url;
-    a.download = filename;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+    a.href = url; a.download = filename;
+    document.body.appendChild(a); a.click();
+    document.body.removeChild(a); URL.revokeObjectURL(url);
 }
-
 async function copyToClipboard(text) {
-    try {
-        await navigator.clipboard.writeText(text);
-        return true;
-    } catch(e) {
-        return false;
-    }
+    try { await navigator.clipboard.writeText(text); return true; } catch(e) { return false; }
 }
-
 function exportAllToFile() {
     document.getElementById('exportMenu').classList.remove('active');
-    if (recipes.length === 0) { alert('Нет рецептов для экспорта.'); return; }
-    const data = JSON.stringify(recipes, null, 2);
-    const stamp = new Date().toISOString().slice(0, 10);
-    downloadJson(data, `chef_recipes_${stamp}.json`);
+    if (recipes.length === 0) { alert('Нет рецептов.'); return; }
+    downloadJson(JSON.stringify(recipes, null, 2), `chef_recipes_${new Date().toISOString().slice(0,10)}.json`);
 }
-
 async function exportAllToClipboard() {
     document.getElementById('exportMenu').classList.remove('active');
-    if (recipes.length === 0) { alert('Нет рецептов для экспорта.'); return; }
-    const data = JSON.stringify(recipes);
-    const ok = await copyToClipboard(data);
-    if (ok) {
-        alert(`Скопировано рецептов: ${recipes.length}`);
-    } else {
-        alert('Не удалось скопировать. Попробуйте экспорт в файл.');
-    }
+    if (recipes.length === 0) { alert('Нет рецептов.'); return; }
+    const ok = await copyToClipboard(JSON.stringify(recipes));
+    if (ok) alert(`Скопировано: ${recipes.length}`);
+    else alert('Не удалось скопировать.');
 }
-
 function exportSelectedToFile() {
     if (selectedIds.size === 0) { alert('Ничего не выбрано.'); return; }
-    const selected = recipes.filter(r => selectedIds.has(r.id));
-    const data = JSON.stringify(selected, null, 2);
-    const stamp = new Date().toISOString().slice(0, 10);
-    downloadJson(data, `chef_recipes_selected_${stamp}.json`);
+    const sel = recipes.filter(r => selectedIds.has(r.id));
+    downloadJson(JSON.stringify(sel, null, 2), `chef_recipes_selected_${new Date().toISOString().slice(0,10)}.json`);
 }
-
 async function exportSelectedToClipboard() {
     if (selectedIds.size === 0) { alert('Ничего не выбрано.'); return; }
-    const selected = recipes.filter(r => selectedIds.has(r.id));
-    const data = JSON.stringify(selected);
-    const ok = await copyToClipboard(data);
-    if (ok) {
-        alert(`Скопировано рецептов: ${selected.length}`);
-    } else {
-        alert('Не удалось скопировать. Попробуйте экспорт в файл.');
-    }
+    const sel = recipes.filter(r => selectedIds.has(r.id));
+    const ok = await copyToClipboard(JSON.stringify(sel));
+    if (ok) alert(`Скопировано: ${sel.length}`);
+    else alert('Не удалось скопировать.');
 }
-
 function importFromFilePrompt() {
     if (!isChef()) return;
     document.getElementById('importMenu').classList.remove('active');
     const input = document.createElement('input');
-    input.type = 'file';
-    input.accept = '.json,application/json';
+    input.type = 'file'; input.accept = '.json,application/json';
     input.onchange = (e) => {
         const file = e.target.files[0];
         if (!file) return;
@@ -2679,69 +2243,46 @@ function importFromFilePrompt() {
             try {
                 const data = JSON.parse(ev.target.result);
                 handleImport(data);
-            } catch(err) {
-                alert('Не удалось прочитать файл. Возможно, это не JSON.');
-            }
+            } catch(err) { alert('Не удалось прочитать файл.'); }
         };
         reader.readAsText(file);
     };
     input.click();
 }
-
 async function importFromClipboardPrompt() {
     if (!isChef()) return;
     document.getElementById('importMenu').classList.remove('active');
     try {
         const text = await navigator.clipboard.readText();
-        if (!text) { alert('Буфер обмена пуст.'); return; }
+        if (!text) { alert('Буфер пуст.'); return; }
         const data = JSON.parse(text);
         handleImport(data);
-    } catch(err) {
-        alert('Не удалось прочитать буфер или это не JSON.');
-    }
+    } catch(err) { alert('Не удалось прочитать буфер.'); }
 }
-
 async function handleImport(data) {
     if (!isChef()) return;
     const incoming = Array.isArray(data) ? data : [data];
-    const ok = confirm(`Импортировать рецептов: ${incoming.length}?\n\nОК — добавить к существующим.`);
+    const ok = confirm(`Импортировать рецептов: ${incoming.length}?`);
     if (!ok) return;
-
     let added = 0, updated = 0, skipped = 0;
     const map = new Map(recipes.map(r => [r.id, r]));
-
     incoming.forEach(inc => {
         if (!inc || typeof inc !== 'object' || !inc.id || !inc.title) { skipped++; return; }
         if (!inc.updated_at) inc.updated_at = new Date(0).toISOString();
-        const existing = map.get(inc.id);
-        if (!existing) {
-            map.set(inc.id, inc);
-            added++;
-        } else {
-            const existingTime = new Date(existing.updated_at || 0).getTime();
-            const incomingTime = new Date(inc.updated_at || 0).getTime();
-            if (incomingTime >= existingTime) {
-                map.set(inc.id, inc);
-                updated++;
-            } else {
-                skipped++;
-            }
+        const ex = map.get(inc.id);
+        if (!ex) { map.set(inc.id, inc); added++; }
+        else {
+            const et = new Date(ex.updated_at || 0).getTime();
+            const it = new Date(inc.updated_at || 0).getTime();
+            if (it >= et) { map.set(inc.id, inc); updated++; } else skipped++;
         }
     });
-
     recipes = Array.from(map.values());
     recipes.sort((a, b) => new Date(b.updated_at || 0) - new Date(a.updated_at || 0));
     saveRecipesToLocal();
     renderRecipes();
-
-    const toSync = recipes.filter(r => {
-        const inc = incoming.find(i => i.id === r.id);
-        return inc !== undefined;
-    });
-    for (const r of toSync) {
-        await saveRecipeToSupabase(r);
-    }
-
+    const toSync = recipes.filter(r => incoming.find(i => i.id === r.id));
+    for (const r of toSync) await saveRecipeToSupabase(r);
     alert(`Готово.\nДобавлено: ${added}\nОбновлено: ${updated}\nПропущено: ${skipped}`);
 }
 </script>
