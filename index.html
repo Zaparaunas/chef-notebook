@@ -500,12 +500,16 @@
 
             <div class="summary-box" id="constructorTotals">
                 <div class="summary-row">
-                    <span>Сумма потерь:</span>
-                    <span id="totalLoss">0 г</span>
+                    <span>Сумма нетто:</span>
+                    <span id="totalNet">0 г</span>
                 </div>
                 <div class="summary-row">
-                    <span>Получится (готовое):</span>
+                    <span>Итоговый вес (после последнего шага):</span>
                     <span id="totalResult">0 г</span>
+                </div>
+                <div class="summary-row">
+                    <span>Потери:</span>
+                    <span id="totalLoss">0 г</span>
                 </div>
                 <div class="summary-row">
                     <span>Размер порции:</span>
@@ -987,13 +991,21 @@ function getTotalGross() {
     return totalGross;
 }
 
-function getTotalLoss() {
-    let totalLoss = 0;
-    document.querySelectorAll('.step-row').forEach(row => {
-        const loss = parseFloat(row.querySelector('.step-loss')?.value) || 0;
-        totalLoss += loss;
-    });
-    return totalLoss;
+// Взять вес после ПОСЛЕДНЕГО заполненного шага
+function getLastStepWeight() {
+    const steps = document.querySelectorAll('.step-row');
+    let lastWeight = null;
+    for (let i = steps.length - 1; i >= 0; i--) {
+        const val = steps[i].querySelector('.step-weight')?.value;
+        if (val !== '' && val !== null && val !== undefined) {
+            const num = parseFloat(val);
+            if (!isNaN(num)) {
+                lastWeight = num;
+                break;
+            }
+        }
+    }
+    return lastWeight;
 }
 
 function updateSummary() {
@@ -1008,18 +1020,15 @@ function updateOutputSummary() {
     if (!el) return;
 
     const totalNet = getTotalNet();
-    const totalLoss = getTotalLoss();
-    const resultWeight = Math.max(0, totalNet - totalLoss);
+    const lastWeight = getLastStepWeight();
+    const resultWeight = (lastWeight !== null && lastWeight > 0) ? lastWeight : totalNet;
+    const totalLoss = Math.max(0, totalNet - resultWeight);
 
     let uvarText = '—';
     let uvarClass = '';
     if (totalNet > 0 && totalLoss > 0) {
         const uvar = (totalLoss / totalNet) * 100;
         uvarText = uvar.toFixed(1) + '%';
-        if (totalLoss > totalNet) {
-            uvarClass = 'warn';
-            uvarText = '⚠️ ' + uvarText;
-        }
     }
 
     el.innerHTML = `Результирующий вес: <b>${formatWeight(resultWeight, 'г')}</b> · Уварка: <b class="${uvarClass}">${uvarText}</b>`;
@@ -1028,8 +1037,9 @@ function updateOutputSummary() {
     if (totalsBox) {
         const portions = parseInt(document.getElementById('portionsInput')?.value) || 0;
         const portionSize = portions > 0 ? resultWeight / portions : 0;
-        document.getElementById('totalLoss').textContent = formatWeight(totalLoss, 'г');
+        document.getElementById('totalNet').textContent = formatWeight(totalNet, 'г');
         document.getElementById('totalResult').textContent = formatWeight(resultWeight, 'г');
+        document.getElementById('totalLoss').textContent = formatWeight(totalLoss, 'г');
         document.getElementById('totalPortionSize').textContent = formatWeight(portionSize, 'г');
     }
 }
@@ -1051,7 +1061,7 @@ function addStepRow(data = {}) {
     const currentHumidity = data.humidity || '';
     let humidityOptionsHtml = '<option value="">— % —</option>' + humidities.map(h => `<option value="${h}" ${String(currentHumidity) === String(h) ? 'selected' : ''}>${h} %</option>`).join('');
 
-    const currentLoss = data.loss || '';
+    const currentWeight = data.weight || '';
 
     div.innerHTML = `
         <textarea placeholder="Описание шага..." rows="2" class="step-desc">${data.desc || ''}</textarea>
@@ -1062,8 +1072,8 @@ function addStepRow(data = {}) {
             <select class="step-humidity" style="display:none;">${humidityOptionsHtml}</select>
         </div>
         <div class="step-loss-row">
-            <label>Потери (г):</label>
-            <input type="number" class="step-loss" min="0" placeholder="0" value="${currentLoss}" oninput="updateSummary()">
+            <label>Вес после шага (г):</label>
+            <input type="number" class="step-weight" min="0" placeholder="0" value="${currentWeight}" oninput="updateSummary()">
         </div>
         <button type="button" class="delete-ing-btn" onclick="this.parentElement.remove(); updateSummary();">Удалить шаг</button>
     `;
@@ -1116,18 +1126,19 @@ async function saveRecipe() {
     const steps = [];
     document.querySelectorAll('.step-row').forEach(row => {
         const method = row.querySelector('.step-method')?.value || 'тушить';
+        const weightVal = row.querySelector('.step-weight')?.value;
         steps.push({
             desc: row.querySelector('.step-desc')?.value.trim() || '',
             method: method,
             temp: row.querySelector('.step-temp')?.value || '',
             humidity: method === 'жар/пар' ? (row.querySelector('.step-humidity')?.value || '') : '',
-            loss: parseFloat(row.querySelector('.step-loss')?.value) || 0
+            weight: weightVal !== '' ? (parseFloat(weightVal) || 0) : null
         });
     });
 
     const totalNet = getTotalNet();
-    const totalLoss = getTotalLoss();
-    const resultWeight = Math.max(0, totalNet - totalLoss);
+    const lastWeight = getLastStepWeight();
+    const resultWeight = (lastWeight !== null && lastWeight > 0) ? lastWeight : totalNet;
     const output = portions > 0 ? resultWeight / portions : 0;
 
     const now = new Date().toISOString();
@@ -1217,6 +1228,26 @@ function resetViewValues() {
     updateViewNumbers();
 }
 
+// Считаем потери из шагов: сумма нетто − последний вес шага
+function calculateTotalLoss(recipe) {
+    let totalNet = 0;
+    (recipe.ingredients || []).forEach(i => {
+        const factor = (i.unit === 'кг' || i.unit === 'л') ? 1000 : 1;
+        totalNet += (i.net || 0) * factor;
+    });
+
+    let lastWeight = null;
+    (recipe.steps || []).forEach(s => {
+        if (s.weight !== null && s.weight !== undefined && s.weight > 0) {
+            lastWeight = s.weight;
+        }
+    });
+
+    const resultWeight = (lastWeight !== null) ? lastWeight : totalNet;
+    const loss = Math.max(0, totalNet - resultWeight);
+    return { totalNet, resultWeight, loss };
+}
+
 function updateViewNumbers() {
     const recipe = recipes.find(r => r.id === viewingRecipeId);
     if (!recipe) return;
@@ -1261,9 +1292,8 @@ function updateViewNumbers() {
         }
     });
 
-    const totalLoss = (recipe.steps || []).reduce((sum, s) => sum + (s.loss || 0), 0) * ratio;
-    const currentNet = totalNet;
-    const currentGross = totalGross;
+    const { loss: baseLoss } = calculateTotalLoss(recipe);
+    const totalLoss = baseLoss * ratio;
 
     const resultEl = document.getElementById('viewResultWeight');
     if (resultEl) resultEl.textContent = formatWeight(currentResultWeight, 'г');
@@ -1272,10 +1302,10 @@ function updateViewNumbers() {
     if (lossEl) lossEl.textContent = formatWeight(totalLoss, 'г');
 
     const netEl = document.getElementById('viewTotalNet');
-    if (netEl) netEl.textContent = formatWeight(currentNet, 'г');
+    if (netEl) netEl.textContent = formatWeight(totalNet, 'г');
 
     const grossEl = document.getElementById('viewTotalGross');
-    if (grossEl) grossEl.textContent = formatWeight(currentGross, 'г');
+    if (grossEl) grossEl.textContent = formatWeight(totalGross, 'г');
 }
 
 function renderRecipeView() {
@@ -1321,17 +1351,18 @@ function renderRecipeView() {
         `;
     });
 
-    const totalLoss = (recipe.steps || []).reduce((sum, s) => sum + (s.loss || 0), 0) * ratio;
+    const { loss: baseLoss } = calculateTotalLoss(recipe);
+    const totalLoss = baseLoss * ratio;
 
     let stepsHtml = '';
     (recipe.steps || []).forEach((s, idx) => {
         const tempLabel = s.temp ? ` | Темп: ${s.temp} °C` : '';
         const humidityLabel = (s.method === 'жар/пар' && s.humidity) ? ` | Влажн: ${s.humidity} %` : '';
-        const lossLabel = s.loss ? ` | Потери: ${formatWeight(s.loss, 'г')}` : '';
+        const weightLabel = (s.weight !== null && s.weight !== undefined && s.weight > 0) ? ` | Вес: ${formatWeight(s.weight, 'г')}` : '';
         stepsHtml += `
             <div class="view-step">
                 <div><span class="view-step-num">${idx+1}</span>${s.desc || ''}</div>
-                <div class="view-step-meta">Метод: ${s.method}${tempLabel}${humidityLabel}${lossLabel}</div>
+                <div class="view-step-meta">Метод: ${s.method}${tempLabel}${humidityLabel}${weightLabel}</div>
             </div>
         `;
     });
