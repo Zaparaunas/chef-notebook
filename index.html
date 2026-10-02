@@ -57,6 +57,56 @@
         }
         .recipe-title-input { font-size: 16px; font-weight: bold; border: 2px solid var(--button-color); }
 
+        /* Поля порций — всегда белый фон и чёрный текст */
+        #portionsRange,
+        #portionsInput {
+            background: #ffffff !important;
+            color: #000000 !important;
+            border: 1px solid #cccccc !important;
+            font-weight: 600;
+        }
+
+        #portionsRange {
+            -webkit-appearance: none;
+            appearance: none;
+            height: 8px;
+            padding: 0;
+            border-radius: 4px;
+            background: #ffffff !important;
+            cursor: pointer;
+            accent-color: #2481cc;
+        }
+        #portionsRange::-webkit-slider-runnable-track {
+            height: 8px;
+            background: #e0e0e0;
+            border-radius: 4px;
+        }
+        #portionsRange::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            background: #2481cc;
+            border-radius: 50%;
+            margin-top: -6px;
+            cursor: pointer;
+            border: 2px solid #ffffff;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+        }
+        #portionsRange::-moz-range-track {
+            height: 8px;
+            background: #e0e0e0;
+            border-radius: 4px;
+        }
+        #portionsRange::-moz-range-thumb {
+            width: 20px;
+            height: 20px;
+            background: #2481cc;
+            border-radius: 50%;
+            border: 2px solid #ffffff;
+            cursor: pointer;
+        }
+
         .ingredient-row, .step-row {
             display: flex; flex-direction: column; gap: 4px; background: var(--bg-color);
             padding: 8px; border-radius: 6px; margin-bottom: 6px; border: 1px solid var(--border-color);
@@ -87,7 +137,6 @@
         </div>
     </div>
 
-    <!-- Управление и рубрикатор -->
     <div id="navControlsContainer">
         <button class="primary" onclick="openConstructor()">+ Новая техкарта</button>
         
@@ -107,12 +156,10 @@
         </div>
     </div>
 
-    <!-- Список рецептов -->
     <div id="recipesContainer">
         <p style="color: var(--hint-color); text-align: center;">Рецепты пока не добавлены...</p>
     </div>
 
-    <!-- Конструктор / Редактор техкарты -->
     <div id="recipeConstructor" class="card" style="display: none;">
         <h3 id="constructorTitle">Создание техкарты</h3>
         
@@ -148,7 +195,6 @@
             <div id="ingredientsList"></div>
             <button class="mode-btn" style="width: 100%; margin-bottom: 8px;" onclick="addIngredientRow()">+ Добавить ингредиент</button>
 
-            <!-- Итоговая сводная строка -->
             <div class="summary-box">
                 <div class="summary-row">
                     <span>Итого (брутто / нетто):</span>
@@ -173,7 +219,6 @@
     let activeFilter = 'Все';
     let recipes = [];
 
-    // Очистка старых демо-данных при первом запускe версии «альфа1»
     if (!localStorage.getItem('alpha1_cleaned')) {
         localStorage.removeItem('chef_recipes');
         localStorage.setItem('alpha1_cleaned', 'true');
@@ -181,7 +226,6 @@
 
     window.addEventListener('DOMContentLoaded', () => {
         loadRecipes();
-        // Принудительно гасим демо-рецепты
         recipes = recipes.filter(r => !r.isDemo);
         saveRecipes();
         renderRecipes();
