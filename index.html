@@ -16,6 +16,7 @@
             --secondary-bg-color: var(--tg-theme-secondary-bg-color, #1c222b);
             --border-color: #2a3442;
             --success-color: #2e7d32;
+            --error-color: #ff5252;
         }
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
@@ -67,6 +68,19 @@
             border-radius: 6px; box-sizing: border-box; background: var(--bg-color); color: var(--text-color);
             font-size: 14px;
         }
+        input.invalid {
+            border-color: var(--error-color) !important;
+            background: rgba(255, 82, 82, 0.1) !important;
+        }
+        .field-warning {
+            font-size: 11px;
+            color: var(--error-color);
+            margin-top: -4px;
+            margin-bottom: 6px;
+            display: none;
+        }
+        .field-warning.show { display: block; }
+
         .recipe-title-input { font-size: 16px; font-weight: bold; border: 2px solid var(--button-color); }
 
         .title-row {
@@ -591,7 +605,7 @@ function applyRoleUI() {
 // ЕДИНИЦЫ И ФОРМАТИРОВАНИЕ
 // ==========================================
 
-const UNITS = ['г', 'кг', 'мл', 'л', 'шт'];
+const UNITS = ['г', 'кг', 'мл', 'л'];
 
 function formatWeight(value, unit) {
     if (value === undefined || value === null || isNaN(value)) return '0 ' + (unit || 'г');
@@ -610,13 +624,6 @@ function formatNum(n) {
     const num = Number(n);
     if (Number.isInteger(num)) return String(num);
     return num.toFixed(1);
-}
-
-function roundPieces(n) {
-    if (Number.isInteger(n)) return n;
-    const frac = n - Math.floor(n);
-    if (frac > 0.5) return Math.ceil(n);
-    return Math.floor(n);
 }
 
 function unitToGrams(value, unit) {
@@ -938,15 +945,16 @@ function addIngredientRow(data = {}) {
         <input type="text" placeholder="Название продукта" value="${data.name || ''}" class="ing-name">
         <div class="pro-fields">
             <div class="weight-group">
-                <input type="number" placeholder="Брутто" value="${gross}" class="ing-gross" oninput="updateRowLoss(this); updateSummary();">
+                <input type="number" placeholder="Брутто" value="${gross}" class="ing-gross" oninput="updateRowLoss(this); updateSummary();" onblur="validateIngredientRow(this)">
                 <select class="ing-unit" onchange="updateSummary()">${unitOptions}</select>
             </div>
         </div>
         <div class="pro-fields">
             <div class="weight-group">
-                <input type="number" placeholder="Нетто" value="${net}" class="ing-net" oninput="updateRowLoss(this); updateSummary();">
+                <input type="number" placeholder="Нетто" value="${net}" class="ing-net" oninput="updateRowLoss(this); updateSummary();" onblur="validateIngredientRow(this)">
             </div>
         </div>
+        <div class="field-warning">Нетто не может быть больше брутто</div>
         <div class="loss-info">Потери: <span class="loss-percent">0%</span></div>
         <button type="button" class="delete-ing-btn" onclick="this.parentElement.remove(); updateSummary();">Удалить ингредиент</button>
     `;
@@ -969,6 +977,49 @@ function updateRowLoss(el) {
             lossSpan.innerText = '0%';
         }
     }
+}
+
+function validateIngredientRow(el) {
+    const row = el.closest('.ingredient-row');
+    if (!row) return;
+
+    const grossInput = row.querySelector('.ing-gross');
+    const netInput = row.querySelector('.ing-net');
+    const warning = row.querySelector('.field-warning');
+    if (!grossInput || !netInput) return;
+
+    const gross = parseFloat(grossInput.value) || 0;
+    const net = parseFloat(netInput.value) || 0;
+
+    if (gross > 0 && net > gross) {
+        grossInput.classList.add('invalid');
+        netInput.classList.add('invalid');
+        if (warning) warning.classList.add('show');
+        if (navigator.vibrate) navigator.vibrate(150);
+    } else {
+        grossInput.classList.remove('invalid');
+        netInput.classList.remove('invalid');
+        if (warning) warning.classList.remove('show');
+    }
+}
+
+function validateAllIngredients() {
+    let allValid = true;
+    document.querySelectorAll('.ingredient-row').forEach(row => {
+        const grossInput = row.querySelector('.ing-gross');
+        const netInput = row.querySelector('.ing-net');
+        const warning = row.querySelector('.field-warning');
+        if (!grossInput || !netInput) return;
+        const gross = parseFloat(grossInput.value) || 0;
+        const net = parseFloat(netInput.value) || 0;
+        if (gross > 0 && net > gross) {
+            grossInput.classList.add('invalid');
+            netInput.classList.add('invalid');
+            if (warning) warning.classList.add('show');
+            allValid = false;
+        }
+    });
+    return allValid;
 }
 
 function getTotalNet() {
@@ -1102,6 +1153,11 @@ async function saveRecipe() {
     
     if (!title) { alert('Введите название блюда!'); return; }
     if (!category) { alert('Выберите категорию!'); return; }
+    if (!validateAllIngredients()) {
+        alert('Исправьте ошибки в ингредиентах:\nнетто не может быть больше брутто.');
+        if (navigator.vibrate) navigator.vibrate(200);
+        return;
+    }
 
     const ingredients = [];
     document.querySelectorAll('.ingredient-row').forEach(row => {
@@ -1265,19 +1321,13 @@ function updateViewNumbers() {
     const rows = document.querySelectorAll('.view-ing-row');
     (recipe.ingredients || []).forEach((i, idx) => {
         const unit = i.unit || 'г';
-        const isPieces = unit === 'шт';
         const factor = (unit === 'кг' || unit === 'л') ? 1000 : 1;
 
         let g = (i.gross || 0) * factor * ratio;
         let n = (i.net || 0) * factor * ratio;
 
-        if (isPieces) {
-            g = roundPieces((i.gross || 0) * ratio);
-            n = roundPieces((i.net || 0) * ratio);
-        } else {
-            g = g / factor;
-            n = n / factor;
-        }
+        g = g / factor;
+        n = n / factor;
 
         totalGross += (i.gross || 0) * factor * ratio;
         totalNet += (i.net || 0) * factor * ratio;
@@ -1323,19 +1373,13 @@ function renderRecipeView() {
     let ingRows = '';
     (recipe.ingredients || []).forEach(i => {
         const unit = i.unit || 'г';
-        const isPieces = unit === 'шт';
         const factor = (unit === 'кг' || unit === 'л') ? 1000 : 1;
 
         let g = (i.gross || 0) * factor * ratio;
         let n = (i.net || 0) * factor * ratio;
 
-        if (isPieces) {
-            g = roundPieces((i.gross || 0) * ratio);
-            n = roundPieces((i.net || 0) * ratio);
-        } else {
-            g = g / factor;
-            n = n / factor;
-        }
+        g = g / factor;
+        n = n / factor;
 
         totalGross += (i.gross || 0) * factor * ratio;
         totalNet += (i.net || 0) * factor * ratio;
