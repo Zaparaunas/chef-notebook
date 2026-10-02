@@ -901,6 +901,7 @@ function openConstructor(recipe = null) {
     }
     updateSummary();
     updateOutputSummary();
+    validateStepChain();
 }
 
 function closeConstructor() {
@@ -956,7 +957,7 @@ function addIngredientRow(data = {}) {
         </div>
         <div class="field-warning">Нетто не может быть больше брутто</div>
         <div class="loss-info">Потери: <span class="loss-percent">0%</span></div>
-        <button type="button" class="delete-ing-btn" onclick="this.parentElement.remove(); updateSummary();">Удалить ингредиент</button>
+        <button type="button" class="delete-ing-btn" onclick="this.parentElement.remove(); updateSummary(); validateStepChain();">Удалить ингредиент</button>
     `;
     container.appendChild(div);
     updateRowLoss(div.querySelector('.ing-gross'));
@@ -1062,7 +1063,91 @@ function updateSummary() {
     const totalGross = getTotalGross();
     const totalNet = getTotalNet();
     document.getElementById('summaryValues').innerText = `${formatWeight(totalGross, 'г')} / ${formatWeight(totalNet, 'г')}`;
+
+    updateFirstStepFromNet();
+
     updateOutputSummary();
+}
+
+function updateFirstStepFromNet() {
+    const container = document.getElementById('stepsList');
+    if (!container) return;
+    const firstStep = container.querySelector('.step-row');
+    if (!firstStep) return;
+    const input = firstStep.querySelector('.step-weight');
+    if (!input) return;
+    if (input.dataset.touched === 'true') return;
+
+    const totalNet = getTotalNet();
+    if (totalNet > 0) {
+        input.value = totalNet;
+        propagateStepChainFrom(input);
+    }
+}
+
+function propagateStepChainFrom(input) {
+    const container = document.getElementById('stepsList');
+    const allSteps = Array.from(container.querySelectorAll('.step-row'));
+    const row = input.closest('.step-row');
+    const idx = allSteps.indexOf(row);
+    if (idx === -1) return;
+
+    const val = input.value;
+    for (let i = idx + 1; i < allSteps.length; i++) {
+        const nextInput = allSteps[i].querySelector('.step-weight');
+        if (!nextInput) break;
+        if (nextInput.dataset.touched === 'true') break;
+        nextInput.value = val;
+    }
+}
+
+function onStepWeightInput(input) {
+    input.dataset.touched = 'true';
+    propagateStepChainFrom(input);
+    validateStepChain();
+    updateSummary();
+}
+
+function validateStepChain() {
+    const container = document.getElementById('stepsList');
+    if (!container) return true;
+    const allSteps = Array.from(container.querySelectorAll('.step-row'));
+    let prevVal = null;
+    let allValid = true;
+
+    allSteps.forEach((step) => {
+        const input = step.querySelector('.step-weight');
+        const warning = step.querySelector('.field-warning');
+        if (!input) return;
+
+        const val = input.value === '' ? null : parseFloat(input.value);
+
+        let invalid = false;
+        let message = '';
+
+        if (val !== null && val < 0) {
+            invalid = true;
+            message = 'Вес не может быть отрицательным';
+        } else if (val !== null && prevVal !== null && val > prevVal) {
+            invalid = true;
+            message = 'Вес не может быть больше предыдущего шага';
+        }
+
+        if (invalid) {
+            input.classList.add('invalid');
+            if (warning) {
+                warning.textContent = message;
+                warning.classList.add('show');
+            }
+            allValid = false;
+        } else {
+            input.classList.remove('invalid');
+            if (warning) warning.classList.remove('show');
+            if (val !== null) prevVal = val;
+        }
+    });
+
+    return allValid;
 }
 
 function updateOutputSummary() {
@@ -1111,7 +1196,23 @@ function addStepRow(data = {}) {
     const currentHumidity = data.humidity || '';
     let humidityOptionsHtml = '<option value="">— % —</option>' + humidities.map(h => `<option value="${h}" ${String(currentHumidity) === String(h) ? 'selected' : ''}>${h} %</option>`).join('');
 
-    const currentWeight = data.weight || '';
+    let currentWeight = '';
+    let touched = false;
+
+    if (data.weight !== undefined && data.weight !== null && data.weight !== '') {
+        currentWeight = data.weight;
+        touched = true;
+    } else {
+        const existingSteps = container.querySelectorAll('.step-row');
+        if (existingSteps.length === 0) {
+            const totalNet = getTotalNet();
+            if (totalNet > 0) currentWeight = totalNet;
+        } else {
+            const lastStep = existingSteps[existingSteps.length - 1];
+            const prevVal = lastStep.querySelector('.step-weight')?.value;
+            if (prevVal) currentWeight = prevVal;
+        }
+    }
 
     div.innerHTML = `
         <textarea placeholder="Описание шага..." rows="2" class="step-desc">${data.desc || ''}</textarea>
@@ -1123,9 +1224,10 @@ function addStepRow(data = {}) {
         </div>
         <div class="step-loss-row">
             <label>Вес после шага (г):</label>
-            <input type="number" class="step-weight" min="0" placeholder="0" value="${currentWeight}" oninput="updateSummary()">
+            <input type="number" class="step-weight" min="0" placeholder="0" value="${currentWeight}" data-touched="${touched ? 'true' : 'false'}" oninput="onStepWeightInput(this)">
         </div>
-        <button type="button" class="delete-ing-btn" onclick="this.parentElement.remove(); updateSummary();">Удалить шаг</button>
+        <div class="field-warning"></div>
+        <button type="button" class="delete-ing-btn" onclick="this.parentElement.remove(); updateSummary(); validateStepChain();">Удалить шаг</button>
     `;
     container.appendChild(div);
     onMethodChange(div.querySelector('.step-method'));
@@ -1155,6 +1257,11 @@ async function saveRecipe() {
     if (!category) { alert('Выберите категорию!'); return; }
     if (!validateAllIngredients()) {
         alert('Исправьте ошибки в ингредиентах:\nнетто не может быть больше брутто.');
+        if (navigator.vibrate) navigator.vibrate(200);
+        return;
+    }
+    if (!validateStepChain()) {
+        alert('Исправьте ошибки в шагах:\nвес не может быть больше веса предыдущего шага.');
         if (navigator.vibrate) navigator.vibrate(200);
         return;
     }
