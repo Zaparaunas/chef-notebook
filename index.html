@@ -18,6 +18,7 @@
             --success-color: #2e7d32;
             --error-color: #ff5252;
             --money-color: #4caf50;
+            --warn-color: #ff9800;
         }
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
@@ -41,8 +42,15 @@
         button.primary {
             background: var(--button-color); color: var(--button-text-color); border: none;
             padding: 12px; width: 100%; border-radius: 8px; font-size: 15px;
-            font-weight: 600; cursor: pointer; margin-bottom: 12px;
+            font-weight: 600; cursor: pointer; margin-bottom: 8px;
         }
+        button.secondary-btn {
+            background: transparent; color: var(--button-color);
+            border: 1px solid var(--button-color); border-radius: 8px;
+            padding: 12px; width: 100%; font-size: 15px; font-weight: 600;
+            cursor: pointer; margin-bottom: 8px;
+        }
+        .btn-row { display: flex; gap: 8px; margin-bottom: 8px; }
 
         .search-container { margin-bottom: 12px; }
         .search-input {
@@ -392,6 +400,80 @@
         }
         .tab-btn .tab-icon { font-size: 20px; line-height: 1.1; }
         .tab-btn.active { color: var(--button-color); }
+
+        /* Импорт прайса */
+        .import-preview-item {
+            background: var(--bg-color);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 10px 12px;
+            margin-bottom: 8px;
+        }
+        .import-preview-item .ip-top {
+            display: flex; justify-content: space-between;
+            align-items: flex-start; gap: 8px; margin-bottom: 6px;
+        }
+        .import-preview-item .ip-name {
+            font-size: 14px; font-weight: 600; flex: 1;
+            word-break: break-word;
+        }
+        .import-preview-item .ip-action-badge {
+            font-size: 10px; font-weight: 700;
+            padding: 2px 8px; border-radius: 10px;
+            text-transform: uppercase; letter-spacing: 0.3px;
+            white-space: nowrap;
+        }
+        .ip-badge-update { background: rgba(76, 175, 80, 0.15); color: var(--money-color); }
+        .ip-badge-new { background: rgba(36, 129, 204, 0.15); color: var(--button-color); }
+        .ip-badge-similar { background: rgba(255, 152, 0, 0.15); color: var(--warn-color); }
+        .ip-badge-skip { background: rgba(120,120,120,0.15); color: #888; }
+        .ip-prices {
+            display: flex; gap: 10px; font-size: 12px;
+            color: var(--hint-color); margin-bottom: 6px; flex-wrap: wrap;
+        }
+        .ip-prices b { color: var(--money-color); }
+        .ip-prices .old { color: var(--hint-color); text-decoration: line-through; }
+        .ip-actions { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px; }
+        .ip-actions button {
+            padding: 5px 10px; font-size: 11px; border-radius: 5px;
+            cursor: pointer; font-weight: 600;
+            background: transparent;
+            border: 1px solid var(--border-color);
+            color: var(--text-color);
+        }
+        .ip-actions button.selected {
+            background: var(--button-color);
+            color: var(--button-text-color);
+            border-color: var(--button-color);
+        }
+        .ip-actions button.skip.selected {
+            background: #666;
+            border-color: #666;
+        }
+        .ip-select-hint {
+            font-size: 11px; color: var(--hint-color);
+            margin-top: 4px; font-style: italic;
+        }
+        .import-match-select {
+            width: 100%; padding: 6px; margin-top: 4px;
+            font-size: 13px;
+        }
+        .loader-box {
+            text-align: center; padding: 30px 20px;
+            color: var(--hint-color);
+        }
+        .loader-box .spinner {
+            display: inline-block;
+            width: 30px; height: 30px;
+            border: 3px solid rgba(36, 129, 204, 0.3);
+            border-top-color: var(--button-color);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin-bottom: 10px;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
     </style>
 </head>
 <body>
@@ -442,7 +524,10 @@
     </div>
 
     <div id="tabProductsContent" style="display: none;">
-        <button class="primary" id="btnNewProduct" onclick="openProductForm()">+ Добавить продукт</button>
+        <div class="btn-row">
+            <button class="primary" id="btnNewProduct" onclick="openProductForm()" style="flex:1; margin-bottom:0;">+ Продукт</button>
+            <button class="secondary-btn" id="btnImportPrice" onclick="openPriceImport()" style="flex:1; margin-bottom:0;">📤 Импорт прайса</button>
+        </div>
         <div class="search-container">
             <input type="text" id="productSearchInput" class="search-input" placeholder="🔍 Поиск продукта..." oninput="onProductSearchInput(this.value)">
         </div>
@@ -461,7 +546,6 @@
 
     <div id="recipeConstructor" class="card" style="display: none;">
         <h3 id="constructorTitle">Создание техкарты</h3>
-        
         <div class="title-row">
             <input type="text" id="recipeTitle" class="recipe-title-input" placeholder="Название блюда (например, Оссобуко)" oninput="toggleConstructorFields()">
             <button type="button" class="cancel-title-btn" id="cancelTitleBtn" onclick="closeConstructor()">Отмена</button>
@@ -574,6 +658,14 @@
         </div>
     </div>
 
+    <div id="priceImportScreen" style="display: none;">
+        <div class="view-header">
+            <button class="back-btn" onclick="closePriceImport()">←</button>
+            <h3 style="margin: 0;">Импорт прайса</h3>
+        </div>
+        <div id="priceImportBody"></div>
+    </div>
+
     <div class="tab-bar" id="tabBar">
         <button class="tab-btn active" id="tabBtnRecipes" onclick="switchTab('recipes')">
             <span class="tab-icon">📓</span>
@@ -589,13 +681,14 @@
         </button>
     </div>
 
-<script>
-// ==========================================
+    <script>
+        // ==========================================
 // КОНСТАНТЫ И РОЛИ
 // ==========================================
 
 const SUPABASE_URL = 'https://fxvporgpgpxudzlbauty.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_kcUT9hJ_k8e-2sj0j8BbAA_QvG8Wc-p';
+const PARSE_FUNCTION_URL = 'https://fxvporgpgpxudzlbauty.supabase.co/functions/v1/smooth-worker';
 const OWNER_TELEGRAM_ID = '1655438557';
 
 const CATEGORIES = [
@@ -643,22 +736,14 @@ function applyRoleUI() {
     const btnNew = document.getElementById('btnNewRecipe');
     const btnImport = document.getElementById('btnImportMenu');
     const tabProducts = document.getElementById('tabBtnProducts');
-    const btnNewProduct = document.getElementById('btnNewProduct');
-
     if (!isChef()) {
         if (btnNew) btnNew.style.display = 'none';
         if (btnImport) btnImport.style.display = 'none';
-    } else {
-        if (btnNew) btnNew.style.display = 'block';
-        if (btnImport) btnImport.style.display = 'block';
     }
-
     if (!canSeeProducts()) {
         if (tabProducts) tabProducts.style.display = 'none';
-        if (btnNewProduct) btnNewProduct.style.display = 'none';
     } else {
         if (tabProducts) tabProducts.style.display = 'flex';
-        if (btnNewProduct) btnNewProduct.style.display = 'block';
     }
 }
 
@@ -700,7 +785,7 @@ function escapeHtml(str) {
 }
 
 // ==========================================
-// МАТРЁШКА — ЗАЩИТА ОТ ЦИКЛОВ
+// МАТРЁШКА
 // ==========================================
 
 function hasPath(fromId, toId, visited) {
@@ -741,28 +826,21 @@ function findProductByName(name) {
     return products.find(p => (p.name || '').toLowerCase().trim() === lower) || null;
 }
 
-// Стоимость ингредиента-продукта: net в его единице, продукт с ценой
 function calcProductCost(net, unit, product) {
     if (!product || !product.price_per_unit) return 0;
-    const netInBase = unitToGrams(net, unit); // в г или мл
-    let amountInProductUnit;
-    if (product.unit === 'кг' || product.unit === 'л') {
-        amountInProductUnit = netInBase / 1000;
-    } else if (product.unit === 'г' || product.unit === 'мл') {
-        amountInProductUnit = netInBase;
-    } else {
-        amountInProductUnit = net;
-    }
-    return amountInProductUnit * product.price_per_unit;
+    const netInBase = unitToGrams(net, unit);
+    let amt;
+    if (product.unit === 'кг' || product.unit === 'л') amt = netInBase / 1000;
+    else if (product.unit === 'г' || product.unit === 'мл') amt = netInBase;
+    else amt = net;
+    return amt * product.price_per_unit;
 }
 
-// Полная себестоимость рецепта (рекурсивно по полуфабрикатам)
 function calcRecipeCost(recipe, visited) {
     if (!recipe) return 0;
     visited = visited || new Set();
     if (visited.has(recipe.id)) return 0;
     visited.add(recipe.id);
-
     let total = 0;
     (recipe.ingredients || []).forEach(ing => {
         if (ing.type === 'product') {
@@ -783,12 +861,10 @@ function calcRecipeCost(recipe, visited) {
     return total;
 }
 
-// Обновить инфо-строку себестоимости у одного ингредиента (в конструкторе)
 function updateIngredientCostInfo(row) {
     if (!canSeeProducts()) return;
     const info = row.querySelector('.ing-cost-info');
     if (!info) return;
-
     const type = row.querySelector('.ing-type')?.value || 'product';
     const net = parseFloat(row.querySelector('.ing-net')?.value) || 0;
     const unit = row.querySelector('.ing-unit')?.value || 'г';
@@ -800,7 +876,6 @@ function updateIngredientCostInfo(row) {
         if (!prod) {
             info.textContent = '⚠️ Нет в справочнике продуктов';
             info.classList.add('show', 'no-price');
-            info.classList.remove('money');
             return;
         }
         const cost = calcProductCost(net, unit, prod);
@@ -808,7 +883,6 @@ function updateIngredientCostInfo(row) {
         info.classList.add('show');
         info.classList.remove('no-price');
     } else {
-        // Полуфабрикат
         const linkedId = row.querySelector('.ing-linked-recipe')?.value;
         if (!linkedId) { info.classList.remove('show'); return; }
         const sub = recipes.find(r => r.id === linkedId);
@@ -824,19 +898,16 @@ function updateIngredientCostInfo(row) {
     }
 }
 
-// Пересчитать всю себестоимость в конструкторе
 function updateConstructorCost() {
     if (!canSeeProducts()) return;
     const box = document.getElementById('constructorCostBox');
     if (!box) return;
     box.style.display = 'block';
-
     let total = 0;
     document.querySelectorAll('.ingredient-row').forEach(row => {
         const type = row.querySelector('.ing-type')?.value || 'product';
         const net = parseFloat(row.querySelector('.ing-net')?.value) || 0;
         const unit = row.querySelector('.ing-unit')?.value || 'г';
-
         if (type === 'product') {
             const name = row.querySelector('.ing-name')?.value.trim() || '';
             if (!name) return;
@@ -849,16 +920,11 @@ function updateConstructorCost() {
             if (!sub) return;
             const subTotal = calcRecipeCost(sub);
             const subBatch = (sub.portions || 1) * (sub.output || 0);
-            if (subBatch > 0) {
-                const netGrams = unitToGrams(net, unit);
-                total += netGrams * (subTotal / subBatch);
-            }
+            if (subBatch > 0) total += unitToGrams(net, unit) * (subTotal / subBatch);
         }
     });
-
     const portions = parseInt(document.getElementById('portionsInput')?.value) || 1;
     const perPortion = portions > 0 ? total / portions : total;
-
     document.getElementById('totalRecipeCost').textContent = formatPrice(total);
     document.getElementById('recipeCostPerPortion').textContent = formatPrice(perPortion);
 }
@@ -894,9 +960,10 @@ let viewOutput = null;
 let viewStack = [];
 let expandedCategories = new Set();
 let searchQuery = '';
+let priceImportState = { items: [], processing: false };
 
 // ==========================================
-// ЗАГРУЗКА РЕЦЕПТОВ
+// ЗАГРУЗКА
 // ==========================================
 
 async function loadRecipesFromSupabase() {
@@ -908,40 +975,30 @@ async function loadRecipesFromSupabase() {
             .order('updated_at', { ascending: false });
         if (recError) throw recError;
         if (!recipesData || recipesData.length === 0) { setSyncStatus('ok'); return []; }
-
         const recipeIds = recipesData.map(r => r.id);
         const { data: ingData, error: ingError } = await supabaseClient
             .from('ingredients').select('*').in('recipe_id', recipeIds);
         if (ingError) throw ingError;
-
-        const ingredientsByRecipe = {};
+        const map = {};
         (ingData || []).forEach(ing => {
-            if (!ingredientsByRecipe[ing.recipe_id]) ingredientsByRecipe[ing.recipe_id] = [];
-            ingredientsByRecipe[ing.recipe_id].push({
-                name: ing.name || '',
-                gross: ing.gross || 0,
-                net: ing.net || 0,
-                loss_percent: ing.loss_percent || 0,
-                unit: ing.unit || 'г',
-                type: ing.type || 'product',
-                linked_recipe_id: ing.linked_recipe_id || null
+            if (!map[ing.recipe_id]) map[ing.recipe_id] = [];
+            map[ing.recipe_id].push({
+                name: ing.name || '', gross: ing.gross || 0, net: ing.net || 0,
+                loss_percent: ing.loss_percent || 0, unit: ing.unit || 'г',
+                type: ing.type || 'product', linked_recipe_id: ing.linked_recipe_id || null
             });
         });
-
         const result = recipesData.map(r => ({
             id: r.id, title: r.title || '', category: r.category || '',
             portions: r.base_portion || 4, output: r.output || 0,
-            ingredients: ingredientsByRecipe[r.id] || [],
+            ingredients: map[r.id] || [],
             steps: typeof r.steps === 'string' ? JSON.parse(r.steps || '[]') : (r.steps || []),
             updated_at: r.updated_at || new Date().toISOString()
         }));
-
         setSyncStatus('ok');
         return result;
     } catch(e) {
-        console.error('Ошибка загрузки:', e);
-        setSyncStatus('error');
-        return null;
+        console.error(e); setSyncStatus('error'); return null;
     }
 }
 
@@ -954,14 +1011,10 @@ async function saveRecipeToSupabase(recipe) {
             base_portion: recipe.portions || 4, output: recipe.output || 0,
             steps: recipe.steps || [], updated_at: new Date().toISOString()
         };
-        const { error: upErr } = await supabaseClient.from('recipes')
-            .upsert(recipeRow, { onConflict: 'id' });
+        const { error: upErr } = await supabaseClient.from('recipes').upsert(recipeRow, { onConflict: 'id' });
         if (upErr) throw upErr;
-
-        const { error: delErr } = await supabaseClient.from('ingredients')
-            .delete().eq('recipe_id', recipe.id);
+        const { error: delErr } = await supabaseClient.from('ingredients').delete().eq('recipe_id', recipe.id);
         if (delErr) throw delErr;
-
         if (recipe.ingredients && recipe.ingredients.length > 0) {
             const rows = recipe.ingredients.map(ing => ({
                 recipe_id: recipe.id, name: ing.name || '', gross: ing.gross || 0,
@@ -974,26 +1027,17 @@ async function saveRecipeToSupabase(recipe) {
         }
         setSyncStatus('ok');
         return true;
-    } catch(e) {
-        console.error('Ошибка сохранения:', e);
-        setSyncStatus('error');
-        return false;
-    }
+    } catch(e) { console.error(e); setSyncStatus('error'); return false; }
 }
 
-async function deleteRecipeFromSupabase(recipeId) {
+async function deleteRecipeFromSupabase(id) {
     setSyncStatus('progress');
     try {
-        const { error } = await supabaseClient.from('recipes').delete().eq('id', recipeId);
+        const { error } = await supabaseClient.from('recipes').delete().eq('id', id);
         if (error) throw error;
-        setSyncStatus('ok');
-        return true;
+        setSyncStatus('ok'); return true;
     } catch(e) { setSyncStatus('error'); return false; }
 }
-
-// ==========================================
-// ЗАГРУЗКА ПРОДУКТОВ
-// ==========================================
 
 async function loadProductsFromSupabase() {
     try {
@@ -1007,7 +1051,7 @@ async function loadProductsFromSupabase() {
             supplier: p.supplier || '', notes: p.notes || '',
             updated_at: p.updated_at || new Date().toISOString()
         }));
-    } catch(e) { console.error('Ошибка загрузки продуктов:', e); return []; }
+    } catch(e) { console.error(e); return []; }
 }
 
 async function saveProductToSupabase(product) {
@@ -1022,14 +1066,13 @@ async function saveProductToSupabase(product) {
         const { error } = await supabaseClient.from('products').upsert(row, { onConflict: 'id' });
         if (error) throw error;
         return true;
-    } catch(e) { console.error('Ошибка сохранения продукта:', e); return false; }
+    } catch(e) { console.error(e); return false; }
 }
 
-async function deleteProductFromSupabase(productId) {
+async function deleteProductFromSupabase(id) {
     try {
-        const { error } = await supabaseClient.from('products').delete().eq('id', productId);
-        if (error) throw error;
-        return true;
+        const { error } = await supabaseClient.from('products').delete().eq('id', id);
+        if (error) throw error; return true;
     } catch(e) { return false; }
 }
 
@@ -1064,7 +1107,6 @@ window.addEventListener('DOMContentLoaded', async () => {
     recipes = localRecipes;
     renderRecipes();
 
-    // Продукты — сначала локально, чтобы себестоимость считалась сразу
     const localProducts = loadProductsFromLocal();
     products = localProducts;
 
@@ -1115,7 +1157,8 @@ function updateTabBarVisibility() {
     const constructorOpen = document.getElementById('recipeConstructor').style.display === 'block';
     const viewOpen = document.getElementById('recipeView').style.display === 'block';
     const productFormOpen = document.getElementById('productForm').style.display === 'block';
-    const hide = constructorOpen || viewOpen || productFormOpen || selectionMode;
+    const importOpen = document.getElementById('priceImportScreen').style.display === 'block';
+    const hide = constructorOpen || viewOpen || productFormOpen || importOpen || selectionMode;
     document.getElementById('tabBar').style.display = hide ? 'none' : 'flex';
 }
 
@@ -1136,7 +1179,6 @@ function openConstructor(recipe = null) {
     document.getElementById('recipeConstructor').style.display = 'block';
     document.getElementById('ingredientsList').innerHTML = '';
     document.getElementById('stepsList').innerHTML = '';
-
     if (recipe) {
         editingRecipeId = recipe.id;
         document.getElementById('constructorTitle').textContent = '✏️ Редактирование техкарты';
@@ -1145,12 +1187,8 @@ function openConstructor(recipe = null) {
         document.getElementById('recipeCategory').value = recipe.category || '';
         const p = recipe.portions || 4;
         document.getElementById('portionsInput').value = p;
-        if(p <= 20) {
-            document.getElementById('portionsRange').value = p;
-            document.getElementById('portionsRange').style.display = 'block';
-        } else {
-            document.getElementById('portionsRange').style.display = 'none';
-        }
+        if(p <= 20) { document.getElementById('portionsRange').value = p; document.getElementById('portionsRange').style.display = 'block'; }
+        else document.getElementById('portionsRange').style.display = 'none';
         (recipe.ingredients || []).forEach(i => addIngredientRow(i));
         (recipe.steps || []).forEach(s => addStepRow(s));
     } else {
@@ -1181,17 +1219,13 @@ function closeConstructor() {
 
 function onRangeInput(val) {
     document.getElementById('portionsInput').value = val;
-    updateSummary();
-    updateOutputSummary();
+    updateSummary(); updateOutputSummary();
 }
-
 function onNumberInput(val) {
     const num = parseInt(val) || 1;
-    const range = document.getElementById('portionsRange');
-    if (num <= 20) { range.value = num; range.style.display = 'block'; }
-    else { range.style.display = 'none'; }
-    updateSummary();
-    updateOutputSummary();
+    const r = document.getElementById('portionsRange');
+    if (num <= 20) { r.value = num; r.style.display = 'block'; } else r.style.display = 'none';
+    updateSummary(); updateOutputSummary();
 }
 
 // ==========================================
@@ -1202,7 +1236,6 @@ function addIngredientRow(data = {}) {
     const container = document.getElementById('ingredientsList');
     const div = document.createElement('div');
     div.className = 'ingredient-row';
-
     const gross = data.gross || '';
     const net = data.net || '';
     const unit = data.unit || 'г';
@@ -1213,11 +1246,9 @@ function addIngredientRow(data = {}) {
         const rec = recipes.find(r => r.id === linkedId);
         if (rec) linkedTitle = rec.title;
     }
-
-    const unitOptions = UNITS.map(u => `<option value="${u}" ${u === unit ? 'selected' : ''}>${u}</option>`).join('');
-    const productDisplay = type === 'product' ? '' : 'display:none;';
-    const preparationDisplay = type === 'preparation' ? '' : 'display:none;';
-
+    const unitOpts = UNITS.map(u => `<option value="${u}" ${u === unit ? 'selected' : ''}>${u}</option>`).join('');
+    const pD = type === 'product' ? '' : 'display:none;';
+    const prepD = type === 'preparation' ? '' : 'display:none;';
     div.innerHTML = `
         <div class="ing-type-row">
             <label>Тип:</label>
@@ -1226,10 +1257,10 @@ function addIngredientRow(data = {}) {
                 <option value="preparation" ${type === 'preparation' ? 'selected' : ''}>Полуфабрикат</option>
             </select>
         </div>
-        <div class="ing-product-fields" style="${productDisplay}">
+        <div class="ing-product-fields" style="${pD}">
             <input type="text" placeholder="Название продукта" value="${type === 'product' ? escapeHtml(data.name || '') : ''}" class="ing-name" oninput="updateIngredientCostInfo(this.closest('.ingredient-row'))" onblur="updateIngredientCostInfo(this.closest('.ingredient-row')); updateConstructorCost();">
         </div>
-        <div class="ing-preparation-fields recipe-picker" style="${preparationDisplay}">
+        <div class="ing-preparation-fields recipe-picker" style="${prepD}">
             <input type="text" class="recipe-search-input ${linkedId ? 'selected' : ''}" placeholder="Начните вводить название..." value="${escapeHtml(linkedTitle)}" autocomplete="off" oninput="onRecipeSearchInput(this)" onfocus="onRecipeSearchFocus(this)">
             <input type="hidden" class="ing-linked-recipe" value="${linkedId}">
             <div class="recipe-search-results"></div>
@@ -1237,7 +1268,7 @@ function addIngredientRow(data = {}) {
         <div class="pro-fields">
             <div class="weight-group">
                 <input type="number" placeholder="Брутто" value="${gross}" class="ing-gross" oninput="updateRowLoss(this); updateSummary();" onblur="validateIngredientRow(this)">
-                <select class="ing-unit" onchange="updateSummary()">${unitOptions}</select>
+                <select class="ing-unit" onchange="updateSummary()">${unitOpts}</select>
             </div>
         </div>
         <div class="pro-fields">
@@ -1257,15 +1288,12 @@ function addIngredientRow(data = {}) {
 }
 
 function onRecipeSearchFocus(input) { renderRecipePickerResults(input, true); }
-
 function onRecipeSearchInput(input) {
     const row = input.closest('.recipe-picker');
     const hidden = row.querySelector('.ing-linked-recipe');
-    hidden.value = '';
-    input.classList.remove('selected');
+    hidden.value = ''; input.classList.remove('selected');
     renderRecipePickerResults(input, false);
 }
-
 function renderRecipePickerResults(input, showAllOnFocus) {
     const picker = input.closest('.recipe-picker');
     if (!picker) return;
@@ -1273,13 +1301,10 @@ function renderRecipePickerResults(input, showAllOnFocus) {
     const query = (input.value || '').trim().toLowerCase();
     let available = getAvailableRecipesForIngredient();
     if (query) available = available.filter(r => (r.title || '').toLowerCase().includes(query));
-
     if (available.length === 0) {
         results.innerHTML = `<div class="recipe-search-empty">Ничего не найдено</div>`;
-        results.classList.add('open');
-        return;
+        results.classList.add('open'); return;
     }
-
     let html = '';
     available.slice(0, 50).forEach(r => {
         html += `<div class="recipe-search-item" onclick="selectRecipeForIngredient(this, '${r.id}', '${escapeHtml(r.title).replace(/'/g, "\\'")}')">
@@ -1290,40 +1315,26 @@ function renderRecipePickerResults(input, showAllOnFocus) {
     results.innerHTML = html;
     results.classList.add('open');
 }
-
-function selectRecipeForIngredient(el, recipeId, recipeTitle) {
+function selectRecipeForIngredient(el, id, title) {
     const picker = el.closest('.recipe-picker');
     if (!picker) return;
     const input = picker.querySelector('.recipe-search-input');
     const hidden = picker.querySelector('.ing-linked-recipe');
     const results = picker.querySelector('.recipe-search-results');
-    input.value = recipeTitle;
-    input.classList.add('selected');
-    hidden.value = recipeId;
+    input.value = title; input.classList.add('selected'); hidden.value = id;
     results.classList.remove('open');
     const row = picker.closest('.ingredient-row');
-    if (row) {
-        updateIngredientCostInfo(row);
-        updateConstructorCost();
-    }
+    if (row) { updateIngredientCostInfo(row); updateConstructorCost(); }
 }
-
 function onIngredientTypeChange(selectEl) {
     const row = selectEl.closest('.ingredient-row');
     if (!row) return;
     const pf = row.querySelector('.ing-product-fields');
     const prep = row.querySelector('.ing-preparation-fields');
-    if (selectEl.value === 'preparation') {
-        pf.style.display = 'none';
-        prep.style.display = 'block';
-    } else {
-        pf.style.display = 'block';
-        prep.style.display = 'none';
-    }
-    updateIngredientCostInfo(row);
-    updateConstructorCost();
+    if (selectEl.value === 'preparation') { pf.style.display = 'none'; prep.style.display = 'block'; }
+    else { pf.style.display = 'block'; prep.style.display = 'none'; }
+    updateIngredientCostInfo(row); updateConstructorCost();
 }
-
 function getIngredientDataFromRow(row) {
     const type = row.querySelector('.ing-type')?.value || 'product';
     let name = '';
@@ -1333,39 +1344,32 @@ function getIngredientDataFromRow(row) {
         linked_recipe_id = hidden?.value || null;
         if (linked_recipe_id) {
             const rec = recipes.find(r => r.id === linked_recipe_id);
-            name = rec ? rec.title : '(неизвестный полуфабрикат)';
+            name = rec ? rec.title : '(неизвестный)';
         }
-    } else {
-        name = row.querySelector('.ing-name')?.value.trim() || '';
-    }
+    } else name = row.querySelector('.ing-name')?.value.trim() || '';
     const gross = parseFloat(row.querySelector('.ing-gross')?.value) || 0;
     const net = parseFloat(row.querySelector('.ing-net')?.value) || 0;
     const unit = row.querySelector('.ing-unit')?.value || 'г';
     const loss = gross > 0 ? ((gross - net) / gross) * 100 : 0;
     return { name, gross, net, loss_percent: loss, unit, type, linked_recipe_id };
 }
-
 function updateRowLoss(el) {
     const row = el.closest('.ingredient-row');
     if (!row) return;
-    const gross = parseFloat(row.querySelector('.ing-gross')?.value) || 0;
-    const net = parseFloat(row.querySelector('.ing-net')?.value) || 0;
-    const lossSpan = row.querySelector('.loss-percent');
-    if (lossSpan) {
-        if (gross > 0 && gross >= net) lossSpan.innerText = (((gross - net) / gross) * 100).toFixed(1) + '%';
-        else lossSpan.innerText = '0%';
+    const g = parseFloat(row.querySelector('.ing-gross')?.value) || 0;
+    const n = parseFloat(row.querySelector('.ing-net')?.value) || 0;
+    const s = row.querySelector('.loss-percent');
+    if (s) {
+        if (g > 0 && g >= n) s.innerText = (((g - n) / g) * 100).toFixed(1) + '%';
+        else s.innerText = '0%';
     }
 }
-
 function validateIngredientRow(el) {
     const row = el.closest('.ingredient-row');
     if (!row) return;
-    const gi = row.querySelector('.ing-gross');
-    const ni = row.querySelector('.ing-net');
-    const w = row.querySelector('.field-warning');
+    const gi = row.querySelector('.ing-gross'), ni = row.querySelector('.ing-net'), w = row.querySelector('.field-warning');
     if (!gi || !ni) return;
-    const g = parseFloat(gi.value) || 0;
-    const n = parseFloat(ni.value) || 0;
+    const g = parseFloat(gi.value) || 0, n = parseFloat(ni.value) || 0;
     if (g > 0 && n > g) {
         gi.classList.add('invalid'); ni.classList.add('invalid');
         if (w) { w.textContent = 'Нетто не может быть больше брутто'; w.classList.add('show'); }
@@ -1375,33 +1379,29 @@ function validateIngredientRow(el) {
         if (w) w.classList.remove('show');
     }
 }
-
 function validateAllIngredients() {
-    let allValid = true;
+    let ok = true;
     document.querySelectorAll('.ingredient-row').forEach(row => {
         const type = row.querySelector('.ing-type')?.value || 'product';
-        const gi = row.querySelector('.ing-gross');
-        const ni = row.querySelector('.ing-net');
-        const w = row.querySelector('.field-warning');
+        const gi = row.querySelector('.ing-gross'), ni = row.querySelector('.ing-net'), w = row.querySelector('.field-warning');
         if (!gi || !ni) return;
-        const g = parseFloat(gi.value) || 0;
-        const n = parseFloat(ni.value) || 0;
-        let invalid = false, msg = '';
+        const g = parseFloat(gi.value) || 0, n = parseFloat(ni.value) || 0;
+        let bad = false, msg = '';
         if (type === 'product') {
             const name = row.querySelector('.ing-name')?.value.trim() || '';
             if (!name) return;
         } else {
             const linked = row.querySelector('.ing-linked-recipe')?.value;
-            if (!linked) { invalid = true; msg = 'Выберите полуфабрикат'; }
+            if (!linked) { bad = true; msg = 'Выберите полуфабрикат'; }
         }
-        if (!invalid && g > 0 && n > g) { invalid = true; msg = 'Нетто не может быть больше брутто'; }
-        if (invalid) {
+        if (!bad && g > 0 && n > g) { bad = true; msg = 'Нетто не может быть больше брутто'; }
+        if (bad) {
             gi.classList.add('invalid'); ni.classList.add('invalid');
             if (w) { w.textContent = msg; w.classList.add('show'); }
-            allValid = false;
+            ok = false;
         }
     });
-    return allValid;
+    return ok;
 }
 
 // ==========================================
@@ -1417,7 +1417,6 @@ function getTotalNet() {
     });
     return t;
 }
-
 function getTotalGross() {
     let t = 0;
     document.querySelectorAll('.ingredient-row').forEach(row => {
@@ -1427,19 +1426,17 @@ function getTotalGross() {
     });
     return t;
 }
-
 function getLastStepWeight() {
     const steps = document.querySelectorAll('.step-row');
     for (let i = steps.length - 1; i >= 0; i--) {
-        const val = steps[i].querySelector('.step-weight')?.value;
-        if (val !== '' && val !== null && val !== undefined) {
-            const num = parseFloat(val);
-            if (!isNaN(num)) return num;
+        const v = steps[i].querySelector('.step-weight')?.value;
+        if (v !== '' && v !== null && v !== undefined) {
+            const n = parseFloat(v);
+            if (!isNaN(n)) return n;
         }
     }
     return null;
 }
-
 function updateSummary() {
     const tg = getTotalGross(), tn = getTotalNet();
     document.getElementById('summaryValues').innerText = `${formatWeight(tg, 'г')} / ${formatWeight(tn, 'г')}`;
@@ -1448,74 +1445,68 @@ function updateSummary() {
     updateConstructorCost();
     document.querySelectorAll('.ingredient-row').forEach(row => updateIngredientCostInfo(row));
 }
-
 function updateFirstStepFromNet() {
-    const container = document.getElementById('stepsList');
-    if (!container) return;
-    const firstStep = container.querySelector('.step-row');
-    if (!firstStep) return;
-    const input = firstStep.querySelector('.step-weight');
+    const c = document.getElementById('stepsList');
+    if (!c) return;
+    const fs = c.querySelector('.step-row');
+    if (!fs) return;
+    const input = fs.querySelector('.step-weight');
     if (!input || input.dataset.touched === 'true') return;
     const tn = getTotalNet();
     if (tn > 0) { input.value = tn; propagateStepChainFrom(input); }
 }
-
 function propagateStepChainFrom(input) {
-    const container = document.getElementById('stepsList');
-    const allSteps = Array.from(container.querySelectorAll('.step-row'));
-    const idx = allSteps.indexOf(input.closest('.step-row'));
+    const c = document.getElementById('stepsList');
+    const all = Array.from(c.querySelectorAll('.step-row'));
+    const idx = all.indexOf(input.closest('.step-row'));
     if (idx === -1) return;
-    const val = input.value;
-    for (let i = idx + 1; i < allSteps.length; i++) {
-        const ni = allSteps[i].querySelector('.step-weight');
+    const v = input.value;
+    for (let i = idx + 1; i < all.length; i++) {
+        const ni = all[i].querySelector('.step-weight');
         if (!ni || ni.dataset.touched === 'true') break;
-        ni.value = val;
+        ni.value = v;
     }
 }
-
 function onStepWeightInput(input) {
     input.dataset.touched = 'true';
     propagateStepChainFrom(input);
     validateStepChain();
     updateSummary();
 }
-
 function validateStepChain() {
-    const container = document.getElementById('stepsList');
-    if (!container) return true;
-    const allSteps = Array.from(container.querySelectorAll('.step-row'));
-    let prevVal = null, allValid = true;
-    allSteps.forEach(step => {
+    const c = document.getElementById('stepsList');
+    if (!c) return true;
+    const all = Array.from(c.querySelectorAll('.step-row'));
+    let prev = null, ok = true;
+    all.forEach(step => {
         const input = step.querySelector('.step-weight');
         const w = step.querySelector('.field-warning');
         if (!input) return;
-        const val = input.value === '' ? null : parseFloat(input.value);
-        let invalid = false, msg = '';
-        if (val !== null && val < 0) { invalid = true; msg = 'Вес не может быть отрицательным'; }
-        else if (val !== null && prevVal !== null && val > prevVal) { invalid = true; msg = 'Вес не может быть больше предыдущего шага'; }
-        if (invalid) {
+        const v = input.value === '' ? null : parseFloat(input.value);
+        let bad = false, msg = '';
+        if (v !== null && v < 0) { bad = true; msg = 'Вес не может быть отрицательным'; }
+        else if (v !== null && prev !== null && v > prev) { bad = true; msg = 'Вес не может быть больше предыдущего шага'; }
+        if (bad) {
             input.classList.add('invalid');
             if (w) { w.textContent = msg; w.classList.add('show'); }
-            allValid = false;
+            ok = false;
         } else {
             input.classList.remove('invalid');
             if (w) w.classList.remove('show');
-            if (val !== null) prevVal = val;
+            if (v !== null) prev = v;
         }
     });
-    return allValid;
+    return ok;
 }
-
 function updateOutputSummary() {
     const el = document.getElementById('outputSummary');
     if (!el) return;
-    const tn = getTotalNet();
-    const lw = getLastStepWeight();
+    const tn = getTotalNet(), lw = getLastStepWeight();
     const rw = (lw !== null && lw > 0) ? lw : tn;
     const loss = Math.max(0, tn - rw);
-    let ut = '—', uc = '';
+    let ut = '—';
     if (tn > 0 && loss > 0) ut = ((loss / tn) * 100).toFixed(1) + '%';
-    el.innerHTML = `Результирующий вес: <b>${formatWeight(rw, 'г')}</b> · Уварка: <b class="${uc}">${ut}</b>`;
+    el.innerHTML = `Результирующий вес: <b>${formatWeight(rw, 'г')}</b> · Уварка: <b>${ut}</b>`;
     const box = document.getElementById('constructorTotals');
     if (box) {
         const p = parseInt(document.getElementById('portionsInput')?.value) || 0;
@@ -1532,28 +1523,26 @@ function updateOutputSummary() {
 // ==========================================
 
 function addStepRow(data = {}) {
-    const container = document.getElementById('stepsList');
+    const c = document.getElementById('stepsList');
     const div = document.createElement('div');
     div.className = 'step-row';
     const methods = ['бланшировать','варить','тушить','пар','жар/пар','жар','жарить','колеровать','гриль','фритюр','до готовности'];
     const cm = data.method || 'тушить';
-    let optH = methods.map(m => `<option value="${m}" ${cm === m ? 'selected' : ''}>${m}</option>`).join('');
+    const optH = methods.map(m => `<option value="${m}" ${cm === m ? 'selected' : ''}>${m}</option>`).join('');
     const temps = ['-18','-5','0','4','60','75','80','85','90','95','98','100','120','125','130','140','150','160','175','180','190','200','210','240'];
     const ct = data.temp || '';
-    let tH = '<option value="">— °C —</option>' + temps.map(t => `<option value="${t}" ${String(ct) === String(t) ? 'selected' : ''}>${t} °C</option>`).join('');
+    const tH = '<option value="">— °C —</option>' + temps.map(t => `<option value="${t}" ${String(ct) === String(t) ? 'selected' : ''}>${t} °C</option>`).join('');
     const hums = ['10','20','30','40','50','60','70','80','90','100'];
     const ch = data.humidity || '';
-    let hH = '<option value="">— % —</option>' + hums.map(h => `<option value="${h}" ${String(ch) === String(h) ? 'selected' : ''}>${h} %</option>`).join('');
+    const hH = '<option value="">— % —</option>' + hums.map(h => `<option value="${h}" ${String(ch) === String(h) ? 'selected' : ''}>${h} %</option>`).join('');
     let cw = '', touched = false;
-    if (data.weight !== undefined && data.weight !== null && data.weight !== '') {
-        cw = data.weight; touched = true;
-    } else {
-        const es = container.querySelectorAll('.step-row');
+    if (data.weight !== undefined && data.weight !== null && data.weight !== '') { cw = data.weight; touched = true; }
+    else {
+        const es = c.querySelectorAll('.step-row');
         if (es.length === 0) {
-            const tn = getTotalNet();
-            if (tn > 0) cw = tn;
+            const tn = getTotalNet(); if (tn > 0) cw = tn;
         } else {
-            const last = es[es.length - 1].querySelector('.step-weight')?.value;
+            const last = es[es.length-1].querySelector('.step-weight')?.value;
             if (last) cw = last;
         }
     }
@@ -1572,10 +1561,9 @@ function addStepRow(data = {}) {
         <div class="field-warning"></div>
         <button type="button" class="delete-ing-btn" onclick="this.parentElement.remove(); updateSummary(); validateStepChain();">Удалить шаг</button>
     `;
-    container.appendChild(div);
+    c.appendChild(div);
     onMethodChange(div.querySelector('.step-method'));
 }
-
 function onMethodChange(selectEl) {
     const row = selectEl.closest('.method-temp-row');
     if (!row) return;
@@ -1596,16 +1584,8 @@ async function saveRecipe() {
     const portions = parseInt(document.getElementById('portionsInput').value) || 4;
     if (!title) { alert('Введите название блюда!'); return; }
     if (!category) { alert('Выберите категорию!'); return; }
-    if (!validateAllIngredients()) {
-        alert('Исправьте ошибки в ингредиентах.');
-        if (navigator.vibrate) navigator.vibrate(200);
-        return;
-    }
-    if (!validateStepChain()) {
-        alert('Исправьте ошибки в шагах.');
-        if (navigator.vibrate) navigator.vibrate(200);
-        return;
-    }
+    if (!validateAllIngredients()) { alert('Исправьте ошибки в ингредиентах.'); if (navigator.vibrate) navigator.vibrate(200); return; }
+    if (!validateStepChain()) { alert('Исправьте ошибки в шагах.'); if (navigator.vibrate) navigator.vibrate(200); return; }
 
     const ingredients = [];
     document.querySelectorAll('.ingredient-row').forEach(row => {
@@ -1614,25 +1594,21 @@ async function saveRecipe() {
         if (ing.type === 'preparation' && !ing.linked_recipe_id) return;
         ingredients.push(ing);
     });
-
     const steps = [];
     document.querySelectorAll('.step-row').forEach(row => {
         const m = row.querySelector('.step-method')?.value || 'тушить';
         const wv = row.querySelector('.step-weight')?.value;
         steps.push({
             desc: row.querySelector('.step-desc')?.value.trim() || '',
-            method: m,
-            temp: row.querySelector('.step-temp')?.value || '',
+            method: m, temp: row.querySelector('.step-temp')?.value || '',
             humidity: m === 'жар/пар' ? (row.querySelector('.step-humidity')?.value || '') : '',
             weight: wv !== '' ? (parseFloat(wv) || 0) : null
         });
     });
 
-    const totalNet = getTotalNet();
-    const lw = getLastStepWeight();
-    const rw = (lw !== null && lw > 0) ? lw : totalNet;
+    const tn = getTotalNet(), lw = getLastStepWeight();
+    const rw = (lw !== null && lw > 0) ? lw : tn;
     const output = portions > 0 ? rw / portions : 0;
-
     const now = new Date().toISOString();
     let recipe;
     if (editingRecipeId) {
@@ -1643,7 +1619,6 @@ async function saveRecipe() {
         recipe = { id: crypto.randomUUID(), title, category, portions, output, ingredients, steps, updated_at: now };
         recipes.unshift(recipe);
     }
-
     saveRecipesToLocal();
     await saveRecipeToSupabase(recipe);
     closeConstructor();
@@ -1652,90 +1627,76 @@ async function saveRecipe() {
 
 async function deleteRecipe(id) {
     if (!isChef()) return;
-    if (!confirm('Точно удалить эту техкарту?')) return;
+    if (!confirm('Точно удалить?')) return;
     recipes = recipes.filter(r => r.id !== id);
     saveRecipesToLocal();
     await deleteRecipeFromSupabase(id);
     renderRecipes();
 }
-
 function editRecipe(id) {
     if (!isChef()) return;
-    const recipe = recipes.find(r => r.id === id);
-    if (recipe) openConstructor(recipe);
+    const r = recipes.find(x => x.id === id);
+    if (r) openConstructor(r);
 }
 
 // ==========================================
-// ПРОСМОТР РЕЦЕПТА
+// ПРОСМОТР
 // ==========================================
 
 function openRecipeView(id) {
-    const recipe = recipes.find(r => r.id === id);
-    if (!recipe) return;
+    const r = recipes.find(x => x.id === id);
+    if (!r) return;
     if (viewingRecipeId && viewingRecipeId !== id) viewStack.push(viewingRecipeId);
     viewingRecipeId = id;
-    viewPortions = recipe.portions || 4;
-    viewOutput = recipe.output || 0;
+    viewPortions = r.portions || 4;
+    viewOutput = r.output || 0;
     document.getElementById('tabRecipesContent').style.display = 'none';
     document.getElementById('recipeConstructor').style.display = 'none';
     document.getElementById('recipeView').style.display = 'block';
     renderRecipeView();
     updateTabBarVisibility();
 }
-
 function closeRecipeView() {
     if (viewStack.length > 0) {
-        const prevId = viewStack.pop();
-        const rec = recipes.find(r => r.id === prevId);
+        const pid = viewStack.pop();
+        const rec = recipes.find(r => r.id === pid);
         if (rec) {
-            viewingRecipeId = prevId;
+            viewingRecipeId = pid;
             viewPortions = rec.portions || 4;
             viewOutput = rec.output || 0;
-            renderRecipeView();
-            return;
+            renderRecipeView(); return;
         }
     }
     viewStack = [];
     document.getElementById('recipeView').style.display = 'none';
     document.getElementById('tabRecipesContent').style.display = (activeTab === 'recipes') ? 'block' : 'none';
-    viewingRecipeId = null;
-    viewPortions = null;
-    viewOutput = null;
+    viewingRecipeId = null; viewPortions = null; viewOutput = null;
     renderRecipes();
     updateTabBarVisibility();
 }
-
-function openLinkedFromView(linkedId) {
-    if (!linkedId) return;
-    const rec = recipes.find(r => r.id === linkedId);
+function openLinkedFromView(id) {
+    if (!id) return;
+    const rec = recipes.find(r => r.id === id);
     if (!rec) { alert('Рецепт полуфабриката не найден'); return; }
-    openRecipeView(linkedId);
+    openRecipeView(id);
 }
-
-function onViewPortionsChange(val) {
-    let p = parseFloat(val);
-    if (isNaN(p) || p < 0.01) p = 0.01;
-    viewPortions = p;
-    updateViewNumbers();
+function onViewPortionsChange(v) {
+    let p = parseFloat(v); if (isNaN(p) || p < 0.01) p = 0.01;
+    viewPortions = p; updateViewNumbers();
 }
-
-function onViewOutputChange(val) {
-    let o = parseFloat(val);
-    if (isNaN(o) || o < 0) o = 0;
-    viewOutput = o;
-    updateViewNumbers();
+function onViewOutputChange(v) {
+    let o = parseFloat(v); if (isNaN(o) || o < 0) o = 0;
+    viewOutput = o; updateViewNumbers();
 }
-
 function resetViewValues() {
-    const recipe = recipes.find(r => r.id === viewingRecipeId);
-    if (!recipe) return;
-    viewPortions = recipe.portions || 4;
-    viewOutput = recipe.output || 0;
+    const r = recipes.find(x => x.id === viewingRecipeId);
+    if (!r) return;
+    viewPortions = r.portions || 4;
+    viewOutput = r.output || 0;
     document.getElementById('viewPortionsInput').value = viewPortions;
     document.getElementById('viewOutputInput').value = viewOutput;
     updateViewNumbers();
 }
-
 function calculateTotalLoss(recipe) {
     let tn = 0;
     (recipe.ingredients || []).forEach(i => {
@@ -1749,20 +1710,16 @@ function calculateTotalLoss(recipe) {
     const rw = (lw !== null) ? lw : tn;
     return { totalNet: tn, resultWeight: rw, loss: Math.max(0, tn - rw) };
 }
-
 function updateViewNumbers() {
-    const recipe = recipes.find(r => r.id === viewingRecipeId);
-    if (!recipe) return;
-    const bp = recipe.portions || 4;
-    const bo = recipe.output || 0;
-    const cp = viewPortions;
-    const co = viewOutput;
+    const r = recipes.find(x => x.id === viewingRecipeId);
+    if (!r) return;
+    const bp = r.portions || 4, bo = r.output || 0;
+    const cp = viewPortions, co = viewOutput;
     const ratio = (cp / bp) * (bo > 0 ? co / bo : 1);
     const crw = cp * co;
-
     let tg = 0, tn = 0;
     const rows = document.querySelectorAll('.view-ing-row');
-    (recipe.ingredients || []).forEach((i, idx) => {
+    (r.ingredients || []).forEach((i, idx) => {
         const u = i.unit || 'г';
         const f = (u === 'кг' || u === 'л') ? 1000 : 1;
         let g = (i.gross || 0) * f * ratio / f;
@@ -1776,45 +1733,34 @@ function updateViewNumbers() {
             if (cells[1]) cells[1].textContent = formatWeight(n, u);
         }
     });
-
-    const { loss: bl } = calculateTotalLoss(recipe);
+    const { loss: bl } = calculateTotalLoss(r);
     const tl = bl * ratio;
-
-    const rw = document.getElementById('viewResultWeight');
-    if (rw) rw.textContent = formatWeight(crw, 'г');
+    const rwEl = document.getElementById('viewResultWeight');
+    if (rwEl) rwEl.textContent = formatWeight(crw, 'г');
     const le = document.getElementById('viewTotalLoss');
     if (le) le.textContent = formatWeight(tl, 'г');
     const ne = document.getElementById('viewTotalNet');
     if (ne) ne.textContent = formatWeight(tn, 'г');
     const ge = document.getElementById('viewTotalGross');
     if (ge) ge.textContent = formatWeight(tg, 'г');
-
-    // Себестоимость
     if (canSeeProducts()) {
-        const totalCost = calcRecipeCost(recipe);
-        const costPortion = cp > 0 ? totalCost * (cp / bp) / cp : 0;
-        const costPerPortion = cp > 0 ? (totalCost * (cp / bp)) / cp : 0;
+        const totalCost = calcRecipeCost(r);
         const costBox = document.getElementById('viewCostTotal');
         const costPerPortionEl = document.getElementById('viewCostPerPortion');
         if (costBox) costBox.textContent = formatPrice(totalCost * (cp / bp));
         if (costPerPortionEl) costPerPortionEl.textContent = formatPrice(totalCost / bp);
     }
 }
-
 function renderRecipeView() {
-    const recipe = recipes.find(r => r.id === viewingRecipeId);
-    if (!recipe) return;
+    const r = recipes.find(x => x.id === viewingRecipeId);
+    if (!r) return;
     const view = document.getElementById('recipeView');
-    const bp = recipe.portions || 4;
-    const bo = recipe.output || 0;
-    const cp = viewPortions;
-    const co = viewOutput;
+    const bp = r.portions || 4, bo = r.output || 0;
+    const cp = viewPortions, co = viewOutput;
     const ratio = (cp / bp) * (bo > 0 ? co / bo : 1);
     const crw = cp * co;
-
-    let tg = 0, tn = 0;
-    let ingRows = '';
-    (recipe.ingredients || []).forEach(i => {
+    let tg = 0, tn = 0, ingRows = '';
+    (r.ingredients || []).forEach(i => {
         const u = i.unit || 'г';
         const f = (u === 'кг' || u === 'л') ? 1000 : 1;
         let g = (i.gross || 0) * f * ratio / f;
@@ -1823,75 +1769,42 @@ function renderRecipeView() {
         tn += (i.net || 0) * f * ratio;
         let nc = escapeHtml(i.name || '');
         if (i.type === 'preparation') {
-            const hasLink = i.linked_recipe_id && recipes.find(r => r.id === i.linked_recipe_id);
+            const hl = i.linked_recipe_id && recipes.find(r2 => r2.id === i.linked_recipe_id);
             nc += ` <span class="linked-badge">полуфаб.</span>`;
-            if (hasLink) nc += ` <button class="open-link-btn" onclick="openLinkedFromView('${i.linked_recipe_id}')">Открыть</button>`;
+            if (hl) nc += ` <button class="open-link-btn" onclick="openLinkedFromView('${i.linked_recipe_id}')">Открыть</button>`;
         }
-        ingRows += `<tr class="view-ing-row">
-            <td>${nc}</td>
-            <td class="num">${formatWeight(g, u)}</td>
-            <td class="num">${formatWeight(n, u)}</td>
-        </tr>`;
+        ingRows += `<tr class="view-ing-row"><td>${nc}</td><td class="num">${formatWeight(g, u)}</td><td class="num">${formatWeight(n, u)}</td></tr>`;
     });
-
-    const { loss: bl } = calculateTotalLoss(recipe);
+    const { loss: bl } = calculateTotalLoss(r);
     const tl = bl * ratio;
-
     let stepsHtml = '';
-    (recipe.steps || []).forEach((s, idx) => {
+    (r.steps || []).forEach((s, idx) => {
         const tl2 = s.temp ? ` | Темп: ${s.temp} °C` : '';
         const hl = (s.method === 'жар/пар' && s.humidity) ? ` | Влажн: ${s.humidity} %` : '';
         const wl = (s.weight !== null && s.weight !== undefined && s.weight > 0) ? ` | Вес: ${formatWeight(s.weight, 'г')}` : '';
-        stepsHtml += `<div class="view-step">
-            <div><span class="view-step-num">${idx+1}</span>${escapeHtml(s.desc || '')}</div>
-            <div class="view-step-meta">Метод: ${escapeHtml(s.method)}${tl2}${hl}${wl}</div>
-        </div>`;
+        stepsHtml += `<div class="view-step"><div><span class="view-step-num">${idx+1}</span>${escapeHtml(s.desc || '')}</div><div class="view-step-meta">Метод: ${escapeHtml(s.method)}${tl2}${hl}${wl}</div></div>`;
     });
-
-    const actionsHtml = isChef()
-        ? `<div class="view-actions">
-            <button class="mode-btn" style="flex: 1;" onclick="editRecipe('${recipe.id}')">Редактировать</button>
-            <button class="mode-btn danger" style="flex: 1;" onclick="deleteRecipeFromView('${recipe.id}')">Удалить</button>
-           </div>`
-        : '';
-
-    // Блок себестоимости только для тех, кто видит продукты
+    const actionsHtml = isChef() ? `<div class="view-actions"><button class="mode-btn" style="flex: 1;" onclick="editRecipe('${r.id}')">Редактировать</button><button class="mode-btn danger" style="flex: 1;" onclick="deleteRecipeFromView('${r.id}')">Удалить</button></div>` : '';
     let costBlockHtml = '';
     if (canSeeProducts()) {
-        const totalCostBase = calcRecipeCost(recipe);
+        const totalCostBase = calcRecipeCost(r);
         const scaledTotal = totalCostBase * (cp / bp);
         const perPortion = totalCostBase / bp;
-        costBlockHtml = `
-            <div class="view-section" style="border-color: rgba(76,175,80,0.4); background: linear-gradient(135deg, rgba(76,175,80,0.08), rgba(76,175,80,0.03));">
-                <h4 style="color: var(--money-color);">Себестоимость</h4>
-                <div class="view-output-row">
-                    Блюдо целиком (${formatNum(cp)} порц.): <b id="viewCostTotal" style="color: var(--money-color); font-size: 16px;">${formatPrice(scaledTotal)}</b>
-                </div>
-                <div class="view-output-row">
-                    Одна порция: <b id="viewCostPerPortion" style="color: var(--money-color);">${formatPrice(perPortion)}</b>
-                </div>
-            </div>
-        `;
+        costBlockHtml = `<div class="view-section" style="border-color: rgba(76,175,80,0.4); background: linear-gradient(135deg, rgba(76,175,80,0.08), rgba(76,175,80,0.03));">
+            <h4 style="color: var(--money-color);">Себестоимость</h4>
+            <div class="view-output-row">Блюдо целиком (${formatNum(cp)} порц.): <b id="viewCostTotal" style="color: var(--money-color); font-size: 16px;">${formatPrice(scaledTotal)}</b></div>
+            <div class="view-output-row">Одна порция: <b id="viewCostPerPortion" style="color: var(--money-color);">${formatPrice(perPortion)}</b></div>
+        </div>`;
     }
-
     view.innerHTML = `
-        <div class="view-header">
-            <button class="back-btn" onclick="closeRecipeView()">←</button>
-        </div>
-        <div style="margin-bottom: 8px;">
-            <div class="view-title">${escapeHtml(recipe.title)}</div>
-            <div style="font-size: 12px; color: var(--hint-color);">${escapeHtml(recipe.category)} · базово: ${bp} порц. по ${formatWeight(bo, 'г')}</div>
-        </div>
+        <div class="view-header"><button class="back-btn" onclick="closeRecipeView()">←</button></div>
+        <div style="margin-bottom: 8px;"><div class="view-title">${escapeHtml(r.title)}</div><div style="font-size: 12px; color: var(--hint-color);">${escapeHtml(r.category)} · базово: ${bp} порц. по ${formatWeight(bo, 'г')}</div></div>
         ${actionsHtml}
         <div class="view-section">
             <h4>Параметры</h4>
             <div class="view-fields-grid">
-                <div><label>Порций</label>
-                    <input type="number" id="viewPortionsInput" min="0.01" step="1" value="${cp}" oninput="onViewPortionsChange(this.value)">
-                </div>
-                <div><label>Размер порции (г)</label>
-                    <input type="number" id="viewOutputInput" min="0" step="1" value="${co}" oninput="onViewOutputChange(this.value)">
-                </div>
+                <div><label>Порций</label><input type="number" id="viewPortionsInput" min="0.01" step="1" value="${cp}" oninput="onViewPortionsChange(this.value)"></div>
+                <div><label>Размер порции (г)</label><input type="number" id="viewOutputInput" min="0" step="1" value="${co}" oninput="onViewOutputChange(this.value)"></div>
             </div>
             <div class="view-output-row">Чистый вес: <b id="viewResultWeight">${formatWeight(crw, 'г')}</b></div>
             <div class="view-output-row">Потери: <b id="viewTotalLoss">${formatWeight(tl, 'г')}</b></div>
@@ -1899,20 +1812,10 @@ function renderRecipeView() {
             <button class="mode-btn" style="width: 100%; margin-top: 6px;" onclick="resetViewValues()">Сбросить к базовым</button>
         </div>
         ${costBlockHtml}
-        <div class="view-section">
-            <h4>Ингредиенты</h4>
-            <table class="view-ing-table">
-                <thead><tr><th>Продукт</th><th class="num">Нужно</th><th class="num">Получится</th></tr></thead>
-                <tbody>${ingRows || '<tr><td colspan="3" style="text-align:center; color: var(--hint-color);">Нет ингредиентов</td></tr>'}</tbody>
-            </table>
-        </div>
-        <div class="view-section">
-            <h4>Приготовление</h4>
-            ${stepsHtml || '<p style="color: var(--hint-color);">Нет шагов</p>'}
-        </div>
+        <div class="view-section"><h4>Ингредиенты</h4><table class="view-ing-table"><thead><tr><th>Продукт</th><th class="num">Нужно</th><th class="num">Получится</th></tr></thead><tbody>${ingRows || '<tr><td colspan="3" style="text-align:center; color: var(--hint-color);">Нет ингредиентов</td></tr>'}</tbody></table></div>
+        <div class="view-section"><h4>Приготовление</h4>${stepsHtml || '<p style="color: var(--hint-color);">Нет шагов</p>'}</div>
     `;
 }
-
 async function deleteRecipeFromView(id) {
     await deleteRecipe(id);
     viewStack = [];
@@ -1923,54 +1826,34 @@ async function deleteRecipeFromView(id) {
 // СПИСОК РЕЦЕПТОВ
 // ==========================================
 
-function onSearchInput(val) {
-    searchQuery = (val || '').trim().toLowerCase();
-    renderRecipes();
-}
-
+function onSearchInput(v) { searchQuery = (v || '').trim().toLowerCase(); renderRecipes(); }
 function toggleCategory(cat) {
     if (expandedCategories.has(cat)) expandedCategories.delete(cat);
     else expandedCategories.add(cat);
     renderRecipes();
 }
-
 function getFilteredRecipes() {
     if (!searchQuery) return recipes;
     return recipes.filter(r => (r.title || '').toLowerCase().includes(searchQuery));
 }
-
 function renderRecipes() {
-    const container = document.getElementById('recipesContainer');
-    if (!container) return;
-    container.innerHTML = '';
+    const c = document.getElementById('recipesContainer');
+    if (!c) return;
+    c.innerHTML = '';
     const bottom = document.getElementById('bottomControls');
     bottom.style.display = recipes.length > 0 ? 'block' : 'none';
-
     if (searchQuery) {
-        const filtered = recipes.filter(r => (r.title || '').toLowerCase().includes(searchQuery));
-        if (filtered.length === 0) {
-            container.innerHTML = `<p style="text-align: center; color: var(--hint-color);">Ничего не найдено по запросу «${escapeHtml(searchQuery)}».</p>`;
-            return;
-        }
+        const f = recipes.filter(r => (r.title || '').toLowerCase().includes(searchQuery));
+        if (f.length === 0) { c.innerHTML = `<p style="text-align:center; color:var(--hint-color);">Ничего не найдено.</p>`; return; }
         const wrap = document.createElement('div');
-        wrap.className = 'accordion-group';
-        wrap.style.padding = '0';
-        filtered.forEach(r => wrap.appendChild(buildCompactRow(r)));
-        container.appendChild(wrap);
-        return;
+        wrap.className = 'accordion-group'; wrap.style.padding = '0';
+        f.forEach(r => wrap.appendChild(buildCompactRow(r)));
+        c.appendChild(wrap); return;
     }
-
     if (recipes.length === 0) {
-        container.innerHTML = `
-            <div class="empty-state">
-                <div class="icon">📓</div>
-                <h3>Пока нет ни одной техкарты</h3>
-                <p>Нажмите «+ Новая техкарта» сверху, чтобы создать первую.</p>
-            </div>
-        `;
+        c.innerHTML = `<div class="empty-state"><div class="icon">📓</div><h3>Пока нет ни одной техкарты</h3><p>Нажмите «+ Новая техкарта» сверху.</p></div>`;
         return;
     }
-
     CATEGORIES.forEach(cat => {
         const inCat = recipes.filter(r => r.category === cat);
         const isOpen = expandedCategories.has(cat);
@@ -1979,149 +1862,95 @@ function renderRecipes() {
         const header = document.createElement('div');
         header.className = 'accordion-header';
         header.onclick = () => toggleCategory(cat);
-        header.innerHTML = `
-            <div class="accordion-title">
-                <span class="accordion-arrow ${isOpen ? 'open' : ''}">▶</span>
-                <span>${cat}</span>
-                <span class="accordion-count">(${inCat.length})</span>
-            </div>
-        `;
+        header.innerHTML = `<div class="accordion-title"><span class="accordion-arrow ${isOpen ? 'open' : ''}">▶</span><span>${cat}</span><span class="accordion-count">(${inCat.length})</span></div>`;
         group.appendChild(header);
         const body = document.createElement('div');
         body.className = 'accordion-body' + (isOpen ? ' open' : '');
         if (inCat.length === 0) body.innerHTML = `<div class="accordion-empty">Пусто</div>`;
         else inCat.forEach(r => body.appendChild(buildCompactRow(r)));
         group.appendChild(body);
-        container.appendChild(group);
+        c.appendChild(group);
     });
 }
-
-function buildCompactRow(recipe) {
+function buildCompactRow(r) {
     const row = document.createElement('div');
     row.className = 'recipe-compact';
     if (selectionMode) row.classList.add('selectable');
-    if (selectedIds.has(recipe.id)) row.style.background = 'rgba(36, 129, 204, 0.15)';
-    const outputLabel = recipe.output ? ` · ${formatWeight(recipe.output, 'г')}/порц` : '';
-    const meta = `${recipe.portions || 4} порц${outputLabel}`;
-    const cbH = selectionMode
-        ? `<input type="checkbox" class="card-checkbox" ${selectedIds.has(recipe.id) ? 'checked' : ''} onchange="event.stopPropagation(); toggleCardSelection('${recipe.id}', this)">`
-        : '';
-    row.innerHTML = `${cbH}
-        <div class="recipe-compact-title">${escapeHtml(recipe.title)}</div>
-        <div class="recipe-compact-meta">${meta}</div>`;
+    if (selectedIds.has(r.id)) row.style.background = 'rgba(36, 129, 204, 0.15)';
+    const ol = r.output ? ` · ${formatWeight(r.output, 'г')}/порц` : '';
+    const meta = `${r.portions || 4} порц${ol}`;
+    const cbH = selectionMode ? `<input type="checkbox" class="card-checkbox" ${selectedIds.has(r.id) ? 'checked' : ''} onchange="event.stopPropagation(); toggleCardSelection('${r.id}', this)">` : '';
+    row.innerHTML = `${cbH}<div class="recipe-compact-title">${escapeHtml(r.title)}</div><div class="recipe-compact-meta">${meta}</div>`;
     if (selectionMode) {
         row.onclick = () => {
             const cb = row.querySelector('.card-checkbox');
             if (cb) {
                 cb.checked = !cb.checked;
-                toggleCardSelection(recipe.id, cb);
+                toggleCardSelection(r.id, cb);
                 if (cb.checked) row.style.background = 'rgba(36, 129, 204, 0.15)';
                 else row.style.background = '';
             }
         };
-    } else {
-        row.onclick = () => openRecipeView(recipe.id);
-    }
+    } else row.onclick = () => openRecipeView(r.id);
     return row;
 }
-
-// ==========================================
-// ВЫБОР
-// ==========================================
-
-function toggleCardSelection(id, checkbox) {
-    if (checkbox.checked) selectedIds.add(id);
-    else selectedIds.delete(id);
+function toggleCardSelection(id, cb) {
+    if (cb.checked) selectedIds.add(id); else selectedIds.delete(id);
     updateSelectionInfo();
 }
-function updateSelectionInfo() {
-    document.getElementById('selectionInfo').textContent = `Выбрано: ${selectedIds.size}`;
-}
+function updateSelectionInfo() { document.getElementById('selectionInfo').textContent = `Выбрано: ${selectedIds.size}`; }
 function startSelectionMode() {
-    selectionMode = true;
-    selectedIds.clear();
+    selectionMode = true; selectedIds.clear();
     document.getElementById('exportMenu').classList.remove('active');
     document.getElementById('selectionPanel').classList.add('active');
-    renderRecipes();
-    updateTabBarVisibility();
+    renderRecipes(); updateTabBarVisibility();
 }
 function exitSelectionMode() {
-    selectionMode = false;
-    selectedIds.clear();
+    selectionMode = false; selectedIds.clear();
     document.getElementById('selectionPanel').classList.remove('active');
-    renderRecipes();
-    updateTabBarVisibility();
+    renderRecipes(); updateTabBarVisibility();
 }
-function selectAll() {
-    getFilteredRecipes().forEach(r => selectedIds.add(r.id));
-    renderRecipes();
-    updateSelectionInfo();
-}
-function clearSelection() {
-    selectedIds.clear();
-    renderRecipes();
-    updateSelectionInfo();
-}
+function selectAll() { getFilteredRecipes().forEach(r => selectedIds.add(r.id)); renderRecipes(); updateSelectionInfo(); }
+function clearSelection() { selectedIds.clear(); renderRecipes(); updateSelectionInfo(); }
 
 // ==========================================
 // ПРОДУКТЫ
 // ==========================================
 
-function onProductSearchInput(val) {
-    productSearchQuery = (val || '').trim().toLowerCase();
-    renderProducts();
-}
-
+function onProductSearchInput(v) { productSearchQuery = (v || '').trim().toLowerCase(); renderProducts(); }
 function renderProducts() {
-    const container = document.getElementById('productsContainer');
-    if (!container) return;
-    container.innerHTML = '';
-    if (!canSeeProducts()) {
-        container.innerHTML = '<p style="text-align: center; color: var(--hint-color);">Нет доступа.</p>';
-        return;
-    }
+    const c = document.getElementById('productsContainer');
+    if (!c) return;
+    c.innerHTML = '';
+    if (!canSeeProducts()) { c.innerHTML = '<p style="text-align:center; color:var(--hint-color);">Нет доступа.</p>'; return; }
     let list = products.slice();
     if (productSearchQuery) list = list.filter(p => (p.name || '').toLowerCase().includes(productSearchQuery));
     list.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
-
     if (list.length === 0) {
         if (products.length === 0) {
-            container.innerHTML = `<div class="empty-state">
-                <div class="icon">📦</div>
-                <h3>Справочник пуст</h3>
-                <p>Добавьте первый продукт — нажмите «+ Добавить продукт».</p>
-            </div>`;
-        } else {
-            container.innerHTML = `<p style="text-align: center; color: var(--hint-color);">Ничего не найдено.</p>`;
-        }
+            c.innerHTML = `<div class="empty-state"><div class="icon">📦</div><h3>Справочник пуст</h3><p>Добавьте продукт или импортируйте прайс.</p></div>`;
+        } else c.innerHTML = `<p style="text-align:center; color:var(--hint-color);">Ничего не найдено.</p>`;
         return;
     }
-    const group = document.createElement('div');
-    group.className = 'accordion-group';
+    const g = document.createElement('div');
+    g.className = 'accordion-group';
     list.forEach(p => {
         const row = document.createElement('div');
         row.className = 'product-row';
         row.onclick = () => openProductForm(p);
         const sup = p.supplier ? `<div class="product-row-supplier">${escapeHtml(p.supplier)}</div>` : '';
-        row.innerHTML = `
-            <div class="product-row-left">
-                <div class="product-row-name">${escapeHtml(p.name)}</div>
-                ${sup}
-            </div>
-            <div class="product-row-price">${formatPrice(p.price_per_unit)}/${escapeHtml(p.unit)}</div>
-        `;
-        group.appendChild(row);
+        row.innerHTML = `<div class="product-row-left"><div class="product-row-name">${escapeHtml(p.name)}</div>${sup}</div><div class="product-row-price">${formatPrice(p.price_per_unit)}/${escapeHtml(p.unit)}</div>`;
+        g.appendChild(row);
     });
-    container.appendChild(group);
+    c.appendChild(g);
 }
-
 function openProductForm(product = null) {
     if (!canSeeProducts()) return;
     document.getElementById('tabProductsContent').style.display = 'none';
     document.getElementById('productForm').style.display = 'block';
     if (product) {
         editingProductId = product.id;
-        document.getElementById('productFormTitle').textContent = '✏️ Редактирование продукта';
+        document.getElementById('productFormTitle').textContent = '✏️ Редактирование';
         document.getElementById('productName').value = product.name || '';
         document.getElementById('productPrice').value = product.price_per_unit || '';
         document.getElementById('productUnit').value = product.unit || 'кг';
@@ -2138,7 +1967,6 @@ function openProductForm(product = null) {
     }
     updateTabBarVisibility();
 }
-
 function closeProductForm() {
     document.getElementById('productForm').style.display = 'none';
     document.getElementById('tabProductsContent').style.display = (activeTab === 'products') ? 'block' : 'none';
@@ -2146,7 +1974,6 @@ function closeProductForm() {
     renderProducts();
     updateTabBarVisibility();
 }
-
 async function saveProduct() {
     if (!canSeeProducts()) return;
     const name = document.getElementById('productName').value.trim();
@@ -2154,9 +1981,8 @@ async function saveProduct() {
     const unit = document.getElementById('productUnit').value || 'кг';
     const supplier = document.getElementById('productSupplier').value.trim();
     const notes = document.getElementById('productNotes').value.trim();
-    if (!name) { alert('Введите название продукта!'); return; }
+    if (!name) { alert('Введите название!'); return; }
     if (price < 0) { alert('Цена не может быть отрицательной'); return; }
-
     const now = new Date().toISOString();
     let product;
     if (editingProductId) {
@@ -2173,17 +1999,245 @@ async function saveProduct() {
     renderProducts();
 }
 
-async function deleteProduct(id) {
+// ==========================================
+// ИМПОРТ ПРАЙСА
+// ==========================================
+
+function openPriceImport() {
     if (!canSeeProducts()) return;
-    if (!confirm('Удалить этот продукт?')) return;
-    products = products.filter(p => p.id !== id);
-    saveProductsToLocal();
-    await deleteProductFromSupabase(id);
+    document.getElementById('tabProductsContent').style.display = 'none';
+    document.getElementById('priceImportScreen').style.display = 'block';
+    priceImportState = { items: [], processing: false };
+    renderPriceImportBody('start');
+    updateTabBarVisibility();
+}
+function closePriceImport() {
+    document.getElementById('priceImportScreen').style.display = 'none';
+    document.getElementById('tabProductsContent').style.display = (activeTab === 'products') ? 'block' : 'none';
+    priceImportState = { items: [], processing: false };
     renderProducts();
+    updateTabBarVisibility();
+}
+function renderPriceImportBody(state, errorMsg) {
+    const body = document.getElementById('priceImportBody');
+    if (state === 'start') {
+        body.innerHTML = `
+            <div class="view-section">
+                <h4>Как это работает</h4>
+                <p style="font-size: 13px; color: var(--hint-color); line-height: 1.5;">
+                    Сфотографируйте прайс поставщика или выберите файл (фото, PDF, Excel).
+                    AI прочитает цены и предложит обновления для справочника.
+                </p>
+            </div>
+            <button class="primary" onclick="triggerPriceFileInput('camera')">📷 Сфотографировать</button>
+            <button class="secondary-btn" onclick="triggerPriceFileInput('file')">📁 Выбрать файл</button>
+        `;
+    } else if (state === 'processing') {
+        body.innerHTML = `
+            <div class="loader-box">
+                <div class="spinner"></div>
+                <div>AI читает прайс…</div>
+                <div style="font-size: 12px; margin-top: 8px;">Обычно 5–15 секунд</div>
+            </div>
+        `;
+    } else if (state === 'error') {
+        body.innerHTML = `
+            <div class="view-section" style="border-color: var(--error-color);">
+                <h4 style="color: var(--error-color);">Ошибка</h4>
+                <p style="font-size: 13px;">${escapeHtml(errorMsg || 'Не удалось разобрать прайс')}</p>
+            </div>
+            <button class="primary" onclick="renderPriceImportBody('start')">Попробовать снова</button>
+            <button class="secondary-btn" onclick="closePriceImport()">Отмена</button>
+        `;
+    } else if (state === 'preview') {
+        renderPriceImportPreview();
+    }
+}
+function triggerPriceFileInput(mode) {
+    const input = document.createElement('input');
+    input.type = 'file';
+    if (mode === 'camera') {
+        input.accept = 'image/*';
+        input.capture = 'environment';
+    } else {
+        input.accept = 'image/*,application/pdf,.pdf,.xlsx,.xls,.csv';
+    }
+    input.onchange = (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        processPriceFile(file);
+    };
+    input.click();
+}
+async function processPriceFile(file) {
+    if (file.size > 8 * 1024 * 1024) {
+        renderPriceImportBody('error', 'Файл больше 8 МБ. Попробуйте сжать или сфотографировать.');
+        return;
+    }
+    renderPriceImportBody('processing');
+    try {
+        const base64 = await fileToBase64(file);
+        const mimeType = file.type || guessMimeType(file.name);
+        const response = await fetch(PARSE_FUNCTION_URL, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'apikey': SUPABASE_KEY,
+                'Authorization': 'Bearer ' + SUPABASE_KEY
+            },
+            body: JSON.stringify({ fileBase64: base64, mimeType })
+        });
+        const result = await response.json();
+        if (!response.ok) { renderPriceImportBody('error', result.error || 'Сервер вернул ошибку'); return; }
+        if (!result.products || !Array.isArray(result.products)) { renderPriceImportBody('error', 'AI вернул неожиданный ответ'); return; }
+        if (result.products.length === 0) { renderPriceImportBody('error', 'В файле не найдено продуктов'); return; }
+        priceImportState.items = matchImportedProducts(result.products);
+        renderPriceImportBody('preview');
+    } catch (e) {
+        console.error(e);
+        renderPriceImportBody('error', 'Ошибка сети: ' + String(e.message || e));
+    }
+}
+function fileToBase64(file) {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => {
+            const dataUrl = reader.result;
+            const base64 = String(dataUrl).split(',')[1] || '';
+            resolve(base64);
+        };
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+    });
+}
+function guessMimeType(name) {
+    const lower = (name || '').toLowerCase();
+    if (lower.endsWith('.pdf')) return 'application/pdf';
+    if (lower.endsWith('.png')) return 'image/png';
+    if (lower.endsWith('.jpg') || lower.endsWith('.jpeg')) return 'image/jpeg';
+    if (lower.endsWith('.xlsx')) return 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+    if (lower.endsWith('.csv')) return 'text/csv';
+    return 'image/jpeg';
+}
+function matchImportedProducts(imported) {
+    const result = [];
+    imported.forEach(item => {
+        const name = String(item.name || '').trim();
+        const price = parseFloat(item.price) || 0;
+        const unit = ['кг','л','шт','г','мл'].includes(item.unit) ? item.unit : 'кг';
+        if (!name) return;
+        const lower = name.toLowerCase();
+        const exact = products.find(p => (p.name || '').toLowerCase().trim() === lower);
+        const similar = !exact ? products.find(p => {
+            const pn = (p.name || '').toLowerCase();
+            return pn.includes(lower) || lower.includes(pn);
+        }) : null;
+        if (exact) result.push({ importName: name, importPrice: price, importUnit: unit, matchedProduct: exact, action: 'update', oldPrice: exact.price_per_unit });
+        else if (similar) result.push({ importName: name, importPrice: price, importUnit: unit, matchedProduct: similar, action: 'similar', oldPrice: similar.price_per_unit });
+        else result.push({ importName: name, importPrice: price, importUnit: unit, matchedProduct: null, action: 'new', oldPrice: null });
+    });
+    return result;
+}
+function renderPriceImportPreview() {
+    const body = document.getElementById('priceImportBody');
+    const items = priceImportState.items;
+    if (items.length === 0) {
+        body.innerHTML = `<div class="view-section"><p>Нет продуктов</p></div><button class="secondary-btn" onclick="closePriceImport()">Закрыть</button>`;
+        return;
+    }
+    let html = `<div class="view-section">
+        <h4>Найдено продуктов: ${items.length}</h4>
+        <p style="font-size: 12px; color: var(--hint-color);">
+            Нажмите на действие для каждого продукта.
+        </p>
+    </div>`;
+
+    items.forEach((item, idx) => {
+        let badge = '', oldPriceHtml = '';
+        if (item.action === 'update') {
+            badge = `<span class="ip-action-badge ip-badge-update">обновить</span>`;
+            oldPriceHtml = `<span class="old">${formatPrice(item.oldPrice)}/${item.matchedProduct.unit}</span> → `;
+        } else if (item.action === 'new') {
+            badge = `<span class="ip-action-badge ip-badge-new">новый</span>`;
+        } else if (item.action === 'similar') {
+            badge = `<span class="ip-action-badge ip-badge-similar">похоже</span>`;
+            oldPriceHtml = `<span class="old">${formatPrice(item.oldPrice)}/${item.matchedProduct.unit}</span> → `;
+        } else if (item.action === 'skip') {
+            badge = `<span class="ip-action-badge ip-badge-skip">пропустить</span>`;
+        }
+
+        let matchLine = '';
+        if (item.action === 'similar' && item.matchedProduct) {
+            matchLine = `<div class="ip-select-hint">Совпадение: <b>${escapeHtml(item.matchedProduct.name)}</b></div>`;
+        }
+
+        html += `<div class="import-preview-item" data-idx="${idx}">
+            <div class="ip-top">
+                <div class="ip-name">${escapeHtml(item.importName)}</div>
+                ${badge}
+            </div>
+            <div class="ip-prices">
+                ${oldPriceHtml}<b>${formatPrice(item.importPrice)}/${item.importUnit}</b>
+            </div>
+            ${matchLine}
+            <div class="ip-actions">
+                <button class="${item.action === 'update' ? 'selected' : ''}" onclick="setImportAction(${idx}, 'update')">Обновить</button>
+                <button class="${item.action === 'new' ? 'selected' : ''}" onclick="setImportAction(${idx}, 'new')">Создать</button>
+                <button class="skip ${item.action === 'skip' ? 'selected' : ''}" onclick="setImportAction(${idx}, 'skip')">Пропустить</button>
+            </div>
+        </div>`;
+    });
+
+    html += `<button class="primary save-db-btn" style="margin-top: 12px;" onclick="applyPriceImport()">Применить изменения</button>`;
+    html += `<button class="secondary-btn" onclick="closePriceImport()">Отмена</button>`;
+    body.innerHTML = html;
+}
+function setImportAction(idx, action) {
+    if (action === 'skip') priceImportState.items[idx].action = 'skip';
+    else if (action === 'new') priceImportState.items[idx].action = 'new';
+    else if (action === 'update') {
+        if (priceImportState.items[idx].matchedProduct) priceImportState.items[idx].action = 'update';
+        else priceImportState.items[idx].action = 'new';
+    }
+    renderPriceImportPreview();
+}
+async function applyPriceImport() {
+    const items = priceImportState.items;
+    let updated = 0, created = 0, skipped = 0;
+    for (const item of items) {
+        if (item.action === 'skip') { skipped++; continue; }
+        if (item.action === 'update' && item.matchedProduct) {
+            const idx = products.findIndex(p => p.id === item.matchedProduct.id);
+            if (idx !== -1) {
+                products[idx].price_per_unit = item.importPrice;
+                products[idx].unit = item.importUnit;
+                products[idx].updated_at = new Date().toISOString();
+                saveProductsToLocal();
+                await saveProductToSupabase(products[idx]);
+                updated++;
+            }
+        } else if (item.action === 'new') {
+            const newProduct = {
+                id: crypto.randomUUID(),
+                name: item.importName,
+                price_per_unit: item.importPrice,
+                unit: item.importUnit,
+                supplier: '',
+                notes: '',
+                updated_at: new Date().toISOString()
+            };
+            products.unshift(newProduct);
+            saveProductsToLocal();
+            await saveProductToSupabase(newProduct);
+            created++;
+        }
+    }
+    alert(`Готово.\n\nОбновлено: ${updated}\nСоздано: ${created}\nПропущено: ${skipped}`);
+    closePriceImport();
 }
 
 // ==========================================
-// ЭКСПОРТ / ИМПОРТ
+// ЭКСПОРТ / ИМПОРТ РЕЦЕПТОВ
 // ==========================================
 
 function toggleExportMenu() {
