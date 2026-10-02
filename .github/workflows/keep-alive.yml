@@ -1,0 +1,17 @@
+name: Keep Supabase alive
+
+on:
+  schedule:
+    - cron: '0 12 * * *'
+  workflow_dispatch:
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping Supabase
+        run: |
+          curl -s -o /dev/null -w "%{http_code}\n" \
+            -H "apikey: sb_publishable_kcUT9hJ_k8e-2sj0j8BbAA_QvG8Wc-p" \
+            -H "Authorization: Bearer sb_publishable_kcUT9hJ_k8e-2sj0j8BbAA_QvG8Wc-p" \
+            "https://fxvporgpgpxudzlbauty.supabase.co/rest/v1/recipes?select=id&limit=1"
