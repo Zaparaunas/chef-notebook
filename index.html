@@ -93,7 +93,6 @@
 
         #portionsRange,
         #portionsInput,
-        #outputInput,
         #viewPortionsInput,
         #viewOutputInput {
             background: #ffffff !important;
@@ -173,7 +172,22 @@
             margin-bottom: 0;
         }
         .loss-info { font-size: 11px; color: var(--hint-color); }
-        
+        .step-loss-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-top: 4px;
+        }
+        .step-loss-row label {
+            font-size: 11px;
+            color: var(--hint-color);
+            white-space: nowrap;
+        }
+        .step-loss-row input {
+            flex: 1;
+            margin-bottom: 0;
+        }
+
         .method-temp-row {
             display: flex;
             gap: 6px;
@@ -465,17 +479,6 @@
                 </div>
             </div>
 
-            <div style="display: flex; gap: 8px; align-items: center; margin-bottom: 8px;">
-                <div style="flex: 1;">
-                    <label style="font-size: 11px; color: var(--hint-color);">Размер порции (г):</label>
-                    <input type="number" id="outputInput" min="0" placeholder="например, 320" style="margin-bottom:0;" oninput="updateOutputSummary()">
-                </div>
-            </div>
-
-            <div class="output-summary" id="outputSummary">
-                Результирующий вес: <b>0 г</b> · Уварка: <b>—</b>
-            </div>
-
             <h4>Ингредиенты:</h4>
             <div id="ingredientsList"></div>
             <button class="mode-btn" style="width: 100%; margin-bottom: 8px;" onclick="addIngredientRow()">+ Добавить ингредиент</button>
@@ -489,7 +492,26 @@
 
             <h4>Шаги приготовления:</h4>
             <div id="stepsList"></div>
-            <button class="mode-btn" style="width: 100%; margin-bottom: 12px;" onclick="addStepRow()">+ Добавить шаг</button>
+            <button class="mode-btn" style="width: 100%; margin-bottom: 8px;" onclick="addStepRow()">+ Добавить шаг</button>
+
+            <div class="output-summary" id="outputSummary" style="margin-bottom: 12px;">
+                Результирующий вес: <b>0 г</b> · Уварка: <b>—</b>
+            </div>
+
+            <div class="summary-box" id="constructorTotals">
+                <div class="summary-row">
+                    <span>Сумма потерь:</span>
+                    <span id="totalLoss">0 г</span>
+                </div>
+                <div class="summary-row">
+                    <span>Получится (готовое):</span>
+                    <span id="totalResult">0 г</span>
+                </div>
+                <div class="summary-row">
+                    <span>Размер порции:</span>
+                    <span id="totalPortionSize">0 г</span>
+                </div>
+            </div>
 
             <div style="display: flex; gap: 8px;">
                 <button class="primary save-db-btn" style="flex: 2; margin-bottom: 0;" onclick="saveRecipe()">Сохранить в базу</button>
@@ -591,6 +613,11 @@ function roundPieces(n) {
     const frac = n - Math.floor(n);
     if (frac > 0.5) return Math.ceil(n);
     return Math.floor(n);
+}
+
+function unitToGrams(value, unit) {
+    if (unit === 'кг' || unit === 'л') return value * 1000;
+    return value;
 }
 
 // ==========================================
@@ -846,7 +873,6 @@ function openConstructor(recipe = null) {
         } else {
             document.getElementById('portionsRange').style.display = 'none';
         }
-        document.getElementById('outputInput').value = recipe.output || '';
 
         (recipe.ingredients || []).forEach(i => addIngredientRow(i));
         (recipe.steps || []).forEach(s => addStepRow(s));
@@ -859,7 +885,6 @@ function openConstructor(recipe = null) {
         document.getElementById('portionsRange').value = 4;
         document.getElementById('portionsRange').style.display = 'block';
         document.getElementById('portionsInput').value = 4;
-        document.getElementById('outputInput').value = '';
         addIngredientRow();
         addStepRow();
     }
@@ -942,23 +967,38 @@ function updateRowLoss(el) {
     }
 }
 
-function getTotals() {
-    let totalGross = 0;
+function getTotalNet() {
     let totalNet = 0;
     document.querySelectorAll('.ingredient-row').forEach(row => {
         const unit = row.querySelector('.ing-unit')?.value || 'г';
-        const gross = parseFloat(row.querySelector('.ing-gross')?.value) || 0;
         const net = parseFloat(row.querySelector('.ing-net')?.value) || 0;
-
-        const factor = (unit === 'кг' || unit === 'л') ? 1000 : 1;
-        totalGross += gross * factor;
-        totalNet += net * factor;
+        totalNet += unitToGrams(net, unit);
     });
-    return { totalGross, totalNet };
+    return totalNet;
+}
+
+function getTotalGross() {
+    let totalGross = 0;
+    document.querySelectorAll('.ingredient-row').forEach(row => {
+        const unit = row.querySelector('.ing-unit')?.value || 'г';
+        const gross = parseFloat(row.querySelector('.ing-gross')?.value) || 0;
+        totalGross += unitToGrams(gross, unit);
+    });
+    return totalGross;
+}
+
+function getTotalLoss() {
+    let totalLoss = 0;
+    document.querySelectorAll('.step-row').forEach(row => {
+        const loss = parseFloat(row.querySelector('.step-loss')?.value) || 0;
+        totalLoss += loss;
+    });
+    return totalLoss;
 }
 
 function updateSummary() {
-    const { totalGross, totalNet } = getTotals();
+    const totalGross = getTotalGross();
+    const totalNet = getTotalNet();
     document.getElementById('summaryValues').innerText = `${formatWeight(totalGross, 'г')} / ${formatWeight(totalNet, 'г')}`;
     updateOutputSummary();
 }
@@ -967,24 +1007,31 @@ function updateOutputSummary() {
     const el = document.getElementById('outputSummary');
     if (!el) return;
 
-    const portions = parseInt(document.getElementById('portionsInput')?.value) || 0;
-    const outputPerPortion = parseFloat(document.getElementById('outputInput')?.value) || 0;
-    const { totalNet } = getTotals();
-
-    const resultWeight = portions * outputPerPortion;
+    const totalNet = getTotalNet();
+    const totalLoss = getTotalLoss();
+    const resultWeight = Math.max(0, totalNet - totalLoss);
 
     let uvarText = '—';
     let uvarClass = '';
-    if (resultWeight > 0 && totalNet > 0) {
-        const uvar = (1 - resultWeight / totalNet) * 100;
+    if (totalNet > 0 && totalLoss > 0) {
+        const uvar = (totalLoss / totalNet) * 100;
         uvarText = uvar.toFixed(1) + '%';
-        if (uvar < 0) {
+        if (totalLoss > totalNet) {
             uvarClass = 'warn';
             uvarText = '⚠️ ' + uvarText;
         }
     }
 
     el.innerHTML = `Результирующий вес: <b>${formatWeight(resultWeight, 'г')}</b> · Уварка: <b class="${uvarClass}">${uvarText}</b>`;
+
+    const totalsBox = document.getElementById('constructorTotals');
+    if (totalsBox) {
+        const portions = parseInt(document.getElementById('portionsInput')?.value) || 0;
+        const portionSize = portions > 0 ? resultWeight / portions : 0;
+        document.getElementById('totalLoss').textContent = formatWeight(totalLoss, 'г');
+        document.getElementById('totalResult').textContent = formatWeight(resultWeight, 'г');
+        document.getElementById('totalPortionSize').textContent = formatWeight(portionSize, 'г');
+    }
 }
 
 function addStepRow(data = {}) {
@@ -1004,6 +1051,8 @@ function addStepRow(data = {}) {
     const currentHumidity = data.humidity || '';
     let humidityOptionsHtml = '<option value="">— % —</option>' + humidities.map(h => `<option value="${h}" ${String(currentHumidity) === String(h) ? 'selected' : ''}>${h} %</option>`).join('');
 
+    const currentLoss = data.loss || '';
+
     div.innerHTML = `
         <textarea placeholder="Описание шага..." rows="2" class="step-desc">${data.desc || ''}</textarea>
         <label style="font-size: 11px; color: var(--hint-color);">Метод приготовления:</label>
@@ -1012,7 +1061,11 @@ function addStepRow(data = {}) {
             <select class="step-temp">${tempOptionsHtml}</select>
             <select class="step-humidity" style="display:none;">${humidityOptionsHtml}</select>
         </div>
-        <button type="button" class="delete-ing-btn" onclick="this.parentElement.remove();">Удалить шаг</button>
+        <div class="step-loss-row">
+            <label>Потери (г):</label>
+            <input type="number" class="step-loss" min="0" placeholder="0" value="${currentLoss}" oninput="updateSummary()">
+        </div>
+        <button type="button" class="delete-ing-btn" onclick="this.parentElement.remove(); updateSummary();">Удалить шаг</button>
     `;
     container.appendChild(div);
     onMethodChange(div.querySelector('.step-method'));
@@ -1037,7 +1090,6 @@ async function saveRecipe() {
     const title = document.getElementById('recipeTitle').value.trim();
     const category = document.getElementById('recipeCategory').value;
     const portions = parseInt(document.getElementById('portionsInput').value) || 4;
-    const output = parseFloat(document.getElementById('outputInput').value) || 0;
     
     if (!title) { alert('Введите название блюда!'); return; }
     if (!category) { alert('Выберите категорию!'); return; }
@@ -1068,9 +1120,15 @@ async function saveRecipe() {
             desc: row.querySelector('.step-desc')?.value.trim() || '',
             method: method,
             temp: row.querySelector('.step-temp')?.value || '',
-            humidity: method === 'жар/пар' ? (row.querySelector('.step-humidity')?.value || '') : ''
+            humidity: method === 'жар/пар' ? (row.querySelector('.step-humidity')?.value || '') : '',
+            loss: parseFloat(row.querySelector('.step-loss')?.value) || 0
         });
     });
+
+    const totalNet = getTotalNet();
+    const totalLoss = getTotalLoss();
+    const resultWeight = Math.max(0, totalNet - totalLoss);
+    const output = portions > 0 ? resultWeight / portions : 0;
 
     const now = new Date().toISOString();
     let recipe;
@@ -1178,13 +1236,13 @@ function updateViewNumbers() {
     const rows = document.querySelectorAll('.view-ing-row');
     (recipe.ingredients || []).forEach((i, idx) => {
         const unit = i.unit || 'г';
-        const isWeight = (unit === 'г' || unit === 'кг' || unit === 'мл' || unit === 'л');
+        const isPieces = unit === 'шт';
         const factor = (unit === 'кг' || unit === 'л') ? 1000 : 1;
 
         let g = (i.gross || 0) * factor * ratio;
         let n = (i.net || 0) * factor * ratio;
 
-        if (unit === 'шт') {
+        if (isPieces) {
             g = roundPieces((i.gross || 0) * ratio);
             n = roundPieces((i.net || 0) * ratio);
         } else {
@@ -1203,14 +1261,21 @@ function updateViewNumbers() {
         }
     });
 
+    const totalLoss = (recipe.steps || []).reduce((sum, s) => sum + (s.loss || 0), 0) * ratio;
+    const currentNet = totalNet;
+    const currentGross = totalGross;
+
     const resultEl = document.getElementById('viewResultWeight');
     if (resultEl) resultEl.textContent = formatWeight(currentResultWeight, 'г');
 
+    const lossEl = document.getElementById('viewTotalLoss');
+    if (lossEl) lossEl.textContent = formatWeight(totalLoss, 'г');
+
     const netEl = document.getElementById('viewTotalNet');
-    if (netEl) netEl.textContent = formatWeight(totalNet, 'г');
+    if (netEl) netEl.textContent = formatWeight(currentNet, 'г');
 
     const grossEl = document.getElementById('viewTotalGross');
-    if (grossEl) grossEl.textContent = formatWeight(totalGross, 'г');
+    if (grossEl) grossEl.textContent = formatWeight(currentGross, 'г');
 }
 
 function renderRecipeView() {
@@ -1230,8 +1295,8 @@ function renderRecipeView() {
     let ingRows = '';
     (recipe.ingredients || []).forEach(i => {
         const unit = i.unit || 'г';
-        const factor = (unit === 'кг' || unit === 'л') ? 1000 : 1;
         const isPieces = unit === 'шт';
+        const factor = (unit === 'кг' || unit === 'л') ? 1000 : 1;
 
         let g = (i.gross || 0) * factor * ratio;
         let n = (i.net || 0) * factor * ratio;
@@ -1256,30 +1321,20 @@ function renderRecipeView() {
         `;
     });
 
+    const totalLoss = (recipe.steps || []).reduce((sum, s) => sum + (s.loss || 0), 0) * ratio;
+
     let stepsHtml = '';
     (recipe.steps || []).forEach((s, idx) => {
         const tempLabel = s.temp ? ` | Темп: ${s.temp} °C` : '';
         const humidityLabel = (s.method === 'жар/пар' && s.humidity) ? ` | Влажн: ${s.humidity} %` : '';
+        const lossLabel = s.loss ? ` | Потери: ${formatWeight(s.loss, 'г')}` : '';
         stepsHtml += `
             <div class="view-step">
                 <div><span class="view-step-num">${idx+1}</span>${s.desc || ''}</div>
-                <div class="view-step-meta">Метод: ${s.method}${tempLabel}${humidityLabel}</div>
+                <div class="view-step-meta">Метод: ${s.method}${tempLabel}${humidityLabel}${lossLabel}</div>
             </div>
         `;
     });
-
-    let uvarText = '—';
-    if (baseOutput > 0 && basePortions > 0) {
-        const baseNetSum = (recipe.ingredients || []).reduce((sum, i) => {
-            const factor = (i.unit === 'кг' || i.unit === 'л') ? 1000 : 1;
-            return sum + (i.net || 0) * factor;
-        }, 0);
-        if (baseNetSum > 0) {
-            const baseResultWeight = basePortions * baseOutput;
-            const uvar = (1 - baseResultWeight / baseNetSum) * 100;
-            uvarText = uvar.toFixed(1) + '%';
-        }
-    }
 
     const actionsHtml = isChef()
         ? `<div class="view-actions">
@@ -1294,7 +1349,7 @@ function renderRecipeView() {
         </div>
         <div style="margin-bottom: 8px;">
             <div class="view-title">${recipe.title}</div>
-            <div style="font-size: 12px; color: var(--hint-color);">${recipe.category} · базово: ${basePortions} порц. по ${baseOutput} г</div>
+            <div style="font-size: 12px; color: var(--hint-color);">${recipe.category} · базово: ${basePortions} порц. по ${formatWeight(baseOutput, 'г')}</div>
         </div>
 
         ${actionsHtml}
@@ -1312,10 +1367,13 @@ function renderRecipeView() {
                 </div>
             </div>
             <div class="view-output-row">
-                Результирующий вес: <b id="viewResultWeight">${formatWeight(currentResultWeight, 'г')}</b> · Уварка: <b>${uvarText}</b>
+                Чистый вес: <b id="viewResultWeight">${formatWeight(currentResultWeight, 'г')}</b>
             </div>
             <div class="view-output-row">
-                Итого нетто: <b id="viewTotalNet">${formatWeight(totalNet, 'г')}</b> · Брутто: <b id="viewTotalGross">${formatWeight(totalGross, 'г')}</b>
+                Потери: <b id="viewTotalLoss">${formatWeight(totalLoss, 'г')}</b>
+            </div>
+            <div class="view-output-row">
+                Нужно взять (нетто): <b id="viewTotalNet">${formatWeight(totalNet, 'г')}</b> · Брутто: <b id="viewTotalGross">${formatWeight(totalGross, 'г')}</b>
             </div>
             <button class="mode-btn" style="width: 100%; margin-top: 6px;" onclick="resetViewValues()">Сбросить к базовым</button>
         </div>
@@ -1326,8 +1384,8 @@ function renderRecipeView() {
                 <thead>
                     <tr>
                         <th>Продукт</th>
-                        <th class="num">Брутто</th>
-                        <th class="num">Нетто</th>
+                        <th class="num">Нужно</th>
+                        <th class="num">Получится</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -1396,7 +1454,7 @@ function renderRecipes() {
         if (selectionMode) card.classList.add('selectable');
         if (selectedIds.has(recipe.id)) card.classList.add('selected');
         
-        const outputLabel = recipe.output ? ` · ${recipe.output} г/порция` : '';
+        const outputLabel = recipe.output ? ` · ${formatWeight(recipe.output, 'г')}/порция` : '';
 
         const checkboxHtml = selectionMode 
             ? `<input type="checkbox" class="card-checkbox" ${selectedIds.has(recipe.id) ? 'checked' : ''} onchange="event.stopPropagation(); toggleCardSelection('${recipe.id}', this)">`
