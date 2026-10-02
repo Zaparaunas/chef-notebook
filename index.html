@@ -57,6 +57,29 @@
         }
         .recipe-title-input { font-size: 16px; font-weight: bold; border: 2px solid var(--button-color); }
 
+        .title-row {
+            display: flex;
+            gap: 6px;
+            align-items: flex-start;
+            margin-bottom: 8px;
+        }
+        .title-row .recipe-title-input {
+            flex: 1;
+            margin-bottom: 0;
+        }
+        .cancel-title-btn {
+            background: transparent;
+            color: #ff5252;
+            border: 1px solid #ff5252;
+            border-radius: 6px;
+            padding: 9px 12px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            white-space: nowrap;
+            display: none;
+        }
+
         #portionsRange,
         #portionsInput {
             background: #ffffff !important;
@@ -180,7 +203,10 @@
     <div id="recipeConstructor" class="card" style="display: none;">
         <h3 id="constructorTitle">Создание техкарты</h3>
         
-        <input type="text" id="recipeTitle" class="recipe-title-input" placeholder="Название блюда (например, Оссобуко)" oninput="toggleConstructorFields()">
+        <div class="title-row">
+            <input type="text" id="recipeTitle" class="recipe-title-input" placeholder="Название блюда (например, Оссобуко)" oninput="toggleConstructorFields()">
+            <button type="button" class="cancel-title-btn" id="cancelTitleBtn" onclick="closeConstructor()">Отмена</button>
+        </div>
 
         <div id="hiddenFieldsContainer" style="display: none;">
             <select id="recipeCategory">
@@ -257,7 +283,9 @@
 
     function toggleConstructorFields() {
         const titleVal = document.getElementById('recipeTitle').value.trim();
-        document.getElementById('hiddenFieldsContainer').style.display = titleVal.length > 0 ? 'block' : 'none';
+        const show = titleVal.length > 0;
+        document.getElementById('hiddenFieldsContainer').style.display = show ? 'block' : 'none';
+        document.getElementById('cancelTitleBtn').style.display = show ? 'block' : 'none';
     }
 
     function openConstructor(recipe = null) {
@@ -579,7 +607,7 @@
                     <button class="mode-btn" style="flex: 1; color: #ff5252; border-color: #ff5252;" onclick="deleteRecipe('${recipe.id}')">Удалить</button>
                 </div>
             `;
-            container.appendChild(card);
+            container.appendChild(div === null ? card : card);
         });
     }
 </script>
