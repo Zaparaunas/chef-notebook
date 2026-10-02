@@ -93,7 +93,8 @@
         #portionsRange,
         #portionsInput,
         #outputInput,
-        #viewPortionsInput {
+        #viewPortionsInput,
+        #viewOutputInput {
             background: #ffffff !important;
             color: #000000 !important;
             border: 1px solid #cccccc !important;
@@ -239,7 +240,6 @@
         }
         .dropdown-menu .mode-btn:last-child { margin-bottom: 0; }
 
-        /* Экран просмотра рецепта */
         .view-header {
             display: flex;
             align-items: center;
@@ -311,26 +311,28 @@
             margin-top: 4px;
             padding-left: 28px;
         }
-        .view-portions-row {
-            display: flex;
-            align-items: center;
+        .view-fields-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
             gap: 8px;
-            margin-bottom: 12px;
+            margin-bottom: 10px;
         }
-        .view-portions-row label {
-            font-size: 13px;
+        .view-fields-grid label {
+            font-size: 11px;
             color: var(--hint-color);
+            display: block;
+            margin-bottom: 4px;
         }
-        .view-portions-row input {
-            width: 80px;
+        .view-fields-grid input {
             margin-bottom: 0;
         }
         .view-output-row {
             font-size: 13px;
             color: var(--hint-color);
-            margin-bottom: 12px;
+            margin-bottom: 6px;
         }
         .view-output-row b { color: var(--text-color); }
+        .view-output-row .warn { color: #ff9800; }
     </style>
 </head>
 <body>
@@ -426,13 +428,13 @@
 
             <div style="display: flex; gap: 8px; align-items: center; margin-bottom: 8px;">
                 <div style="flex: 1;">
-                    <label style="font-size: 11px; color: var(--hint-color);">Выход готового блюда (г, на 1 порцию):</label>
+                    <label style="font-size: 11px; color: var(--hint-color);">Размер порции (г):</label>
                     <input type="number" id="outputInput" min="0" placeholder="например, 320" style="margin-bottom:0;" oninput="updateOutputSummary()">
                 </div>
             </div>
 
             <div class="output-summary" id="outputSummary">
-                Общий выход: <b>0 г</b> · Уварка: <b>—</b>
+                Результирующий вес: <b>0 г</b> · Уварка: <b>—</b>
             </div>
 
             <h4>Ингредиенты:</h4>
@@ -504,6 +506,8 @@ let activeFilter = 'Все';
 let recipes = [];
 let selectionMode = false;
 let selectedIds = new Set();
+let viewPortions = null;
+let viewOutput = null;
 
 // ==========================================
 // ЗАГРУЗКА ИЗ SUPABASE
@@ -849,12 +853,12 @@ function updateOutputSummary() {
     const outputPerPortion = parseFloat(document.getElementById('outputInput')?.value) || 0;
     const totalNet = getTotalNet();
 
-    const totalOutput = portions * outputPerPortion;
+    const resultWeight = portions * outputPerPortion;
 
     let uvarText = '—';
     let uvarClass = '';
-    if (totalOutput > 0 && totalNet > 0) {
-        const uvar = (1 - totalOutput / totalNet) * 100;
+    if (resultWeight > 0 && totalNet > 0) {
+        const uvar = (1 - resultWeight / totalNet) * 100;
         uvarText = uvar.toFixed(1) + '%';
         if (uvar < 0) {
             uvarClass = 'warn';
@@ -862,7 +866,7 @@ function updateOutputSummary() {
         }
     }
 
-    el.innerHTML = `Общий выход: <b>${totalOutput} г</b> · Уварка: <b class="${uvarClass}">${uvarText}</b>`;
+    el.innerHTML = `Результирующий вес: <b>${resultWeight} г</b> · Уварка: <b class="${uvarClass}">${uvarText}</b>`;
 }
 
 function addStepRow(data = {}) {
@@ -989,6 +993,8 @@ function openRecipeView(id) {
     const recipe = recipes.find(r => r.id === id);
     if (!recipe) return;
     viewingRecipeId = id;
+    viewPortions = recipe.portions || 4;
+    viewOutput = recipe.output || 0;
 
     document.getElementById('navControlsContainer').style.display = 'none';
     document.getElementById('recipesContainer').style.display = 'none';
@@ -1005,7 +1011,31 @@ function closeRecipeView() {
     document.getElementById('navControlsContainer').style.display = 'block';
     document.getElementById('recipesContainer').style.display = 'block';
     viewingRecipeId = null;
+    viewPortions = null;
+    viewOutput = null;
     renderRecipes();
+}
+
+function onViewPortionsChange(val) {
+    let p = parseFloat(val) || 1;
+    if (p < 0.01) p = 0.01;
+    viewPortions = p;
+    renderRecipeView();
+}
+
+function onViewOutputChange(val) {
+    let o = parseFloat(val) || 0;
+    if (o < 0) o = 0;
+    viewOutput = o;
+    renderRecipeView();
+}
+
+function resetViewValues() {
+    const recipe = recipes.find(r => r.id === viewingRecipeId);
+    if (!recipe) return;
+    viewPortions = recipe.portions || 4;
+    viewOutput = recipe.output || 0;
+    renderRecipeView();
 }
 
 function renderRecipeView() {
@@ -1013,12 +1043,15 @@ function renderRecipeView() {
     if (!recipe) return;
 
     const view = document.getElementById('recipeView');
-    const currentPortions = recipe._viewPortions || recipe.portions || 4;
     const basePortions = recipe.portions || 4;
-    const ratio = currentPortions / basePortions;
-    const outputPerPortion = recipe.output || 0;
+    const baseOutput = recipe.output || 0;
+    const currentPortions = viewPortions;
+    const currentOutput = viewOutput;
 
-    // Ингредиенты с пересчётом
+    const ratio = currentPortions / basePortions;
+    const currentResultWeight = currentPortions * currentOutput;
+    const baseResultWeight = basePortions * baseOutput;
+
     let totalGross = 0, totalNet = 0;
     let ingRows = '';
     (recipe.ingredients || []).forEach(i => {
@@ -1035,7 +1068,6 @@ function renderRecipeView() {
         `;
     });
 
-    // Шаги
     let stepsHtml = '';
     (recipe.steps || []).forEach((s, idx) => {
         const tempLabel = s.temp ? ` | Темп: ${s.temp} °C` : '';
@@ -1048,12 +1080,13 @@ function renderRecipeView() {
         `;
     });
 
-    // Общий выход и уварка
-    const totalOutput = currentPortions * outputPerPortion;
     let uvarText = '—';
-    if (totalOutput > 0 && totalNet > 0) {
-        const uvar = (1 - totalOutput / totalNet) * 100;
-        uvarText = uvar.toFixed(1) + '%';
+    if (baseResultWeight > 0 && basePortions > 0) {
+        const baseNetSum = (recipe.ingredients || []).reduce((sum, i) => sum + (i.net || 0), 0);
+        if (baseNetSum > 0) {
+            const uvar = (1 - baseResultWeight / baseNetSum) * 100;
+            uvarText = uvar.toFixed(1) + '%';
+        }
     }
 
     view.innerHTML = `
@@ -1063,22 +1096,28 @@ function renderRecipeView() {
         </div>
 
         <div style="font-size: 12px; color: var(--hint-color); margin-bottom: 12px;">
-            ${recipe.category}${outputPerPortion ? ` · Выход: ${outputPerPortion} г/порция` : ''}
+            ${recipe.category} · базово: ${basePortions} порц. по ${baseOutput} г
         </div>
 
         <div class="view-section">
-            <h4>Пересчёт порций</h4>
-            <div class="view-portions-row">
-                <label>Порций:</label>
-                <input type="number" id="viewPortionsInput" min="1" max="1000" value="${currentPortions}" oninput="onViewPortionsChange(this.value)">
-                <button class="mode-btn" onclick="resetViewPortions()">Сброс</button>
+            <h4>Параметры</h4>
+            <div class="view-fields-grid">
+                <div>
+                    <label>Порций</label>
+                    <input type="number" id="viewPortionsInput" min="0.01" step="1" value="${currentPortions}" oninput="onViewPortionsChange(this.value)">
+                </div>
+                <div>
+                    <label>Размер порции (г)</label>
+                    <input type="number" id="viewOutputInput" min="0" step="1" value="${currentOutput}" oninput="onViewOutputChange(this.value)">
+                </div>
             </div>
             <div class="view-output-row">
-                Общий выход: <b>${formatNum(totalOutput)} г</b> · Уварка: <b>${uvarText}</b>
+                Результирующий вес: <b>${formatNum(currentResultWeight)} г</b> · Уварка: <b>${uvarText}</b>
             </div>
             <div class="view-output-row">
                 Итого нетто: <b>${formatNum(totalNet)} г</b> · Брутто: <b>${formatNum(totalGross)} г</b>
             </div>
+            <button class="mode-btn" style="width: 100%; margin-top: 6px;" onclick="resetViewValues()">Сбросить к базовым</button>
         </div>
 
         <div class="view-section">
@@ -1109,22 +1148,6 @@ function renderRecipeView() {
     `;
 }
 
-function onViewPortionsChange(val) {
-    const recipe = recipes.find(r => r.id === viewingRecipeId);
-    if (!recipe) return;
-    let p = parseInt(val) || 1;
-    if (p < 1) p = 1;
-    recipe._viewPortions = p;
-    renderRecipeView();
-}
-
-function resetViewPortions() {
-    const recipe = recipes.find(r => r.id === viewingRecipeId);
-    if (!recipe) return;
-    recipe._viewPortions = recipe.portions || 4;
-    renderRecipeView();
-}
-
 async function deleteRecipeFromView(id) {
     await deleteRecipe(id);
     closeRecipeView();
@@ -1132,7 +1155,9 @@ async function deleteRecipeFromView(id) {
 
 function formatNum(n) {
     if (n === undefined || n === null) return '0';
-    return Number.isInteger(n) ? String(n) : n.toFixed(1);
+    const num = Number(n);
+    if (Number.isInteger(num)) return String(num);
+    return num.toFixed(1);
 }
 
 // ==========================================
