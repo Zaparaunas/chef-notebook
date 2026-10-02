@@ -42,27 +42,94 @@
             font-weight: 600; cursor: pointer; margin-bottom: 12px;
         }
 
-        .category-nav { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 6px; margin-bottom: 12px; scrollbar-width: none; }
-        .category-nav::-webkit-scrollbar { display: none; }
-        .category-chip {
-            background: var(--secondary-bg-color); padding: 6px 12px; border-radius: 14px;
-            font-size: 12px; white-space: nowrap; cursor: pointer; border: 1px solid var(--border-color);
+        .search-container { margin-bottom: 12px; }
+        .search-input {
+            width: 100%; padding: 10px 12px; border: 1px solid var(--border-color);
+            border-radius: 8px; box-sizing: border-box; background: var(--secondary-bg-color);
+            color: var(--text-color); font-size: 14px;
         }
-        .category-chip.active { border-color: var(--button-color); font-weight: bold; background: rgba(36, 129, 204, 0.15); }
+        .search-input:focus {
+            outline: none;
+            border-color: var(--button-color);
+        }
 
-        .card { background: var(--secondary-bg-color); padding: 14px; border-radius: 10px; margin-bottom: 12px; border: 1px solid var(--border-color); position: relative; }
-        .card.selectable { padding-left: 40px; }
-        .card.selected { border-color: var(--button-color); background: rgba(36, 129, 204, 0.12); }
-        .card-checkbox {
+        .accordion-group {
+            background: var(--secondary-bg-color);
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            margin-bottom: 8px;
+            overflow: hidden;
+        }
+        .accordion-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 14px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            user-select: none;
+        }
+        .accordion-header:hover { background: rgba(36, 129, 204, 0.08); }
+        .accordion-title { display: flex; align-items: center; gap: 8px; }
+        .accordion-count {
+            color: var(--hint-color);
+            font-weight: 400;
+            font-size: 13px;
+        }
+        .accordion-arrow {
+            color: var(--hint-color);
+            font-size: 12px;
+            transition: transform 0.2s;
+        }
+        .accordion-arrow.open { transform: rotate(90deg); }
+        .accordion-body {
+            display: none;
+            border-top: 1px solid var(--border-color);
+        }
+        .accordion-body.open { display: block; }
+        .accordion-empty {
+            padding: 12px 14px;
+            color: var(--hint-color);
+            font-size: 12px;
+        }
+
+        .recipe-compact {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 14px;
+            border-bottom: 1px solid var(--border-color);
+            cursor: pointer;
+            gap: 8px;
+        }
+        .recipe-compact:last-child { border-bottom: none; }
+        .recipe-compact:active { background: rgba(36, 129, 204, 0.08); }
+        .recipe-compact-title {
+            font-size: 14px;
+            font-weight: 500;
+            flex: 1;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        .recipe-compact-meta {
+            font-size: 12px;
+            color: var(--hint-color);
+            white-space: nowrap;
+        }
+        .recipe-compact.selectable { padding-left: 40px; position: relative; }
+        .recipe-compact .card-checkbox {
             position: absolute;
-            left: 12px;
-            top: 16px;
+            left: 14px;
+            top: 50%;
+            transform: translateY(-50%);
             width: 18px;
             height: 18px;
             cursor: pointer;
+            margin: 0;
         }
-        .card-clickable { cursor: pointer; }
-        
+
         input, select, textarea {
             width: 100%; padding: 9px; margin-bottom: 8px; border: 1px solid var(--border-color);
             border-radius: 6px; box-sizing: border-box; background: var(--bg-color); color: var(--text-color);
@@ -458,19 +525,8 @@
     <div id="navControlsContainer">
         <button class="primary" id="btnNewRecipe" onclick="openConstructor()">+ Новая техкарта</button>
         
-        <div class="category-nav" id="categoryNav">
-            <div class="category-chip active" onclick="filterCategory('Все')">Все</div>
-            <div class="category-chip" onclick="filterCategory('Мясо и птица')">Мясо и птица</div>
-            <div class="category-chip" onclick="filterCategory('Рыба и морепродукты')">Рыба и морепродукты</div>
-            <div class="category-chip" onclick="filterCategory('Овощи и грибы')">Овощи и грибы</div>
-            <div class="category-chip" onclick="filterCategory('Крупы, макароны и бобовые')">Крупы и гарниры</div>
-            <div class="category-chip" onclick="filterCategory('Супы')">Супы</div>
-            <div class="category-chip" onclick="filterCategory('Холодные блюда и закуски')">Холодные закуски</div>
-            <div class="category-chip" onclick="filterCategory('Соусы, маринады и заправки')">Соусы</div>
-            <div class="category-chip" onclick="filterCategory('Полуфабрикаты и заготовки')">Заготовки</div>
-            <div class="category-chip" onclick="filterCategory('Выпечка и десерты')">Десерты</div>
-            <div class="category-chip" onclick="filterCategory('Напитки')">Напитки</div>
-            <div class="category-chip" onclick="filterCategory('Другое')">Другое</div>
+        <div class="search-container">
+            <input type="text" id="searchInput" class="search-input" placeholder="🔍 Поиск по названию..." oninput="onSearchInput(this.value)">
         </div>
     </div>
 
@@ -593,6 +649,20 @@ const SUPABASE_URL = 'https://fxvporgpgpxudzlbauty.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_kcUT9hJ_k8e-2sj0j8BbAA_QvG8Wc-p';
 const OWNER_TELEGRAM_ID = '1655438557';
 
+const CATEGORIES = [
+    'Мясо и птица',
+    'Рыба и морепродукты',
+    'Овощи и грибы',
+    'Крупы, макароны и бобовые',
+    'Супы',
+    'Холодные блюда и закуски',
+    'Соусы, маринады и заправки',
+    'Полуфабрикаты и заготовки',
+    'Выпечка и десерты',
+    'Напитки',
+    'Другое'
+];
+
 const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 let currentUserRole = 'cook';
@@ -695,12 +765,6 @@ function hasPath(fromId, toId, visited) {
     return false;
 }
 
-function wouldCreateCycle(currentId, candidateId) {
-    if (!currentId) return false;
-    if (currentId === candidateId) return true;
-    return hasPath(candidateId, currentId);
-}
-
 function getAvailableRecipesForIngredient() {
     const currentId = editingRecipeId;
     return recipes
@@ -746,6 +810,8 @@ let selectedIds = new Set();
 let viewPortions = null;
 let viewOutput = null;
 let viewStack = [];
+let expandedCategories = new Set();
+let searchQuery = '';
 
 // ==========================================
 // ЗАГРУЗКА ИЗ SUPABASE
@@ -1751,11 +1817,9 @@ function renderRecipeView() {
            </div>`
         : '';
 
-    const backLabel = viewStack.length > 0 ? '←' : '←';
-
     view.innerHTML = `
         <div class="view-header">
-            <button class="back-btn" onclick="closeRecipeView()">${backLabel}</button>
+            <button class="back-btn" onclick="closeRecipeView()">←</button>
         </div>
         <div style="margin-bottom: 8px;">
             <div class="view-title">${recipe.title}</div>
@@ -1818,20 +1882,26 @@ async function deleteRecipeFromView(id) {
 }
 
 // ==========================================
-// СПИСОК РЕЦЕПТОВ
+// СПИСОК РЕЦЕПТОВ — АККОРДЕОН + ПОИСК
 // ==========================================
 
-function filterCategory(cat) {
-    activeFilter = cat;
-    document.querySelectorAll('.category-chip').forEach(chip => {
-        chip.classList.toggle('active', chip.textContent.includes(cat) || (cat === 'Все' && chip.textContent === 'Все'));
-    });
+function onSearchInput(val) {
+    searchQuery = (val || '').trim().toLowerCase();
+    renderRecipes();
+}
+
+function toggleCategory(cat) {
+    if (expandedCategories.has(cat)) {
+        expandedCategories.delete(cat);
+    } else {
+        expandedCategories.add(cat);
+    }
     renderRecipes();
 }
 
 function getFilteredRecipes() {
-    if (activeFilter === 'Все') return recipes;
-    return recipes.filter(r => r.category === activeFilter);
+    if (!searchQuery) return recipes;
+    return recipes.filter(r => (r.title || '').toLowerCase().includes(searchQuery));
 }
 
 function renderRecipes() {
@@ -1839,70 +1909,107 @@ function renderRecipes() {
     if (!container) return;
     container.innerHTML = '';
 
-    const filtered = getFilteredRecipes();
-
     const bottom = document.getElementById('bottomControls');
     bottom.style.display = recipes.length > 0 ? 'block' : 'none';
 
-    if (filtered.length === 0) {
-        if (recipes.length === 0) {
-            container.innerHTML = `
-                <div class="empty-state">
-                    <div class="icon">📓</div>
-                    <h3>Пока нет ни одной техкарты</h3>
-                    <p>Нажмите «+ Новая техкарта» сверху, чтобы создать первую.</p>
-                </div>
-            `;
-        } else {
-            container.innerHTML = `<p style="text-align: center; color: var(--hint-color);">Техкарт пока нет в категории «${activeFilter}».</p>`;
+    // Режим поиска — плоский список
+    if (searchQuery) {
+        const filtered = recipes.filter(r => (r.title || '').toLowerCase().includes(searchQuery));
+        if (filtered.length === 0) {
+            container.innerHTML = `<p style="text-align: center; color: var(--hint-color);">Ничего не найдено по запросу «${searchQuery}».</p>`;
+            return;
         }
+        const wrap = document.createElement('div');
+        wrap.className = 'accordion-group';
+        wrap.style.padding = '0';
+        filtered.forEach(r => {
+            wrap.appendChild(buildCompactRow(r));
+        });
+        container.appendChild(wrap);
         return;
     }
 
-    filtered.forEach(recipe => {
-        const card = document.createElement('div');
-        card.className = 'card card-clickable';
-        if (selectionMode) card.classList.add('selectable');
-        if (selectedIds.has(recipe.id)) card.classList.add('selected');
-        
-        const outputLabel = recipe.output ? ` · ${formatWeight(recipe.output, 'г')}/порция` : '';
-
-        const checkboxHtml = selectionMode 
-            ? `<input type="checkbox" class="card-checkbox" ${selectedIds.has(recipe.id) ? 'checked' : ''} onchange="event.stopPropagation(); toggleCardSelection('${recipe.id}', this)">`
-            : '';
-
-        card.innerHTML = `
-            ${checkboxHtml}
-            <h3 style="margin-bottom: 4px;">${recipe.title}</h3>
-            <div style="font-size: 12px; color: var(--hint-color);">${recipe.category} · ${recipe.portions || 4} порций${outputLabel}</div>
+    // Пусто
+    if (recipes.length === 0) {
+        container.innerHTML = `
+            <div class="empty-state">
+                <div class="icon">📓</div>
+                <h3>Пока нет ни одной техкарты</h3>
+                <p>Нажмите «+ Новая техкарта» сверху, чтобы создать первую.</p>
+            </div>
         `;
+        return;
+    }
 
-        if (selectionMode) {
-            card.onclick = () => {
-                const cb = card.querySelector('.card-checkbox');
-                if (cb) {
-                    cb.checked = !cb.checked;
-                    toggleCardSelection(recipe.id, cb);
-                }
-            };
+    // Аккордеон по категориям
+    CATEGORIES.forEach(cat => {
+        const inCat = recipes.filter(r => r.category === cat);
+        const isOpen = expandedCategories.has(cat);
+
+        const group = document.createElement('div');
+        group.className = 'accordion-group';
+
+        const header = document.createElement('div');
+        header.className = 'accordion-header';
+        header.onclick = () => toggleCategory(cat);
+        header.innerHTML = `
+            <div class="accordion-title">
+                <span class="accordion-arrow ${isOpen ? 'open' : ''}">▶</span>
+                <span>${cat}</span>
+                <span class="accordion-count">(${inCat.length})</span>
+            </div>
+        `;
+        group.appendChild(header);
+
+        const body = document.createElement('div');
+        body.className = 'accordion-body' + (isOpen ? ' open' : '');
+        if (inCat.length === 0) {
+            body.innerHTML = `<div class="accordion-empty">Пусто</div>`;
         } else {
-            card.onclick = () => openRecipeView(recipe.id);
+            inCat.forEach(r => {
+                body.appendChild(buildCompactRow(r));
+            });
         }
+        group.appendChild(body);
 
-        container.appendChild(card);
+        container.appendChild(group);
     });
+}
+
+function buildCompactRow(recipe) {
+    const row = document.createElement('div');
+    row.className = 'recipe-compact';
+    if (selectionMode) row.classList.add('selectable');
+    if (selectedIds.has(recipe.id)) row.style.background = 'rgba(36, 129, 204, 0.15)';
+
+    const outputLabel = recipe.output ? ` · ${formatWeight(recipe.output, 'г')}/порц` : '';
+    const meta = `${recipe.portions || 4} порц${outputLabel}`;
+
+    const checkboxHtml = selectionMode
+        ? `<input type="checkbox" class="card-checkbox" ${selectedIds.has(recipe.id) ? 'checked' : ''} onchange="event.stopPropagation(); toggleCardSelection('${recipe.id}', this)">`
+        : '';
+
+    row.innerHTML = `
+        ${checkboxHtml}
+        <div class="recipe-compact-title">${recipe.title}</div>
+        <div class="recipe-compact-meta">${meta}</div>
+    `;
 
     if (selectionMode) {
-        const panel = document.getElementById('selectionPanel');
-        const oldButtons = panel.querySelector('.selection-buttons');
-        oldButtons.innerHTML = `
-            <button class="mode-btn" onclick="selectAll()">Все</button>
-            <button class="mode-btn" onclick="clearSelection()">Ничего</button>
-            <button class="mode-btn" onclick="exportSelectedToFile()">Файл</button>
-            <button class="mode-btn" onclick="exportSelectedToClipboard()">Буфер</button>
-            <button class="mode-btn" onclick="exitSelectionMode()">Выйти</button>
-        `;
+        row.onclick = () => {
+            const cb = row.querySelector('.card-checkbox');
+            if (cb) {
+                cb.checked = !cb.checked;
+                toggleCardSelection(recipe.id, cb);
+                if (cb.checked) row.style.background = 'rgba(36, 129, 204, 0.15)';
+                else row.style.background = '';
+            }
+        };
+    } else {
+        row.onclick = () => openRecipeView(recipe.id);
     }
+
+    return row;
 }
 
 // ==========================================
@@ -1915,8 +2022,6 @@ function toggleCardSelection(id, checkbox) {
     } else {
         selectedIds.delete(id);
     }
-    const card = checkbox.closest('.card');
-    if (card) card.classList.toggle('selected', checkbox.checked);
     updateSelectionInfo();
 }
 
