@@ -202,6 +202,25 @@
             margin-bottom: 0;
         }
 
+        .ing-type-row {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            margin-bottom: 4px;
+        }
+        .ing-type-row label {
+            font-size: 11px;
+            color: var(--hint-color);
+            white-space: nowrap;
+        }
+        .ing-type-row select {
+            flex: 1;
+            margin-bottom: 0;
+        }
+        .ing-preparation-fields select {
+            margin-bottom: 4px;
+        }
+
         .method-temp-row {
             display: flex;
             gap: 6px;
@@ -386,6 +405,31 @@
         }
         .view-output-row b { color: var(--text-color); }
         .view-output-row .warn { color: #ff9800; }
+
+        .linked-badge {
+            display: inline-block;
+            background: var(--button-color);
+            color: white;
+            font-size: 9px;
+            padding: 1px 5px;
+            border-radius: 8px;
+            margin-left: 4px;
+            vertical-align: middle;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+        }
+        .open-link-btn {
+            display: inline-block;
+            background: transparent;
+            border: 1px solid var(--button-color);
+            color: var(--button-color);
+            font-size: 10px;
+            padding: 2px 6px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-left: 4px;
+            vertical-align: middle;
+        }
 
         .empty-state {
             text-align: center;
@@ -632,6 +676,45 @@ function unitToGrams(value, unit) {
 }
 
 // ==========================================
+// МАТРЁШКА — ЗАЩИТА ОТ ЦИКЛОВ
+// ==========================================
+
+function hasPath(fromId, toId, visited) {
+    if (!fromId || !toId) return false;
+    if (fromId === toId) return true;
+    visited = visited || new Set();
+    if (visited.has(fromId)) return false;
+    visited.add(fromId);
+    const rec = recipes.find(r => r.id === fromId);
+    if (!rec) return false;
+    for (const ing of (rec.ingredients || [])) {
+        if (ing.type === 'preparation' && ing.linked_recipe_id) {
+            if (hasPath(ing.linked_recipe_id, toId, visited)) return true;
+        }
+    }
+    return false;
+}
+
+function wouldCreateCycle(currentId, candidateId) {
+    if (!currentId) return false;
+    if (currentId === candidateId) return true;
+    return hasPath(candidateId, currentId);
+}
+
+function getAvailableRecipesForIngredient() {
+    const currentId = editingRecipeId;
+    return recipes
+        .slice()
+        .sort((a, b) => (a.title || '').localeCompare(b.title || ''))
+        .filter(r => {
+            if (!currentId) return true;
+            if (r.id === currentId) return false;
+            if (hasPath(r.id, currentId)) return false;
+            return true;
+        });
+}
+
+// ==========================================
 // СИНХРОНИЗАЦИЯ
 // ==========================================
 
@@ -662,6 +745,7 @@ let selectionMode = false;
 let selectedIds = new Set();
 let viewPortions = null;
 let viewOutput = null;
+let viewStack = [];
 
 // ==========================================
 // ЗАГРУЗКА ИЗ SUPABASE
@@ -931,6 +1015,10 @@ function onNumberInput(val) {
     updateOutputSummary();
 }
 
+// ==========================================
+// ИНГРЕДИЕНТ
+// ==========================================
+
 function addIngredientRow(data = {}) {
     const container = document.getElementById('ingredientsList');
     const div = document.createElement('div');
@@ -939,11 +1027,39 @@ function addIngredientRow(data = {}) {
     const gross = data.gross || '';
     const net = data.net || '';
     const unit = data.unit || 'г';
+    const type = data.type || 'product';
+    const linkedId = data.linked_recipe_id || '';
 
     const unitOptions = UNITS.map(u => `<option value="${u}" ${u === unit ? 'selected' : ''}>${u}</option>`).join('');
 
+    const availableRecipes = getAvailableRecipesForIngredient();
+    let recipeOptionsHtml = '<option value="">— выберите рецепт —</option>';
+    availableRecipes.forEach(r => {
+        const label = r.title + (r.category ? ' · ' + r.category : '');
+        recipeOptionsHtml += `<option value="${r.id}" ${r.id === linkedId ? 'selected' : ''}>${label}</option>`;
+    });
+
+    if (linkedId && !availableRecipes.find(r => r.id === linkedId)) {
+        recipeOptionsHtml += `<option value="${linkedId}" selected>(недоступный рецепт)</option>`;
+    }
+
+    const productDisplay = type === 'product' ? '' : 'display:none;';
+    const preparationDisplay = type === 'preparation' ? '' : 'display:none;';
+
     div.innerHTML = `
-        <input type="text" placeholder="Название продукта" value="${data.name || ''}" class="ing-name">
+        <div class="ing-type-row">
+            <label>Тип:</label>
+            <select class="ing-type" onchange="onIngredientTypeChange(this)">
+                <option value="product" ${type === 'product' ? 'selected' : ''}>Продукт</option>
+                <option value="preparation" ${type === 'preparation' ? 'selected' : ''}>Полуфабрикат</option>
+            </select>
+        </div>
+        <div class="ing-product-fields" style="${productDisplay}">
+            <input type="text" placeholder="Название продукта" value="${type === 'product' ? (data.name || '') : ''}" class="ing-name">
+        </div>
+        <div class="ing-preparation-fields" style="${preparationDisplay}">
+            <select class="ing-linked-recipe">${recipeOptionsHtml}</select>
+        </div>
         <div class="pro-fields">
             <div class="weight-group">
                 <input type="number" placeholder="Брутто" value="${gross}" class="ing-gross" oninput="updateRowLoss(this); updateSummary();" onblur="validateIngredientRow(this)">
@@ -962,6 +1078,52 @@ function addIngredientRow(data = {}) {
     container.appendChild(div);
     updateRowLoss(div.querySelector('.ing-gross'));
     updateSummary();
+}
+
+function onIngredientTypeChange(selectEl) {
+    const row = selectEl.closest('.ingredient-row');
+    if (!row) return;
+    const productFields = row.querySelector('.ing-product-fields');
+    const preparationFields = row.querySelector('.ing-preparation-fields');
+    if (selectEl.value === 'preparation') {
+        productFields.style.display = 'none';
+        preparationFields.style.display = 'block';
+    } else {
+        productFields.style.display = 'block';
+        preparationFields.style.display = 'none';
+    }
+}
+
+function getIngredientDataFromRow(row) {
+    const type = row.querySelector('.ing-type')?.value || 'product';
+    let name = '';
+    let linked_recipe_id = null;
+
+    if (type === 'preparation') {
+        const linkedSelect = row.querySelector('.ing-linked-recipe');
+        linked_recipe_id = linkedSelect?.value || null;
+        if (linked_recipe_id) {
+            const rec = recipes.find(r => r.id === linked_recipe_id);
+            name = rec ? rec.title : '(неизвестный полуфабрикат)';
+        }
+    } else {
+        name = row.querySelector('.ing-name')?.value.trim() || '';
+    }
+
+    const gross = parseFloat(row.querySelector('.ing-gross')?.value) || 0;
+    const net = parseFloat(row.querySelector('.ing-net')?.value) || 0;
+    const unit = row.querySelector('.ing-unit')?.value || 'г';
+    const loss = gross > 0 ? ((gross - net) / gross) * 100 : 0;
+
+    return {
+        name,
+        gross,
+        net,
+        loss_percent: loss,
+        unit,
+        type,
+        linked_recipe_id
+    };
 }
 
 function updateRowLoss(el) {
@@ -995,7 +1157,10 @@ function validateIngredientRow(el) {
     if (gross > 0 && net > gross) {
         grossInput.classList.add('invalid');
         netInput.classList.add('invalid');
-        if (warning) warning.classList.add('show');
+        if (warning) {
+            warning.textContent = 'Нетто не может быть больше брутто';
+            warning.classList.add('show');
+        }
         if (navigator.vibrate) navigator.vibrate(150);
     } else {
         grossInput.classList.remove('invalid');
@@ -1007,21 +1172,51 @@ function validateIngredientRow(el) {
 function validateAllIngredients() {
     let allValid = true;
     document.querySelectorAll('.ingredient-row').forEach(row => {
+        const type = row.querySelector('.ing-type')?.value || 'product';
         const grossInput = row.querySelector('.ing-gross');
         const netInput = row.querySelector('.ing-net');
         const warning = row.querySelector('.field-warning');
         if (!grossInput || !netInput) return;
+
         const gross = parseFloat(grossInput.value) || 0;
         const net = parseFloat(netInput.value) || 0;
-        if (gross > 0 && net > gross) {
+
+        let invalid = false;
+        let msg = '';
+
+        if (type === 'product') {
+            const nameInput = row.querySelector('.ing-name');
+            const name = nameInput?.value.trim() || '';
+            if (!name) return;
+        } else if (type === 'preparation') {
+            const linked = row.querySelector('.ing-linked-recipe')?.value;
+            if (!linked) {
+                invalid = true;
+                msg = 'Выберите полуфабрикат';
+            }
+        }
+
+        if (!invalid && gross > 0 && net > gross) {
+            invalid = true;
+            msg = 'Нетто не может быть больше брутто';
+        }
+
+        if (invalid) {
             grossInput.classList.add('invalid');
             netInput.classList.add('invalid');
-            if (warning) warning.classList.add('show');
+            if (warning) {
+                warning.textContent = msg;
+                warning.classList.add('show');
+            }
             allValid = false;
         }
     });
     return allValid;
 }
+
+// ==========================================
+// ИТОГИ
+// ==========================================
 
 function getTotalNet() {
     let totalNet = 0;
@@ -1179,6 +1374,10 @@ function updateOutputSummary() {
     }
 }
 
+// ==========================================
+// ШАГИ
+// ==========================================
+
 function addStepRow(data = {}) {
     const container = document.getElementById('stepsList');
     const div = document.createElement('div');
@@ -1246,6 +1445,10 @@ function onMethodChange(selectEl) {
     }
 }
 
+// ==========================================
+// СОХРАНЕНИЕ
+// ==========================================
+
 async function saveRecipe() {
     if (!isChef()) return;
 
@@ -1256,7 +1459,7 @@ async function saveRecipe() {
     if (!title) { alert('Введите название блюда!'); return; }
     if (!category) { alert('Выберите категорию!'); return; }
     if (!validateAllIngredients()) {
-        alert('Исправьте ошибки в ингредиентах:\nнетто не может быть больше брутто.');
+        alert('Исправьте ошибки в ингредиентах.');
         if (navigator.vibrate) navigator.vibrate(200);
         return;
     }
@@ -1268,21 +1471,10 @@ async function saveRecipe() {
 
     const ingredients = [];
     document.querySelectorAll('.ingredient-row').forEach(row => {
-        const name = row.querySelector('.ing-name')?.value.trim();
-        if (!name) return;
-        const gross = parseFloat(row.querySelector('.ing-gross')?.value) || 0;
-        const net = parseFloat(row.querySelector('.ing-net')?.value) || 0;
-        const unit = row.querySelector('.ing-unit')?.value || 'г';
-        const loss = gross > 0 ? ((gross - net) / gross) * 100 : 0;
-        ingredients.push({
-            name,
-            gross,
-            net,
-            loss_percent: loss,
-            unit,
-            type: 'product',
-            linked_recipe_id: null
-        });
+        const ing = getIngredientDataFromRow(row);
+        if (ing.type === 'product' && !ing.name) return;
+        if (ing.type === 'preparation' && !ing.linked_recipe_id) return;
+        ingredients.push(ing);
     });
 
     const steps = [];
@@ -1342,6 +1534,11 @@ function editRecipe(id) {
 function openRecipeView(id) {
     const recipe = recipes.find(r => r.id === id);
     if (!recipe) return;
+
+    if (viewingRecipeId && viewingRecipeId !== id) {
+        viewStack.push(viewingRecipeId);
+    }
+
     viewingRecipeId = id;
     viewPortions = recipe.portions || 4;
     viewOutput = recipe.output || 0;
@@ -1357,6 +1554,18 @@ function openRecipeView(id) {
 }
 
 function closeRecipeView() {
+    if (viewStack.length > 0) {
+        const prevId = viewStack.pop();
+        const rec = recipes.find(r => r.id === prevId);
+        if (rec) {
+            viewingRecipeId = prevId;
+            viewPortions = rec.portions || 4;
+            viewOutput = rec.output || 0;
+            renderRecipeView();
+            return;
+        }
+    }
+    viewStack = [];
     document.getElementById('recipeView').style.display = 'none';
     document.getElementById('navControlsContainer').style.display = 'block';
     document.getElementById('recipesContainer').style.display = 'block';
@@ -1364,6 +1573,16 @@ function closeRecipeView() {
     viewPortions = null;
     viewOutput = null;
     renderRecipes();
+}
+
+function openLinkedFromView(linkedId) {
+    if (!linkedId) return;
+    const rec = recipes.find(r => r.id === linkedId);
+    if (!rec) {
+        alert('Рецепт полуфабриката не найден');
+        return;
+    }
+    openRecipeView(linkedId);
 }
 
 function onViewPortionsChange(val) {
@@ -1491,9 +1710,18 @@ function renderRecipeView() {
         totalGross += (i.gross || 0) * factor * ratio;
         totalNet += (i.net || 0) * factor * ratio;
 
+        let nameCell = i.name || '';
+        if (i.type === 'preparation') {
+            const hasLink = i.linked_recipe_id && recipes.find(r => r.id === i.linked_recipe_id);
+            nameCell += ` <span class="linked-badge">полуфаб.</span>`;
+            if (hasLink) {
+                nameCell += ` <button class="open-link-btn" onclick="openLinkedFromView('${i.linked_recipe_id}')">Открыть</button>`;
+            }
+        }
+
         ingRows += `
             <tr class="view-ing-row">
-                <td>${i.name || ''}</td>
+                <td>${nameCell}</td>
                 <td class="num">${formatWeight(g, unit)}</td>
                 <td class="num">${formatWeight(n, unit)}</td>
             </tr>
@@ -1523,9 +1751,11 @@ function renderRecipeView() {
            </div>`
         : '';
 
+    const backLabel = viewStack.length > 0 ? '←' : '←';
+
     view.innerHTML = `
         <div class="view-header">
-            <button class="back-btn" onclick="closeRecipeView()">←</button>
+            <button class="back-btn" onclick="closeRecipeView()">${backLabel}</button>
         </div>
         <div style="margin-bottom: 8px;">
             <div class="view-title">${recipe.title}</div>
@@ -1583,6 +1813,7 @@ function renderRecipeView() {
 
 async function deleteRecipeFromView(id) {
     await deleteRecipe(id);
+    viewStack = [];
     closeRecipeView();
 }
 
