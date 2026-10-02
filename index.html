@@ -48,7 +48,17 @@
         }
         .category-chip.active { border-color: var(--button-color); font-weight: bold; background: rgba(36, 129, 204, 0.15); }
 
-        .card { background: var(--secondary-bg-color); padding: 14px; border-radius: 10px; margin-bottom: 12px; border: 1px solid var(--border-color); }
+        .card { background: var(--secondary-bg-color); padding: 14px; border-radius: 10px; margin-bottom: 12px; border: 1px solid var(--border-color); position: relative; }
+        .card.selectable { padding-left: 40px; }
+        .card.selected { border-color: var(--button-color); background: rgba(36, 129, 204, 0.12); }
+        .card-checkbox {
+            position: absolute;
+            left: 12px;
+            top: 16px;
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+        }
         
         input, select, textarea {
             width: 100%; padding: 9px; margin-bottom: 8px; border: 1px solid var(--border-color);
@@ -164,6 +174,57 @@
             padding: 4px 8px; border-radius: 4px; font-size: 12px; cursor: pointer; align-self: flex-end;
         }
         .save-db-btn { background-color: var(--success-color) !important; color: #fff !important; }
+
+        .selection-panel {
+            background: var(--secondary-bg-color);
+            border: 1px solid var(--button-color);
+            border-radius: 10px;
+            padding: 10px;
+            margin-bottom: 12px;
+            display: none;
+        }
+        .selection-panel.active { display: block; }
+        .selection-panel .selection-info {
+            font-size: 13px;
+            font-weight: 600;
+            margin-bottom: 8px;
+            text-align: center;
+        }
+        .selection-panel .selection-buttons {
+            display: flex;
+            gap: 6px;
+        }
+        .selection-panel .selection-buttons .mode-btn {
+            flex: 1;
+        }
+
+        .bottom-controls {
+            margin-top: 20px;
+            padding-top: 16px;
+            border-top: 1px solid var(--border-color);
+        }
+        .bottom-controls .controls-row {
+            display: flex;
+            gap: 6px;
+            margin-bottom: 6px;
+        }
+        .bottom-controls .controls-row .mode-btn {
+            flex: 1;
+        }
+        .dropdown-menu {
+            background: var(--secondary-bg-color);
+            border: 1px solid var(--button-color);
+            border-radius: 8px;
+            padding: 6px;
+            margin-bottom: 8px;
+            display: none;
+        }
+        .dropdown-menu.active { display: block; }
+        .dropdown-menu .mode-btn {
+            width: 100%;
+            margin-bottom: 4px;
+        }
+        .dropdown-menu .mode-btn:last-child { margin-bottom: 0; }
     </style>
 </head>
 <body>
@@ -195,8 +256,33 @@
         </div>
     </div>
 
+    <div id="selectionPanel" class="selection-panel">
+        <div class="selection-info" id="selectionInfo">Выбрано: 0</div>
+        <div class="selection-buttons">
+            <button class="mode-btn" onclick="selectAll()">Выбрать все</button>
+            <button class="mode-btn" onclick="clearSelection()">Снять все</button>
+            <button class="mode-btn" onclick="exitSelectionMode()">Выйти</button>
+        </div>
+    </div>
+
     <div id="recipesContainer">
         <p style="color: var(--hint-color); text-align: center;">Рецепты пока не добавлены...</p>
+    </div>
+
+    <div class="bottom-controls" id="bottomControls" style="display: none;">
+        <div class="controls-row">
+            <button class="mode-btn" onclick="toggleExportMenu()">Экспорт ▾</button>
+            <button class="mode-btn" onclick="toggleImportMenu()">Импорт ▾</button>
+        </div>
+        <div class="dropdown-menu" id="exportMenu">
+            <button class="mode-btn" onclick="startSelectionMode()">Выбрать рецепты…</button>
+            <button class="mode-btn" onclick="exportAllToFile()">Экспорт всех в файл</button>
+            <button class="mode-btn" onclick="exportAllToClipboard()">Экспорт всех в буфер</button>
+        </div>
+        <div class="dropdown-menu" id="importMenu">
+            <button class="mode-btn" onclick="importFromFilePrompt()">Импорт из файла</button>
+            <button class="mode-btn" onclick="importFromClipboardPrompt()">Импорт из буфера</button>
+        </div>
     </div>
 
     <div id="recipeConstructor" class="card" style="display: none;">
@@ -260,6 +346,8 @@
     let editingRecipeId = null;
     let activeFilter = 'Все';
     let recipes = [];
+    let selectionMode = false;
+    let selectedIds = new Set();
 
     if (!localStorage.getItem('alpha1_cleaned')) {
         localStorage.removeItem('chef_recipes');
@@ -288,6 +376,8 @@
     function openConstructor(recipe = null) {
         document.getElementById('navControlsContainer').style.display = 'none';
         document.getElementById('recipesContainer').style.display = 'none';
+        document.getElementById('selectionPanel').classList.remove('active');
+        document.getElementById('bottomControls').style.display = 'none';
         document.getElementById('recipeConstructor').style.display = 'block';
 
         document.getElementById('ingredientsList').innerHTML = '';
@@ -330,6 +420,7 @@
         document.getElementById('navControlsContainer').style.display = 'block';
         document.getElementById('recipesContainer').style.display = 'block';
         editingRecipeId = null;
+        renderRecipes();
     }
 
     function onRangeInput(val) {
@@ -510,13 +601,14 @@
         });
 
         loadRecipes();
+        const now = new Date().toISOString();
         if (editingRecipeId) {
             const idx = recipes.findIndex(r => r.id === editingRecipeId);
             if (idx !== -1) {
-                recipes[idx] = { id: editingRecipeId, title, category, portions, ingredients, steps };
+                recipes[idx] = { id: editingRecipeId, title, category, portions, ingredients, steps, updated_at: now };
             }
         } else {
-            const newRecipe = { id: Date.now().toString(), title, category, portions, ingredients, steps };
+            const newRecipe = { id: Date.now().toString(), title, category, portions, ingredients, steps, updated_at: now };
             recipes.unshift(newRecipe);
         }
 
@@ -558,15 +650,208 @@
         localStorage.setItem('chef_recipes', JSON.stringify(recipes));
     }
 
+    function toggleCardSelection(id, checkbox) {
+        if (checkbox.checked) {
+            selectedIds.add(id);
+        } else {
+            selectedIds.delete(id);
+        }
+        const card = checkbox.closest('.card');
+        if (card) card.classList.toggle('selected', checkbox.checked);
+        updateSelectionInfo();
+    }
+
+    function updateSelectionInfo() {
+        document.getElementById('selectionInfo').textContent = `Выбрано: ${selectedIds.size}`;
+    }
+
+    function startSelectionMode() {
+        selectionMode = true;
+        selectedIds.clear();
+        document.getElementById('exportMenu').classList.remove('active');
+        document.getElementById('selectionPanel').classList.add('active');
+        renderRecipes();
+    }
+
+    function exitSelectionMode() {
+        selectionMode = false;
+        selectedIds.clear();
+        document.getElementById('selectionPanel').classList.remove('active');
+        renderRecipes();
+    }
+
+    function selectAll() {
+        const filtered = getFilteredRecipes();
+        filtered.forEach(r => selectedIds.add(r.id));
+        renderRecipes();
+        updateSelectionInfo();
+    }
+
+    function clearSelection() {
+        selectedIds.clear();
+        renderRecipes();
+        updateSelectionInfo();
+    }
+
+    function getFilteredRecipes() {
+        if (activeFilter === 'Все') return recipes;
+        return recipes.filter(r => r.category === activeFilter);
+    }
+
+    function toggleExportMenu() {
+        document.getElementById('importMenu').classList.remove('active');
+        document.getElementById('exportMenu').classList.toggle('active');
+    }
+
+    function toggleImportMenu() {
+        document.getElementById('exportMenu').classList.remove('active');
+        document.getElementById('importMenu').classList.toggle('active');
+    }
+
+    function downloadJson(data, filename) {
+        const blob = new Blob([data], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    }
+
+    async function copyToClipboard(text) {
+        try {
+            await navigator.clipboard.writeText(text);
+            return true;
+        } catch(e) {
+            return false;
+        }
+    }
+
+    function exportAllToFile() {
+        document.getElementById('exportMenu').classList.remove('active');
+        if (recipes.length === 0) { alert('Нет рецептов для экспорта.'); return; }
+        const data = JSON.stringify(recipes, null, 2);
+        const stamp = new Date().toISOString().slice(0, 10);
+        downloadJson(data, `chef_recipes_${stamp}.json`);
+    }
+
+    async function exportAllToClipboard() {
+        document.getElementById('exportMenu').classList.remove('active');
+        if (recipes.length === 0) { alert('Нет рецептов для экспорта.'); return; }
+        const data = JSON.stringify(recipes);
+        const ok = await copyToClipboard(data);
+        if (ok) {
+            alert(`Скопировано рецептов: ${recipes.length}`);
+        } else {
+            alert('Не удалось скопировать. Попробуйте экспорт в файл.');
+        }
+    }
+
+    function exportSelectedToFile() {
+        if (selectedIds.size === 0) { alert('Ничего не выбрано.'); return; }
+        const selected = recipes.filter(r => selectedIds.has(r.id));
+        const data = JSON.stringify(selected, null, 2);
+        const stamp = new Date().toISOString().slice(0, 10);
+        downloadJson(data, `chef_recipes_selected_${stamp}.json`);
+    }
+
+    async function exportSelectedToClipboard() {
+        if (selectedIds.size === 0) { alert('Ничего не выбрано.'); return; }
+        const selected = recipes.filter(r => selectedIds.has(r.id));
+        const data = JSON.stringify(selected);
+        const ok = await copyToClipboard(data);
+        if (ok) {
+            alert(`Скопировано рецептов: ${selected.length}`);
+        } else {
+            alert('Не удалось скопировать. Попробуйте экспорт в файл.');
+        }
+    }
+
+    function mergeRecipes(incoming) {
+        if (!Array.isArray(incoming)) return { added: 0, updated: 0, skipped: 0 };
+        let added = 0, updated = 0, skipped = 0;
+        const current = recipes.slice();
+        const map = new Map(current.map(r => [r.id, r]));
+
+        incoming.forEach(inc => {
+            if (!inc || typeof inc !== 'object' || !inc.id || !inc.title) { skipped++; return; }
+            if (!inc.updated_at) inc.updated_at = new Date(0).toISOString();
+            const existing = map.get(inc.id);
+            if (!existing) {
+                map.set(inc.id, inc);
+                added++;
+            } else {
+                const existingTime = new Date(existing.updated_at || 0).getTime();
+                const incomingTime = new Date(inc.updated_at || 0).getTime();
+                if (incomingTime >= existingTime) {
+                    map.set(inc.id, inc);
+                    updated++;
+                } else {
+                    skipped++;
+                }
+            }
+        });
+
+        recipes = Array.from(map.values());
+        recipes.sort((a, b) => new Date(b.updated_at || 0) - new Date(a.updated_at || 0));
+        saveRecipes();
+        return { added, updated, skipped };
+    }
+
+    function importFromFilePrompt() {
+        document.getElementById('importMenu').classList.remove('active');
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.accept = '.json,application/json';
+        input.onchange = (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = (ev) => {
+                try {
+                    const data = JSON.parse(ev.target.result);
+                    handleImport(data);
+                } catch(err) {
+                    alert('Не удалось прочитать файл. Возможно, это не JSON.');
+                }
+            };
+            reader.readAsText(file);
+        };
+        input.click();
+    }
+
+    async function importFromClipboardPrompt() {
+        document.getElementById('importMenu').classList.remove('active');
+        try {
+            const text = await navigator.clipboard.readText();
+            if (!text) { alert('Буфер обмена пуст.'); return; }
+            const data = JSON.parse(text);
+            handleImport(data);
+        } catch(err) {
+            alert('Не удалось прочитать буфер или это не JSON.');
+        }
+    }
+
+    function handleImport(data) {
+        const incoming = Array.isArray(data) ? data : [data];
+        const ok = confirm(`Импортировать рецептов: ${incoming.length}?\n\nОК — добавить к существующим.\nОтмена — отменить импорт.`);
+        if (!ok) return;
+        const result = mergeRecipes(incoming);
+        renderRecipes();
+        alert(`Готово.\nДобавлено: ${result.added}\nОбновлено: ${result.updated}\nПропущено: ${result.skipped}`);
+    }
+
     function renderRecipes() {
         loadRecipes();
         const container = document.getElementById('recipesContainer');
         container.innerHTML = '';
 
-        let filtered = recipes;
-        if (activeFilter !== 'Все') {
-            filtered = recipes.filter(r => r.category === activeFilter);
-        }
+        const filtered = getFilteredRecipes();
+
+        const bottom = document.getElementById('bottomControls');
+        bottom.style.display = recipes.length > 0 ? 'block' : 'none';
 
         if (filtered.length === 0) {
             container.innerHTML = `<p style="text-align: center; color: var(--hint-color);">Техкарт пока нет в категории «${activeFilter}».</p>`;
@@ -576,6 +861,8 @@
         filtered.forEach(recipe => {
             const card = document.createElement('div');
             card.className = 'card';
+            if (selectionMode) card.classList.add('selectable');
+            if (selectedIds.has(recipe.id)) card.classList.add('selected');
             
             let totalGross = 0;
             let totalNet = 0;
@@ -591,7 +878,19 @@
                 return `<li>Шаг ${idx+1}: ${s.desc} <br><span style="color:var(--hint-color);">Метод: ${s.method}${tempLabel}${humidityLabel}</span></li>`;
             }).join('');
 
+            const checkboxHtml = selectionMode 
+                ? `<input type="checkbox" class="card-checkbox" ${selectedIds.has(recipe.id) ? 'checked' : ''} onchange="toggleCardSelection('${recipe.id}', this)">`
+                : '';
+
+            const buttonsHtml = selectionMode
+                ? ''
+                : `<div style="display: flex; gap: 8px;">
+                    <button class="mode-btn" style="flex: 2;" onclick="editRecipe('${recipe.id}')">Редактировать</button>
+                    <button class="mode-btn" style="flex: 1; color: #ff5252; border-color: #ff5252;" onclick="deleteRecipe('${recipe.id}')">Удалить</button>
+                </div>`;
+
             card.innerHTML = `
+                ${checkboxHtml}
                 <h3 style="margin-bottom: 4px;">${recipe.title}</h3>
                 <div style="font-size: 11px; color: var(--hint-color); margin-bottom: 8px;">Категория: ${recipe.category} | Порций: ${recipe.portions || 4}</div>
                 <div style="font-size: 12px; margin-bottom: 8px; background: var(--bg-color); padding: 6px; border-radius: 4px;">
@@ -599,13 +898,22 @@
                 </div>
                 <div style="font-size: 13px; margin-bottom: 6px;"><b>Ингредиенты:</b><ul>${ingHtml || '<li>Нет ингредиентов</li>'}</ul></div>
                 <div style="font-size: 13px; margin-bottom: 10px;"><b>Шаги:</b><ol>${stepsHtml || '<li>Нет шагов</li>'}</ol></div>
-                <div style="display: flex; gap: 8px;">
-                    <button class="mode-btn" style="flex: 2;" onclick="editRecipe('${recipe.id}')">Редактировать</button>
-                    <button class="mode-btn" style="flex: 1; color: #ff5252; border-color: #ff5252;" onclick="deleteRecipe('${recipe.id}')">Удалить</button>
-                </div>
+                ${buttonsHtml}
             `;
             container.appendChild(card);
         });
+
+        if (selectionMode) {
+            const panel = document.getElementById('selectionPanel');
+            const oldButtons = panel.querySelector('.selection-buttons');
+            oldButtons.innerHTML = `
+                <button class="mode-btn" onclick="selectAll()">Все</button>
+                <button class="mode-btn" onclick="clearSelection()">Ничего</button>
+                <button class="mode-btn" onclick="exportSelectedToFile()">Файл</button>
+                <button class="mode-btn" onclick="exportSelectedToClipboard()">Буфер</button>
+                <button class="mode-btn" onclick="exitSelectionMode()">Выйти</button>
+            `;
+        }
     }
 </script>
 </body>
