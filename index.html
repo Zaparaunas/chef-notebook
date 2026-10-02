@@ -393,7 +393,7 @@
         const div = document.createElement('div');
         div.className = 'step-row';
         
-        const methods = ['бланшировать', 'варить', 'тушить', 'пар', 'жар/пар', 'жар', 'жарить', 'колеровать', 'гриль'];
+        const methods = ['бланшировать', 'варить', 'тушить', 'пар', 'жар/пар', 'жар', 'жарить', 'колеровать', 'гриль', 'фритюр', 'до готовности'];
         const currentMethod = data.method || 'тушить';
         let optionsHtml = methods.map(m => `<option value="${m}" ${currentMethod === m ? 'selected' : ''}>${m}</option>`).join('');
 
