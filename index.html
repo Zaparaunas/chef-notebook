@@ -209,16 +209,16 @@
             border: 1px solid var(--button-color);
             border-radius: 6px;
             padding: 4px;
-            max-height: 200px;
+            max-height: 220px;
             overflow-y: auto;
             box-shadow: 0 6px 16px rgba(0,0,0,0.4);
             z-index: 300;
-            min-width: 140px;
+            min-width: 180px;
         }
         .step-suggestions.open { display: flex; }
         .step-suggestion-btn {
             text-align: left;
-            padding: 7px 10px;
+            padding: 8px 10px;
             font-size: 13px;
             background: transparent;
             border: none;
@@ -673,8 +673,7 @@
         </button>
     </div>
 
-    <script>
-        // ==========================================
+    <script>        // ==========================================
 // КОНСТАНТЫ И РОЛИ
 // ==========================================
 
@@ -694,7 +693,6 @@ const UNITS = ['г','кг','мл','л'];
 const PRICE_UNITS = ['кг','л','шт','г','мл'];
 
 const CUT_TRIGGERS = ['нарезать','порезать','нашинковать','шинковать','порубить','нарубить','измельчить','покрошить'];
-const DONE_TRIGGER = 'до';
 
 const CUTS_BY_PRODUCT = {
     'лук': ['соломкой','кубиком 1×1','кубиком 0,5×0,5','полукольцами','кольцами','дольками','мелко','крупно'],
@@ -756,23 +754,32 @@ const CUTS_BY_PRODUCT = {
 };
 
 const DONENESS_BY_ACTION = {
-    'варить': ['готовности','мягкости','полуготовности','al dente','прозрачности'],
-    'варим': ['готовности','мягкости','полуготовности','al dente'],
-    'вар': ['готовности','мягкости','полуготовности','al dente'],
-    'обжарить': ['золотистой корочки','румяного цвета','карамелизации','прозрачности'],
-    'обжар': ['золотистой корочки','румяного цвета','карамелизации'],
-    'запечь': ['румяной корочки','полной готовности','хрустящей корочки'],
-    'запек': ['румяной корочки','полной готовности'],
-    'тушить': ['мягкости','готовности','размягчения'],
-    'туш': ['мягкости','готовности'],
-    'припустить': ['готовности','мягкости'],
-    'припуск': ['готовности','мягкости'],
-    'бланшировать': ['полуготовности','мягкости'],
-    'бланшир': ['полуготовности','мягкости'],
-    'пассеровать': ['прозрачности','золотистого цвета','мягкости'],
-    'пассер': ['прозрачности','золотистого цвета'],
-    'фритюр': ['золотистой корочки','готовности'],
-    'гриль': ['румяной корочки','готовности','прожарки']
+    'варить': ['до готовности','до мягкости','до полуготовности','до al dente','до прозрачности'],
+    'варим': ['до готовности','до мягкости','до полуготовности','до al dente'],
+    'вар': ['до готовности','до мягкости','до полуготовности','до al dente'],
+    'отварить': ['до готовности','до мягкости','до полуготовности'],
+    'обжарить': ['до золотистой корочки','до румяного цвета','до карамелизации','до прозрачности'],
+    'обжар': ['до золотистой корочки','до румяного цвета','до карамелизации'],
+    'запечь': ['до румяной корочки','до полной готовности','до хрустящей корочки'],
+    'запек': ['до румяной корочки','до полной готовности'],
+    'тушить': ['до мягкости','до готовности','до размягчения'],
+    'туш': ['до мягкости','до готовности'],
+    'припустить': ['до готовности','до мягкости'],
+    'припуск': ['до готовности','до мягкости'],
+    'бланшировать': ['до полуготовности','до мягкости'],
+    'бланшир': ['до полуготовности','до мягкости'],
+    'пассеровать': ['до прозрачности','до золотистого цвета','до мягкости'],
+    'пассер': ['до прозрачности','до золотистого цвета'],
+    'фритюр': ['до золотистой корочки','до готовности'],
+    'гриль': ['до румяной корочки','до готовности','до прожарки'],
+    'довести': ['до вкуса','до кипения','до готовности','до нужной консистенции'],
+    'доводить': ['до вкуса','до кипения','до готовности','до нужной консистенции'],
+    'кипятить': ['до готовности','до уваривания'],
+    'прогреть': ['до тёплого','до горячего'],
+    'прокалить': ['до дымка'],
+    'коптить': ['до готовности','до золотистого цвета'],
+    'мариновать': ['до готовности','до мягкости'],
+    'настоять': ['до готовности','до нужного вкуса']
 };
 
 const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -1663,8 +1670,24 @@ function updateStepSuggestions(textarea) {
     if (!box) return;
 
     const raw = textarea.value || '';
-    const lower = raw.toLowerCase().replace(/ё/g, 'е');
+    const pos = textarea.selectionStart ?? raw.length;
+    const beforeCursor = raw.substring(0, pos);
+    const lastChar = beforeCursor.slice(-1);
+
+    if (lastChar === ' ' || lastChar === '\n' || lastChar === '') {
+        box.classList.remove('open');
+        box.innerHTML = '';
+        return;
+    }
+
+    const lower = beforeCursor.toLowerCase().replace(/ё/g, 'е');
     const words = lower.split(/[\s,.;:!?()\[\]{}"'«»]+/).filter(w => w.length > 0);
+    if (!words.length) {
+        box.classList.remove('open');
+        box.innerHTML = '';
+        return;
+    }
+    const last = words[words.length - 1];
 
     function findProductKey(word) {
         let best = null;
@@ -1690,25 +1713,17 @@ function updateStepSuggestions(textarea) {
     }
 
     let suggestions = [];
-    if (words.length > 0) {
-        const last = words[words.length - 1];
-        const lastProduct = findProductKey(last);
-        const lastAction = findActionKey(last);
+    const lastProduct = findProductKey(last);
+    const lastAction = findActionKey(last);
 
-        if (lastProduct) {
-            suggestions = CUTS_BY_PRODUCT[lastProduct];
-        } else if (CUT_TRIGGERS.includes(last)) {
-            for (let i = words.length - 2; i >= 0 && i >= words.length - 5; i--) {
-                const k = findProductKey(words[i]);
-                if (k) { suggestions = CUTS_BY_PRODUCT[k]; break; }
-            }
-        } else if (lastAction) {
-            suggestions = DONENESS_BY_ACTION[lastAction];
-        } else if (last === 'до') {
-            for (let i = words.length - 2; i >= 0 && i >= words.length - 5; i--) {
-                const k = findActionKey(words[i]);
-                if (k) { suggestions = DONENESS_BY_ACTION[k]; break; }
-            }
+    if (lastProduct) {
+        suggestions = CUTS_BY_PRODUCT[lastProduct];
+    } else if (lastAction) {
+        suggestions = DONENESS_BY_ACTION[lastAction];
+    } else if (CUT_TRIGGERS.includes(last)) {
+        for (let i = words.length - 2; i >= 0 && i >= words.length - 4; i--) {
+            const k = findProductKey(words[i]);
+            if (k) { suggestions = CUTS_BY_PRODUCT[k]; break; }
         }
     }
 
@@ -1759,7 +1774,7 @@ function positionStepSuggestions(textarea, box) {
     let top = markerRect.top - wrapRect.top + lineHeight;
     let left = markerRect.left - wrapRect.left;
 
-    const boxWidth = box.offsetWidth || 160;
+    const boxWidth = box.offsetWidth || 180;
     if (left + boxWidth > wrap.clientWidth) {
         left = Math.max(0, wrap.clientWidth - boxWidth);
     }
@@ -1773,6 +1788,7 @@ function applyStepSuggestion(btn, text) {
     const row = btn.closest('.step-row');
     if (!row) return;
     const textarea = row.querySelector('.step-desc');
+    const box = row.querySelector('.step-suggestions');
     if (!textarea) return;
 
     const pos = textarea.selectionStart ?? textarea.value.length;
@@ -1780,11 +1796,11 @@ function applyStepSuggestion(btn, text) {
     const before = textarea.value.slice(0, safePos);
     const after = textarea.value.slice(safePos);
     const needsSpace = before.length > 0 && !/\s$/.test(before);
-    const insert = (needsSpace ? ' ' : '') + text;
+    const insert = (needsSpace ? ' ' : '') + text + ' ';
     textarea.value = before + insert + after;
     const newPos = before.length + insert.length;
     try { textarea.focus(); textarea.setSelectionRange(newPos, newPos); } catch(e) {}
-    updateStepSuggestions(textarea);
+    if (box) { box.classList.remove('open'); box.innerHTML = ''; }
 }
 
 function addStepRow(data = {}) {
