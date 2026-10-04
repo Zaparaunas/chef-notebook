@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Блокнот Шефа</title>
+    <title>Запара</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
@@ -359,6 +359,26 @@
         .view-output-row b { color: var(--text-color); }
         .view-output-row .warn { color: #ff9800; }
 
+        .view-total-row {
+            margin-top: 14px;
+            padding-top: 12px;
+            border-top: 2px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .view-total-row .label {
+            font-size: 18px;
+            font-weight: 800;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+        .view-total-row .value {
+            font-size: 22px;
+            font-weight: 800;
+            color: var(--money-color);
+        }
+
         .linked-badge {
             display: inline-block;
             background: var(--button-color);
@@ -401,7 +421,6 @@
         .tab-btn .tab-icon { font-size: 20px; line-height: 1.1; }
         .tab-btn.active { color: var(--button-color); }
 
-        /* Импорт прайса */
         .import-preview-item {
             background: var(--bg-color);
             border: 1px solid var(--border-color);
@@ -480,7 +499,7 @@
 
     <div class="header">
         <div class="header-left">
-            <h2 style="margin-bottom: 0;">Блокнот Шефа</h2>
+            <h2 style="margin-bottom: 0;">Запара</h2>
             <span id="syncStatus" style="font-size: 18px; margin-left: 8px; cursor: help;" title="Состояние синхронизации">☁️</span>
         </div>
     </div>
@@ -682,7 +701,7 @@
     </div>
 
     <script>
-        // ==========================================
+// ==========================================
 // КОНСТАНТЫ И РОЛИ
 // ==========================================
 
@@ -1733,16 +1752,9 @@ function updateViewNumbers() {
             if (cells[1]) cells[1].textContent = formatWeight(n, u);
         }
     });
-    const { loss: bl } = calculateTotalLoss(r);
-    const tl = bl * ratio;
-    const rwEl = document.getElementById('viewResultWeight');
-    if (rwEl) rwEl.textContent = formatWeight(crw, 'г');
-    const le = document.getElementById('viewTotalLoss');
-    if (le) le.textContent = formatWeight(tl, 'г');
-    const ne = document.getElementById('viewTotalNet');
-    if (ne) ne.textContent = formatWeight(tn, 'г');
-    const ge = document.getElementById('viewTotalGross');
-    if (ge) ge.textContent = formatWeight(tg, 'г');
+    const baseResult = calculateTotalLoss(r).resultWeight;
+    const totalResultEl = document.getElementById('viewTotalResult');
+    if (totalResultEl) totalResultEl.textContent = formatWeight(baseResult * ratio, 'г');
     if (canSeeProducts()) {
         const totalCost = calcRecipeCost(r);
         const costBox = document.getElementById('viewCostTotal');
@@ -1759,14 +1771,12 @@ function renderRecipeView() {
     const cp = viewPortions, co = viewOutput;
     const ratio = (cp / bp) * (bo > 0 ? co / bo : 1);
     const crw = cp * co;
-    let tg = 0, tn = 0, ingRows = '';
+    let ingRows = '';
     (r.ingredients || []).forEach(i => {
         const u = i.unit || 'г';
         const f = (u === 'кг' || u === 'л') ? 1000 : 1;
         let g = (i.gross || 0) * f * ratio / f;
         let n = (i.net || 0) * f * ratio / f;
-        tg += (i.gross || 0) * f * ratio;
-        tn += (i.net || 0) * f * ratio;
         let nc = escapeHtml(i.name || '');
         if (i.type === 'preparation') {
             const hl = i.linked_recipe_id && recipes.find(r2 => r2.id === i.linked_recipe_id);
@@ -1775,8 +1785,8 @@ function renderRecipeView() {
         }
         ingRows += `<tr class="view-ing-row"><td>${nc}</td><td class="num">${formatWeight(g, u)}</td><td class="num">${formatWeight(n, u)}</td></tr>`;
     });
-    const { loss: bl } = calculateTotalLoss(r);
-    const tl = bl * ratio;
+    const baseResult = calculateTotalLoss(r).resultWeight;
+    const currentResult = baseResult * ratio;
     let stepsHtml = '';
     (r.steps || []).forEach((s, idx) => {
         const tl2 = s.temp ? ` | Темп: ${s.temp} °C` : '';
@@ -1806,13 +1816,24 @@ function renderRecipeView() {
                 <div><label>Порций</label><input type="number" id="viewPortionsInput" min="0.01" step="1" value="${cp}" oninput="onViewPortionsChange(this.value)"></div>
                 <div><label>Размер порции (г)</label><input type="number" id="viewOutputInput" min="0" step="1" value="${co}" oninput="onViewOutputChange(this.value)"></div>
             </div>
-            <div class="view-output-row">Чистый вес: <b id="viewResultWeight">${formatWeight(crw, 'г')}</b></div>
-            <div class="view-output-row">Потери: <b id="viewTotalLoss">${formatWeight(tl, 'г')}</b></div>
-            <div class="view-output-row">Нужно взять (нетто): <b id="viewTotalNet">${formatWeight(tn, 'г')}</b> · Брутто: <b id="viewTotalGross">${formatWeight(tg, 'г')}</b></div>
             <button class="mode-btn" style="width: 100%; margin-top: 6px;" onclick="resetViewValues()">Сбросить к базовым</button>
         </div>
         ${costBlockHtml}
-        <div class="view-section"><h4>Ингредиенты</h4><table class="view-ing-table"><thead><tr><th>Продукт</th><th class="num">Нужно</th><th class="num">Получится</th></tr></thead><tbody>${ingRows || '<tr><td colspan="3" style="text-align:center; color: var(--hint-color);">Нет ингредиентов</td></tr>'}</tbody></table></div>
+        <div class="view-section">
+            <h4>Ингредиенты</h4>
+            <table class="view-ing-table">
+                <thead>
+                    <tr><th>Продукт</th><th class="num">Нужно</th><th class="num">Получится</th></tr>
+                </thead>
+                <tbody>
+                    ${ingRows || '<tr><td colspan="3" style="text-align:center; color: var(--hint-color);">Нет ингредиентов</td></tr>'}
+                </tbody>
+            </table>
+            <div class="view-total-row">
+                <span class="label">Итого</span>
+                <span class="value" id="viewTotalResult">${formatWeight(currentResult, 'г')}</span>
+            </div>
+        </div>
         <div class="view-section"><h4>Приготовление</h4>${stepsHtml || '<p style="color: var(--hint-color);">Нет шагов</p>'}</div>
     `;
 }
