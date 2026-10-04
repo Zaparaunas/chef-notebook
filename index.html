@@ -161,6 +161,11 @@
             margin-top: -6px; cursor: pointer; border: 2px solid #ffffff;
             box-shadow: 0 1px 3px rgba(0,0,0,0.3);
         }
+        #portionsRange::-moz-range-track { height: 8px; background: #e0e0e0; border-radius: 4px; }
+        #portionsRange::-moz-range-thumb {
+            width: 20px; height: 20px; background: #2481cc; border-radius: 50%;
+            border: 2px solid #ffffff; cursor: pointer;
+        }
 
         .output-summary {
             font-size: 12px; color: var(--hint-color);
@@ -197,6 +202,12 @@
         .recipe-picker .recipe-search-input { margin-bottom: 0; }
         .recipe-picker .recipe-search-input.selected {
             border-color: var(--button-color); background: rgba(36, 129, 204, 0.08);
+        }
+        .product-picker { position: relative; margin-bottom: 4px; }
+        .product-picker .ing-name { margin-bottom: 0; }
+        .product-picker .ing-name.selected {
+            border-color: var(--button-color);
+            background: rgba(36, 129, 204, 0.08);
         }
         .recipe-search-results {
             position: absolute; top: calc(100% + 2px); left: 0; right: 0;
@@ -1062,7 +1073,7 @@ window.addEventListener('DOMContentLoaded', async () => {
     }
 
     document.addEventListener('click', function(e) {
-        if (!e.target.closest('.recipe-picker')) {
+        if (!e.target.closest('.recipe-picker') && !e.target.closest('.product-picker')) {
             document.querySelectorAll('.recipe-search-results.open').forEach(el => el.classList.remove('open'));
         }
     });
@@ -1189,8 +1200,12 @@ function addIngredientRow(data = {}) {
                 <option value="preparation" ${type === 'preparation' ? 'selected' : ''}>Полуфабрикат</option>
             </select>
         </div>
-        <div class="ing-product-fields" style="${pD}">
-            <input type="text" placeholder="Название продукта" value="${type === 'product' ? escapeHtml(data.name || '') : ''}" class="ing-name" oninput="updateIngredientCostInfo(this.closest('.ingredient-row'))" onblur="updateIngredientCostInfo(this.closest('.ingredient-row')); updateConstructorCost();">
+        <div class="ing-product-fields product-picker" style="${pD}">
+            <input type="text" class="ing-name" placeholder="Название продукта" value="${type === 'product' ? escapeHtml(data.name || '') : ''}" autocomplete="off"
+                oninput="onProductPickerInput(this); updateIngredientCostInfo(this.closest('.ingredient-row'));"
+                onfocus="onProductPickerFocus(this)"
+                onblur="setTimeout(() => { updateIngredientCostInfo(this.closest('.ingredient-row')); updateConstructorCost(); }, 150);">
+            <div class="recipe-search-results"></div>
         </div>
         <div class="ing-preparation-fields recipe-picker" style="${prepD}">
             <input type="text" class="recipe-search-input ${linkedId ? 'selected' : ''}" placeholder="Начните вводить название..." value="${escapeHtml(linkedTitle)}" autocomplete="off" oninput="onRecipeSearchInput(this)" onfocus="onRecipeSearchFocus(this)">
@@ -1217,6 +1232,50 @@ function addIngredientRow(data = {}) {
     updateRowLoss(div.querySelector('.ing-gross'));
     updateIngredientCostInfo(div);
     updateSummary();
+}
+
+function onProductPickerFocus(input) {
+    renderProductPickerResults(input, true);
+}
+function onProductPickerInput(input) {
+    renderProductPickerResults(input, false);
+}
+function renderProductPickerResults(input, showAllOnFocus) {
+    if (!canSeeProducts()) return;
+    const picker = input.closest('.product-picker');
+    if (!picker) return;
+    const results = picker.querySelector('.recipe-search-results');
+    if (!results) return;
+    const query = (input.value || '').trim().toLowerCase();
+    let available = products.slice().sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+    if (query) available = available.filter(p => (p.name || '').toLowerCase().includes(query));
+    if (available.length === 0) {
+        results.innerHTML = `<div class="recipe-search-empty">${query ? 'Нет в справочнике. Оставьте как есть — продукт добавите позже.' : 'Справочник пуст'}</div>`;
+        results.classList.add('open');
+        return;
+    }
+    let html = '';
+    available.slice(0, 50).forEach(p => {
+        html += `<div class="recipe-search-item" onclick="selectProductForIngredient(this, '${escapeHtml(p.name).replace(/'/g, "\\'")}')">
+            <div>${escapeHtml(p.name)}</div>
+            <div class="recipe-search-item-cat">${formatPrice(p.price_per_unit)}/${escapeHtml(p.unit)}</div>
+        </div>`;
+    });
+    results.innerHTML = html;
+    results.classList.add('open');
+}
+function selectProductForIngredient(el, name) {
+    const picker = el.closest('.product-picker');
+    if (!picker) return;
+    const input = picker.querySelector('.ing-name');
+    const results = picker.querySelector('.recipe-search-results');
+    if (input) {
+        input.value = name;
+        input.classList.add('selected');
+    }
+    if (results) results.classList.remove('open');
+    const row = picker.closest('.ingredient-row');
+    if (row) { updateIngredientCostInfo(row); updateConstructorCost(); }
 }
 
 function onRecipeSearchFocus(input) { renderRecipePickerResults(input, true); }
