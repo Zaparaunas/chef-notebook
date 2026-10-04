@@ -38,7 +38,7 @@
             font-weight: 600; cursor: pointer; font-size: 13px;
         }
         .mode-btn.danger { color: #ff5252; border-color: #ff5252; }
-        
+
         button.primary {
             background: var(--button-color); color: var(--button-text-color); border: none;
             padding: 12px; width: 100%; border-radius: 8px; font-size: 15px;
@@ -198,6 +198,18 @@
         .step-loss-row { display: flex; align-items: center; gap: 8px; margin-top: 4px; }
         .step-loss-row label { font-size: 11px; color: var(--hint-color); white-space: nowrap; }
         .step-loss-row input { flex: 1; margin-bottom: 0; }
+        .step-suggestions {
+            display: none; flex-wrap: wrap; gap: 6px; margin: -2px 0 8px 0;
+        }
+        .step-suggestions.open { display: flex; }
+        .step-suggestion-btn {
+            padding: 6px 10px; font-size: 12px; border-radius: 6px;
+            background: rgba(36, 129, 204, 0.12);
+            color: var(--button-color);
+            border: 1px solid rgba(36, 129, 204, 0.3);
+            cursor: pointer; font-weight: 600; font-family: inherit;
+        }
+        .step-suggestion-btn:active { background: var(--button-color); color: #fff; }
 
         .ing-type-row { display: flex; gap: 8px; align-items: center; margin-bottom: 4px; }
         .ing-type-row label { font-size: 11px; color: var(--hint-color); white-space: nowrap; }
@@ -647,6 +659,88 @@ const CATEGORIES = [
 
 const UNITS = ['г','кг','мл','л'];
 const PRICE_UNITS = ['кг','л','шт','г','мл'];
+
+const CUT_TRIGGERS = ['нарезать','порезать','нашинковать','шинковать','порубить','нарубить','измельчить','покрошить'];
+const DONE_TRIGGER = 'до';
+
+const CUTS_BY_PRODUCT = {
+    'лук': ['соломкой','кубиком 1×1','кубиком 0,5×0,5','полукольцами','кольцами','дольками','мелко','крупно'],
+    'морков': ['соломкой','кубиком 1×1','кубиком 0,5×0,5','брусочками','кружочками','дольками','мелко','крупно'],
+    'картоф': ['соломкой','брусочками','кубиком 1×1','кубиком 2×2','дольками','кружочками','фри'],
+    'свекл': ['соломкой','кубиком 1×1','брусочками','кружочками','дольками'],
+    'реп': ['соломкой','кубиком','кружочками','дольками'],
+    'редис': ['кружочками','соломкой','дольками'],
+    'сельдерей': ['соломкой','кубиком','брусочками','кружочками'],
+    'пастернак': ['соломкой','кубиком','кружочками','брусочками'],
+    'петрушк': ['мелко','крупно','соломкой'],
+    'чеснок': ['мелко','пластинками','зубчиками'],
+    'имбир': ['соломкой','мелко','пластинками','кубиком'],
+    'помидор': ['кружочками','дольками','кубиком','соломкой','половинками'],
+    'томат': ['кружочками','дольками','кубиком','соломкой','половинками'],
+    'огурец': ['кружочками','дольками','соломкой','кубиком','брусочками'],
+    'перец': ['соломкой','кубиком','полукольцами','кольцами','дольками'],
+    'баклажан': ['кружочками','кубиком','соломкой','дольками','брусочками'],
+    'кабачок': ['кружочками','кубиком','соломкой','дольками','брусочками'],
+    'патиссон': ['кружочками','кубиком','соломкой','дольками'],
+    'капуст': ['соломкой','шашками','квадратами','мелко'],
+    'брокколи': ['соцветиями','куском'],
+    'гриб': ['пластинками','кубиком','соломкой','дольками','целиком'],
+    'шампиньон': ['пластинками','кубиком','соломкой','дольками','целиком'],
+    'укроп': ['мелко','крупно'],
+    'базилик': ['мелко','крупно','листьями'],
+    'кинз': ['мелко','крупно'],
+    'зелен': ['мелко','крупно'],
+    'салат': ['крупно','полосами','куском'],
+    'шпинат': ['крупно','полосами','куском'],
+    'руккол': ['крупно','куском'],
+    'мясо': ['куском','кубиком','соломкой','брусочками','пластом','отбить'],
+    'говядин': ['куском','кубиком','соломкой','брусочками','пластом','отбить'],
+    'свинин': ['куском','кубиком','соломкой','брусочками','пластом','отбить'],
+    'баранин': ['куском','кубиком','соломкой','брусочками','пластом','отбить'],
+    'телятин': ['куском','кубиком','соломкой','пластом','отбить'],
+    'куриц': ['куском','кубиком','соломкой','брусочками','филе'],
+    'индейк': ['куском','кубиком','соломкой','пластом'],
+    'утк': ['куском','кубиком','соломкой','пластом'],
+    'гус': ['куском','кубиком','соломкой','пластом'],
+    'рыб': ['филе','стейк','куском','пластом','порционно'],
+    'лосос': ['филе','стейк','куском','пластом'],
+    'семг': ['филе','стейк','куском','пластом'],
+    'форел': ['филе','стейк','куском','пластом'],
+    'треск': ['филе','куском','порционно'],
+    'судак': ['филе','куском','порционно'],
+    'тунец': ['филе','стейк','куском'],
+    'селедк': ['филе','куском'],
+    'хлеб': ['ломтиком','кубиком','полосами','куском'],
+    'батон': ['ломтиком','кубиком','полосами'],
+    'тест': ['пластом','полосами','кубиком','кружочками'],
+    'лаваш': ['полосами','куском','рулетом'],
+    'яблок': ['дольками','кубиком','соломкой','кружочками','куском'],
+    'груш': ['дольками','кубиком','соломкой','кружочками'],
+    'апельсин': ['дольками','кружочками','сегментами','цедрой'],
+    'лимон': ['дольками','кружочками','сегментами','цедрой','соком'],
+    'банан': ['кружочками','кубиком','дольками'],
+    'ягод': ['целиком','половинками','кубиком']
+};
+
+const DONENESS_BY_ACTION = {
+    'варить': ['готовности','мягкости','полуготовности','al dente','прозрачности'],
+    'варим': ['готовности','мягкости','полуготовности','al dente'],
+    'вар': ['готовности','мягкости','полуготовности','al dente'],
+    'обжарить': ['золотистой корочки','румяного цвета','карамелизации','прозрачности'],
+    'обжар': ['золотистой корочки','румяного цвета','карамелизации'],
+    'запечь': ['румяной корочки','полной готовности','хрустящей корочки'],
+    'запек': ['румяной корочки','полной готовности'],
+    'тушить': ['мягкости','готовности','размягчения'],
+    'туш': ['мягкости','готовности'],
+    'припустить': ['готовности','мягкости'],
+    'припуск': ['готовности','мягкости'],
+    'бланшировать': ['полуготовности','мягкости'],
+    'бланшир': ['полуготовности','мягкости'],
+    'пассеровать': ['прозрачности','золотистого цвета','мягкости'],
+    'пассер': ['прозрачности','золотистого цвета'],
+    'фритюр': ['золотистой корочки','готовности'],
+    'гриль': ['румяной корочки','готовности','прожарки']
+};
 
 const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
@@ -1522,6 +1616,71 @@ function updateOutputSummary() {
 // ШАГИ
 // ==========================================
 
+function onStepDescInput(textarea) {
+    textarea.dataset.pos = String(textarea.selectionStart ?? textarea.value.length);
+    updateStepSuggestions(textarea);
+}
+
+function updateStepSuggestions(textarea) {
+    const row = textarea.closest('.step-row');
+    if (!row) return;
+    const box = row.querySelector('.step-suggestions');
+    if (!box) return;
+
+    const lower = (textarea.value || '').toLowerCase().replace(/ё/g, 'е');
+    const words = lower.split(/[\s,.;:!?()\[\]{}"'«»]+/).filter(w => w.length > 0);
+    const last = words[words.length - 1] || '';
+
+    let suggestions = [];
+    if (CUT_TRIGGERS.includes(last)) {
+        for (let i = words.length - 2; i >= 0 && i >= words.length - 5; i--) {
+            const w = words[i];
+            for (const key in CUTS_BY_PRODUCT) {
+                if (w.startsWith(key)) { suggestions = CUTS_BY_PRODUCT[key]; break; }
+            }
+            if (suggestions.length) break;
+        }
+    } else if (last === DONE_TRIGGER) {
+        for (let i = words.length - 2; i >= 0 && i >= words.length - 5; i--) {
+            const w = words[i];
+            for (const key in DONENESS_BY_ACTION) {
+                if (w.startsWith(key)) { suggestions = DONENESS_BY_ACTION[key]; break; }
+            }
+            if (suggestions.length) break;
+        }
+    }
+
+    if (!suggestions.length) {
+        box.classList.remove('open');
+        box.innerHTML = '';
+        return;
+    }
+
+    box.innerHTML = suggestions.map(s =>
+        `<button type="button" class="step-suggestion-btn" onclick="applyStepSuggestion(this, '${escapeHtml(s).replace(/'/g, "\\'")}')">${escapeHtml(s)}</button>`
+    ).join('');
+    box.classList.add('open');
+}
+
+function applyStepSuggestion(btn, text) {
+    const row = btn.closest('.step-row');
+    if (!row) return;
+    const textarea = row.querySelector('.step-desc');
+    if (!textarea) return;
+
+    const pos = parseInt(textarea.dataset.pos ?? textarea.value.length, 10);
+    const safePos = isNaN(pos) ? textarea.value.length : Math.min(pos, textarea.value.length);
+    const before = textarea.value.slice(0, safePos);
+    const after = textarea.value.slice(safePos);
+    const needsSpace = before.length > 0 && !/\s$/.test(before);
+    const insert = (needsSpace ? ' ' : '') + text;
+    textarea.value = before + insert + after;
+    const newPos = before.length + insert.length;
+    textarea.dataset.pos = String(newPos);
+    try { textarea.focus(); textarea.setSelectionRange(newPos, newPos); } catch(e) {}
+    updateStepSuggestions(textarea);
+}
+
 function addStepRow(data = {}) {
     const c = document.getElementById('stepsList');
     const div = document.createElement('div');
@@ -1547,7 +1706,8 @@ function addStepRow(data = {}) {
         }
     }
     div.innerHTML = `
-        <textarea placeholder="Описание шага..." rows="2" class="step-desc">${escapeHtml(data.desc || '')}</textarea>
+        <textarea placeholder="Описание шага..." rows="2" class="step-desc" oninput="onStepDescInput(this)">${escapeHtml(data.desc || '')}</textarea>
+        <div class="step-suggestions"></div>
         <label style="font-size: 11px; color: var(--hint-color);">Метод приготовления:</label>
         <div class="method-temp-row">
             <select class="step-method" onchange="onMethodChange(this)">${optH}</select>
