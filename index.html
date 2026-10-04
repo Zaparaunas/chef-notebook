@@ -166,6 +166,11 @@
             width: 20px; height: 20px; background: #2481cc; border-radius: 50%;
             border: 2px solid #ffffff; cursor: pointer;
         }
+        #viewOutputInput.input-readonly {
+            background: #f0f0f0 !important;
+            color: #888 !important;
+            cursor: not-allowed;
+        }
 
         .output-summary {
             font-size: 12px; color: var(--hint-color);
@@ -668,6 +673,10 @@ async function loadUserRole() {
 
 function isChef() {
     return currentUserRole === 'chef' || currentUserRole === 'admin';
+}
+
+function isCook() {
+    return currentUserRole === 'cook';
 }
 
 function canSeeProducts() {
@@ -1704,6 +1713,7 @@ function onViewPortionsChange(v) {
     viewPortions = p; updateViewNumbers();
 }
 function onViewOutputChange(v) {
+    if (isCook()) return;
     let o = parseFloat(v); if (isNaN(o) || o < 0) o = 0;
     viewOutput = o; updateViewNumbers();
 }
@@ -1816,11 +1826,13 @@ function renderRecipeView() {
             <div class="ctx-sub">Требуется партия: ${formatWeight(viewContext.neededGrams, 'г')}</div>
         </div>`;
     } else {
+        const outputReadonly = isCook() ? 'readonly' : '';
+        const outputClass = isCook() ? 'input-readonly' : '';
         paramsBlockHtml = `<div class="view-section">
             <h4>Параметры</h4>
             <div class="view-fields-grid">
                 <div><label>Порций</label><input type="number" id="viewPortionsInput" min="0.01" step="1" value="${cp}" oninput="onViewPortionsChange(this.value)"></div>
-                <div><label>Размер порции (г)</label><input type="number" id="viewOutputInput" min="0" step="1" value="${co}" oninput="onViewOutputChange(this.value)"></div>
+                <div><label>Размер порции (г)</label><input type="number" id="viewOutputInput" min="0" step="1" value="${co}" ${outputReadonly} class="${outputClass}" oninput="onViewOutputChange(this.value)"></div>
             </div>
             <button class="mode-btn" style="width: 100%; margin-top: 6px;" onclick="resetViewValues()">Сбросить к базовым</button>
         </div>`;
