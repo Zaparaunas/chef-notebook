@@ -161,18 +161,12 @@
             margin-top: -6px; cursor: pointer; border: 2px solid #ffffff;
             box-shadow: 0 1px 3px rgba(0,0,0,0.3);
         }
-        #portionsRange::-moz-range-track { height: 8px; background: #e0e0e0; border-radius: 4px; }
-        #portionsRange::-moz-range-thumb {
-            width: 20px; height: 20px; background: #2481cc; border-radius: 50%;
-            border: 2px solid #ffffff; cursor: pointer;
-        }
 
         .output-summary {
             font-size: 12px; color: var(--hint-color);
             margin-top: -4px; margin-bottom: 12px; padding-left: 2px;
         }
         .output-summary b { color: var(--text-color); font-weight: 600; }
-        .output-summary .warn { color: #ff9800; }
 
         .ingredient-row, .step-row {
             display: flex; flex-direction: column; gap: 4px; background: var(--bg-color);
@@ -190,13 +184,8 @@
             border-radius: 4px; display: none;
         }
         .ing-cost-info.show { display: block; }
-        .ing-cost-info.no-price {
-            color: var(--hint-color);
-            background: rgba(142, 153, 164, 0.08);
-        }
-        .step-loss-row {
-            display: flex; align-items: center; gap: 8px; margin-top: 4px;
-        }
+        .ing-cost-info.no-price { color: var(--hint-color); background: rgba(142, 153, 164, 0.08); }
+        .step-loss-row { display: flex; align-items: center; gap: 8px; margin-top: 4px; }
         .step-loss-row label { font-size: 11px; color: var(--hint-color); white-space: nowrap; }
         .step-loss-row input { flex: 1; margin-bottom: 0; }
 
@@ -207,8 +196,7 @@
         .recipe-picker { position: relative; margin-bottom: 4px; }
         .recipe-picker .recipe-search-input { margin-bottom: 0; }
         .recipe-picker .recipe-search-input.selected {
-            border-color: var(--button-color);
-            background: rgba(36, 129, 204, 0.08);
+            border-color: var(--button-color); background: rgba(36, 129, 204, 0.08);
         }
         .recipe-search-results {
             position: absolute; top: calc(100% + 2px); left: 0; right: 0;
@@ -224,10 +212,7 @@
         .recipe-search-item:last-child { border-bottom: none; }
         .recipe-search-item:active { background: rgba(36, 129, 204, 0.15); }
         .recipe-search-item-cat { font-size: 11px; color: var(--hint-color); margin-top: 2px; }
-        .recipe-search-empty {
-            padding: 12px; color: var(--hint-color);
-            font-size: 12px; text-align: center;
-        }
+        .recipe-search-empty { padding: 12px; color: var(--hint-color); font-size: 12px; text-align: center; }
 
         .method-temp-row { display: flex; gap: 6px; align-items: center; }
         .method-temp-row select { margin-bottom: 0; }
@@ -239,10 +224,7 @@
             background: var(--bg-color); border: 1px dashed var(--button-color);
             padding: 8px; border-radius: 6px; margin-bottom: 10px; font-size: 13px;
         }
-        .summary-row {
-            display: flex; justify-content: space-between;
-            font-weight: bold; margin-bottom: 3px;
-        }
+        .summary-row { display: flex; justify-content: space-between; font-weight: bold; margin-bottom: 3px; }
         .summary-row:last-child { margin-bottom: 0; }
 
         .cost-box {
@@ -267,34 +249,22 @@
             margin-bottom: 12px; display: none;
         }
         .selection-panel.active { display: block; }
-        .selection-panel .selection-info {
-            font-size: 13px; font-weight: 600;
-            margin-bottom: 8px; text-align: center;
-        }
+        .selection-panel .selection-info { font-size: 13px; font-weight: 600; margin-bottom: 8px; text-align: center; }
         .selection-panel .selection-buttons { display: flex; gap: 6px; }
         .selection-panel .selection-buttons .mode-btn { flex: 1; }
 
-        .bottom-controls {
-            margin-top: 20px; padding-top: 16px;
-            border-top: 1px solid var(--border-color);
-        }
-        .bottom-controls .controls-row {
-            display: flex; gap: 6px; margin-bottom: 6px;
-        }
+        .bottom-controls { margin-top: 20px; padding-top: 16px; border-top: 1px solid var(--border-color); }
+        .bottom-controls .controls-row { display: flex; gap: 6px; margin-bottom: 6px; }
         .bottom-controls .controls-row .mode-btn { flex: 1; }
         .dropdown-menu {
-            background: var(--secondary-bg-color);
-            border: 1px solid var(--button-color);
-            border-radius: 8px; padding: 6px;
-            margin-bottom: 8px; display: none;
+            background: var(--secondary-bg-color); border: 1px solid var(--button-color);
+            border-radius: 8px; padding: 6px; margin-bottom: 8px; display: none;
         }
         .dropdown-menu.active { display: block; }
         .dropdown-menu .mode-btn { width: 100%; margin-bottom: 4px; }
         .dropdown-menu .mode-btn:last-child { margin-bottom: 0; }
 
-        .view-header {
-            display: flex; align-items: center; gap: 8px; margin-bottom: 8px;
-        }
+        .view-header { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
         .back-btn {
             background: transparent; border: none;
             color: var(--button-color); font-size: 20px;
@@ -305,20 +275,15 @@
         .view-section {
             background: var(--secondary-bg-color);
             border: 1px solid var(--border-color);
-            border-radius: 10px; padding: 12px;
-            margin-bottom: 12px;
+            border-radius: 10px; padding: 12px; margin-bottom: 12px;
         }
         .view-section h4 {
             margin-bottom: 8px; color: var(--hint-color);
-            font-size: 12px; text-transform: uppercase;
-            letter-spacing: 0.5px;
+            font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px;
         }
-        .view-ing-table {
-            width: 100%; border-collapse: collapse; font-size: 13px;
-        }
+        .view-ing-table { width: 100%; border-collapse: collapse; font-size: 13px; }
         .view-ing-table th, .view-ing-table td {
-            text-align: left; padding: 6px 4px;
-            border-bottom: 1px solid var(--border-color);
+            text-align: left; padding: 6px 4px; border-bottom: 1px solid var(--border-color);
         }
         .view-ing-table th {
             color: var(--hint-color); font-weight: 600;
@@ -326,80 +291,59 @@
         }
         .view-ing-table tr:last-child td { border-bottom: none; }
         .view-ing-table .num { text-align: right; font-variant-numeric: tabular-nums; }
-        .view-step {
-            margin-bottom: 12px; padding-bottom: 12px;
-            border-bottom: 1px solid var(--border-color);
-        }
+        .view-step { margin-bottom: 12px; padding-bottom: 12px; border-bottom: 1px solid var(--border-color); }
         .view-step:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
         .view-step-num {
-            display: inline-block;
-            background: var(--button-color);
-            color: var(--button-text-color);
-            width: 22px; height: 22px; line-height: 22px;
-            text-align: center; border-radius: 50%;
+            display: inline-block; background: var(--button-color); color: var(--button-text-color);
+            width: 22px; height: 22px; line-height: 22px; text-align: center; border-radius: 50%;
             font-size: 12px; font-weight: 700; margin-right: 6px;
         }
-        .view-step-meta {
-            font-size: 11px; color: var(--hint-color);
-            margin-top: 4px; padding-left: 28px;
-        }
-        .view-fields-grid {
-            display: grid; grid-template-columns: 1fr 1fr;
-            gap: 8px; margin-bottom: 10px;
-        }
-        .view-fields-grid label {
-            font-size: 11px; color: var(--hint-color);
-            display: block; margin-bottom: 4px;
-        }
+        .view-step-meta { font-size: 11px; color: var(--hint-color); margin-top: 4px; padding-left: 28px; }
+        .view-fields-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 10px; }
+        .view-fields-grid label { font-size: 11px; color: var(--hint-color); display: block; margin-bottom: 4px; }
         .view-fields-grid input { margin-bottom: 0; }
-        .view-output-row {
-            font-size: 13px; color: var(--hint-color);
-            margin-bottom: 6px;
-        }
+        .view-output-row { font-size: 13px; color: var(--hint-color); margin-bottom: 6px; }
         .view-output-row b { color: var(--text-color); }
-        .view-output-row .warn { color: #ff9800; }
 
         .view-total-row {
-            margin-top: 14px;
-            padding-top: 12px;
-            border-top: 2px solid var(--border-color);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
+            margin-top: 14px; padding-top: 12px; border-top: 2px solid var(--border-color);
+            display: flex; justify-content: space-between; align-items: center;
         }
         .view-total-row .label {
-            font-size: 18px;
-            font-weight: 800;
-            letter-spacing: 1px;
-            text-transform: uppercase;
+            font-size: 18px; font-weight: 800; letter-spacing: 1px; text-transform: uppercase;
         }
-        .view-total-row .value {
-            font-size: 22px;
-            font-weight: 800;
-            color: var(--money-color);
+        .view-total-row .value { font-size: 22px; font-weight: 800; color: var(--money-color); }
+
+        .view-context-banner {
+            background: rgba(36, 129, 204, 0.1);
+            border: 1px solid var(--button-color);
+            border-radius: 10px; padding: 12px; margin-bottom: 12px;
+        }
+        .view-context-banner .ctx-label {
+            font-size: 11px; color: var(--hint-color);
+            text-transform: uppercase; letter-spacing: 0.5px;
+        }
+        .view-context-banner .ctx-title {
+            font-size: 15px; font-weight: 700; margin-top: 4px;
+        }
+        .view-context-banner .ctx-sub {
+            font-size: 12px; color: var(--hint-color); margin-top: 4px;
         }
 
         .linked-badge {
-            display: inline-block;
-            background: var(--button-color);
-            color: white; font-size: 9px;
-            padding: 1px 5px; border-radius: 8px;
+            display: inline-block; background: var(--button-color); color: white;
+            font-size: 9px; padding: 1px 5px; border-radius: 8px;
             margin-left: 4px; vertical-align: middle;
             text-transform: uppercase; letter-spacing: 0.3px;
         }
         .open-link-btn {
-            display: inline-block;
-            background: transparent;
-            border: 1px solid var(--button-color);
-            color: var(--button-color); font-size: 10px;
-            padding: 2px 6px; border-radius: 4px;
+            display: inline-block; background: transparent;
+            border: 1px solid var(--button-color); color: var(--button-color);
+            font-size: 10px; padding: 2px 6px; border-radius: 4px;
             cursor: pointer; margin-left: 4px; vertical-align: middle;
         }
 
-        .empty-state {
-            text-align: center; padding: 40px 20px;
-            color: var(--hint-color);
-        }
+        .empty-state { text-align: center; padding: 40px 20px; color: var(--hint-color); }
         .empty-state .icon { font-size: 48px; margin-bottom: 12px; }
         .empty-state h3 { color: var(--text-color); margin-bottom: 8px; }
 
@@ -422,77 +366,45 @@
         .tab-btn.active { color: var(--button-color); }
 
         .import-preview-item {
-            background: var(--bg-color);
-            border: 1px solid var(--border-color);
-            border-radius: 8px;
-            padding: 10px 12px;
-            margin-bottom: 8px;
+            background: var(--bg-color); border: 1px solid var(--border-color);
+            border-radius: 8px; padding: 10px 12px; margin-bottom: 8px;
         }
         .import-preview-item .ip-top {
             display: flex; justify-content: space-between;
             align-items: flex-start; gap: 8px; margin-bottom: 6px;
         }
-        .import-preview-item .ip-name {
-            font-size: 14px; font-weight: 600; flex: 1;
-            word-break: break-word;
-        }
+        .import-preview-item .ip-name { font-size: 14px; font-weight: 600; flex: 1; word-break: break-word; }
         .import-preview-item .ip-action-badge {
-            font-size: 10px; font-weight: 700;
-            padding: 2px 8px; border-radius: 10px;
-            text-transform: uppercase; letter-spacing: 0.3px;
-            white-space: nowrap;
+            font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 10px;
+            text-transform: uppercase; letter-spacing: 0.3px; white-space: nowrap;
         }
         .ip-badge-update { background: rgba(76, 175, 80, 0.15); color: var(--money-color); }
         .ip-badge-new { background: rgba(36, 129, 204, 0.15); color: var(--button-color); }
         .ip-badge-similar { background: rgba(255, 152, 0, 0.15); color: var(--warn-color); }
         .ip-badge-skip { background: rgba(120,120,120,0.15); color: #888; }
-        .ip-prices {
-            display: flex; gap: 10px; font-size: 12px;
-            color: var(--hint-color); margin-bottom: 6px; flex-wrap: wrap;
-        }
+        .ip-prices { display: flex; gap: 10px; font-size: 12px; color: var(--hint-color); margin-bottom: 6px; flex-wrap: wrap; }
         .ip-prices b { color: var(--money-color); }
         .ip-prices .old { color: var(--hint-color); text-decoration: line-through; }
         .ip-actions { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px; }
         .ip-actions button {
             padding: 5px 10px; font-size: 11px; border-radius: 5px;
-            cursor: pointer; font-weight: 600;
-            background: transparent;
-            border: 1px solid var(--border-color);
-            color: var(--text-color);
+            cursor: pointer; font-weight: 600; background: transparent;
+            border: 1px solid var(--border-color); color: var(--text-color);
         }
         .ip-actions button.selected {
-            background: var(--button-color);
-            color: var(--button-text-color);
+            background: var(--button-color); color: var(--button-text-color);
             border-color: var(--button-color);
         }
-        .ip-actions button.skip.selected {
-            background: #666;
-            border-color: #666;
-        }
-        .ip-select-hint {
-            font-size: 11px; color: var(--hint-color);
-            margin-top: 4px; font-style: italic;
-        }
-        .import-match-select {
-            width: 100%; padding: 6px; margin-top: 4px;
-            font-size: 13px;
-        }
-        .loader-box {
-            text-align: center; padding: 30px 20px;
-            color: var(--hint-color);
-        }
+        .ip-actions button.skip.selected { background: #666; border-color: #666; }
+        .ip-select-hint { font-size: 11px; color: var(--hint-color); margin-top: 4px; font-style: italic; }
+        .loader-box { text-align: center; padding: 30px 20px; color: var(--hint-color); }
         .loader-box .spinner {
-            display: inline-block;
-            width: 30px; height: 30px;
+            display: inline-block; width: 30px; height: 30px;
             border: 3px solid rgba(36, 129, 204, 0.3);
-            border-top-color: var(--button-color);
-            border-radius: 50%;
-            animation: spin 0.8s linear infinite;
-            margin-bottom: 10px;
+            border-top-color: var(--button-color); border-radius: 50%;
+            animation: spin 0.8s linear infinite; margin-bottom: 10px;
         }
-        @keyframes spin {
-            to { transform: rotate(360deg); }
-        }
+        @keyframes spin { to { transform: rotate(360deg); } }
     </style>
 </head>
 <body>
@@ -701,7 +613,7 @@
     </div>
 
     <script>
-// ==========================================
+        // ==========================================
 // КОНСТАНТЫ И РОЛИ
 // ==========================================
 
@@ -976,6 +888,7 @@ let selectionMode = false;
 let selectedIds = new Set();
 let viewPortions = null;
 let viewOutput = null;
+let viewContext = null;
 let viewStack = [];
 let expandedCategories = new Set();
 let searchQuery = '';
@@ -1662,13 +1575,31 @@ function editRecipe(id) {
 // ПРОСМОТР
 // ==========================================
 
-function openRecipeView(id) {
+function openRecipeView(id, context) {
     const r = recipes.find(x => x.id === id);
     if (!r) return;
-    if (viewingRecipeId && viewingRecipeId !== id) viewStack.push(viewingRecipeId);
+    if (viewingRecipeId && viewingRecipeId !== id) {
+        viewStack.push({
+            id: viewingRecipeId,
+            portions: viewPortions,
+            output: viewOutput,
+            context: viewContext
+        });
+    }
     viewingRecipeId = id;
-    viewPortions = r.portions || 4;
-    viewOutput = r.output || 0;
+    viewContext = context || null;
+    if (viewContext && viewContext.neededGrams) {
+        const baseResult = calculateTotalLoss(r).resultWeight;
+        if (baseResult > 0) {
+            viewPortions = (r.portions || 4) * (viewContext.neededGrams / baseResult);
+        } else {
+            viewPortions = r.portions || 4;
+        }
+        viewOutput = r.output || 0;
+    } else {
+        viewPortions = r.portions || 4;
+        viewOutput = r.output || 0;
+    }
     document.getElementById('tabRecipesContent').style.display = 'none';
     document.getElementById('recipeConstructor').style.display = 'none';
     document.getElementById('recipeView').style.display = 'block';
@@ -1677,27 +1608,37 @@ function openRecipeView(id) {
 }
 function closeRecipeView() {
     if (viewStack.length > 0) {
-        const pid = viewStack.pop();
-        const rec = recipes.find(r => r.id === pid);
+        const prev = viewStack.pop();
+        const rec = recipes.find(r => r.id === prev.id);
         if (rec) {
-            viewingRecipeId = pid;
-            viewPortions = rec.portions || 4;
-            viewOutput = rec.output || 0;
-            renderRecipeView(); return;
+            viewingRecipeId = prev.id;
+            viewPortions = prev.portions;
+            viewOutput = prev.output;
+            viewContext = prev.context;
+            renderRecipeView();
+            return;
         }
     }
     viewStack = [];
     document.getElementById('recipeView').style.display = 'none';
     document.getElementById('tabRecipesContent').style.display = (activeTab === 'recipes') ? 'block' : 'none';
-    viewingRecipeId = null; viewPortions = null; viewOutput = null;
+    viewingRecipeId = null;
+    viewPortions = null;
+    viewOutput = null;
+    viewContext = null;
     renderRecipes();
     updateTabBarVisibility();
 }
-function openLinkedFromView(id) {
+function openLinkedFromView(id, neededGrams, parentId, parentPortions) {
     if (!id) return;
     const rec = recipes.find(r => r.id === id);
     if (!rec) { alert('Рецепт полуфабриката не найден'); return; }
-    openRecipeView(id);
+    const parent = parentId ? recipes.find(r => r.id === parentId) : null;
+    openRecipeView(id, {
+        neededGrams: neededGrams,
+        parentTitle: parent ? parent.title : '',
+        parentPortions: parentPortions
+    });
 }
 function onViewPortionsChange(v) {
     let p = parseFloat(v); if (isNaN(p) || p < 0.01) p = 0.01;
@@ -1735,7 +1676,6 @@ function updateViewNumbers() {
     const bp = r.portions || 4, bo = r.output || 0;
     const cp = viewPortions, co = viewOutput;
     const ratio = (cp / bp) * (bo > 0 ? co / bo : 1);
-    const crw = cp * co;
     let tg = 0, tn = 0;
     const rows = document.querySelectorAll('.view-ing-row');
     (r.ingredients || []).forEach((i, idx) => {
@@ -1770,7 +1710,6 @@ function renderRecipeView() {
     const bp = r.portions || 4, bo = r.output || 0;
     const cp = viewPortions, co = viewOutput;
     const ratio = (cp / bp) * (bo > 0 ? co / bo : 1);
-    const crw = cp * co;
     let ingRows = '';
     (r.ingredients || []).forEach(i => {
         const u = i.unit || 'г';
@@ -1781,7 +1720,10 @@ function renderRecipeView() {
         if (i.type === 'preparation') {
             const hl = i.linked_recipe_id && recipes.find(r2 => r2.id === i.linked_recipe_id);
             nc += ` <span class="linked-badge">полуфаб.</span>`;
-            if (hl) nc += ` <button class="open-link-btn" onclick="openLinkedFromView('${i.linked_recipe_id}')">Открыть</button>`;
+            if (hl) {
+                const nG = unitToGrams(n, u);
+                nc += ` <button class="open-link-btn" onclick="openLinkedFromView('${i.linked_recipe_id}', ${nG}, '${r.id}', ${cp})">Открыть</button>`;
+            }
         }
         ingRows += `<tr class="view-ing-row"><td>${nc}</td><td class="num">${formatWeight(g, u)}</td><td class="num">${formatWeight(n, u)}</td></tr>`;
     });
@@ -1806,18 +1748,30 @@ function renderRecipeView() {
             <div class="view-output-row">Одна порция: <b id="viewCostPerPortion" style="color: var(--money-color);">${formatPrice(perPortion)}</b></div>
         </div>`;
     }
-    view.innerHTML = `
-        <div class="view-header"><button class="back-btn" onclick="closeRecipeView()">←</button></div>
-        <div style="margin-bottom: 8px;"><div class="view-title">${escapeHtml(r.title)}</div><div style="font-size: 12px; color: var(--hint-color);">${escapeHtml(r.category)} · базово: ${bp} порц. по ${formatWeight(bo, 'г')}</div></div>
-        ${actionsHtml}
-        <div class="view-section">
+    let contextBannerHtml = '';
+    let paramsBlockHtml = '';
+    if (viewContext && viewContext.neededGrams) {
+        contextBannerHtml = `<div class="view-context-banner">
+            <div class="ctx-label">Нужно для</div>
+            <div class="ctx-title">${escapeHtml(viewContext.parentTitle)} · ${formatNum(viewContext.parentPortions)} порц.</div>
+            <div class="ctx-sub">Требуется партия: ${formatWeight(viewContext.neededGrams, 'г')}</div>
+        </div>`;
+    } else {
+        paramsBlockHtml = `<div class="view-section">
             <h4>Параметры</h4>
             <div class="view-fields-grid">
                 <div><label>Порций</label><input type="number" id="viewPortionsInput" min="0.01" step="1" value="${cp}" oninput="onViewPortionsChange(this.value)"></div>
                 <div><label>Размер порции (г)</label><input type="number" id="viewOutputInput" min="0" step="1" value="${co}" oninput="onViewOutputChange(this.value)"></div>
             </div>
             <button class="mode-btn" style="width: 100%; margin-top: 6px;" onclick="resetViewValues()">Сбросить к базовым</button>
-        </div>
+        </div>`;
+    }
+    view.innerHTML = `
+        <div class="view-header"><button class="back-btn" onclick="closeRecipeView()">←</button></div>
+        <div style="margin-bottom: 8px;"><div class="view-title">${escapeHtml(r.title)}</div><div style="font-size: 12px; color: var(--hint-color);">${escapeHtml(r.category)} · базово: ${bp} порц. по ${formatWeight(bo, 'г')}</div></div>
+        ${contextBannerHtml}
+        ${actionsHtml}
+        ${paramsBlockHtml}
         ${costBlockHtml}
         <div class="view-section">
             <h4>Ингредиенты</h4>
