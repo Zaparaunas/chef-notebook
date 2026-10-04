@@ -198,18 +198,51 @@
         .step-loss-row { display: flex; align-items: center; gap: 8px; margin-top: 4px; }
         .step-loss-row label { font-size: 11px; color: var(--hint-color); white-space: nowrap; }
         .step-loss-row input { flex: 1; margin-bottom: 0; }
+
+        .step-desc-wrap { position: relative; margin-bottom: 8px; }
+        .step-desc-wrap > textarea { margin-bottom: 0; }
         .step-suggestions {
-            display: none; flex-wrap: wrap; gap: 6px; margin: -2px 0 8px 0;
+            position: absolute;
+            display: none;
+            flex-direction: column;
+            background: var(--secondary-bg-color);
+            border: 1px solid var(--button-color);
+            border-radius: 6px;
+            padding: 4px;
+            max-height: 200px;
+            overflow-y: auto;
+            box-shadow: 0 6px 16px rgba(0,0,0,0.4);
+            z-index: 300;
+            min-width: 140px;
         }
         .step-suggestions.open { display: flex; }
         .step-suggestion-btn {
-            padding: 6px 10px; font-size: 12px; border-radius: 6px;
-            background: rgba(36, 129, 204, 0.12);
-            color: var(--button-color);
-            border: 1px solid rgba(36, 129, 204, 0.3);
-            cursor: pointer; font-weight: 600; font-family: inherit;
+            text-align: left;
+            padding: 7px 10px;
+            font-size: 13px;
+            background: transparent;
+            border: none;
+            color: var(--text-color);
+            cursor: pointer;
+            border-radius: 4px;
+            font-family: inherit;
+            white-space: nowrap;
         }
-        .step-suggestion-btn:active { background: var(--button-color); color: #fff; }
+        .step-suggestion-btn:hover, .step-suggestion-btn:active {
+            background: rgba(36, 129, 204, 0.15);
+            color: var(--button-color);
+        }
+        .step-mirror {
+            position: absolute;
+            top: 0;
+            left: 0;
+            visibility: hidden;
+            pointer-events: none;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            overflow: hidden;
+            z-index: -1;
+        }
 
         .ing-type-row { display: flex; gap: 8px; align-items: center; margin-bottom: 4px; }
         .ing-type-row label { font-size: 11px; color: var(--hint-color); white-space: nowrap; }
@@ -1179,6 +1212,9 @@ window.addEventListener('DOMContentLoaded', async () => {
         if (!e.target.closest('.recipe-picker') && !e.target.closest('.product-picker')) {
             document.querySelectorAll('.recipe-search-results.open').forEach(el => el.classList.remove('open'));
         }
+        if (!e.target.closest('.step-desc-wrap')) {
+            document.querySelectorAll('.step-suggestions.open').forEach(el => el.classList.remove('open'));
+        }
     });
 });
 
@@ -1617,7 +1653,6 @@ function updateOutputSummary() {
 // ==========================================
 
 function onStepDescInput(textarea) {
-    textarea.dataset.pos = String(textarea.selectionStart ?? textarea.value.length);
     updateStepSuggestions(textarea);
 }
 
@@ -1627,26 +1662,53 @@ function updateStepSuggestions(textarea) {
     const box = row.querySelector('.step-suggestions');
     if (!box) return;
 
-    const lower = (textarea.value || '').toLowerCase().replace(/ё/g, 'е');
+    const raw = textarea.value || '';
+    const lower = raw.toLowerCase().replace(/ё/g, 'е');
     const words = lower.split(/[\s,.;:!?()\[\]{}"'«»]+/).filter(w => w.length > 0);
-    const last = words[words.length - 1] || '';
+
+    function findProductKey(word) {
+        let best = null;
+        for (const k in CUTS_BY_PRODUCT) {
+            if (word === k) return k;
+            if (word.startsWith(k)) {
+                const diff = word.length - k.length;
+                if (diff <= 2 && (!best || k.length > best.length)) best = k;
+            }
+        }
+        return best;
+    }
+    function findActionKey(word) {
+        let best = null;
+        for (const k in DONENESS_BY_ACTION) {
+            if (word === k) return k;
+            if (word.startsWith(k)) {
+                const diff = word.length - k.length;
+                if (diff <= 3 && (!best || k.length > best.length)) best = k;
+            }
+        }
+        return best;
+    }
 
     let suggestions = [];
-    if (CUT_TRIGGERS.includes(last)) {
-        for (let i = words.length - 2; i >= 0 && i >= words.length - 5; i--) {
-            const w = words[i];
-            for (const key in CUTS_BY_PRODUCT) {
-                if (w.startsWith(key)) { suggestions = CUTS_BY_PRODUCT[key]; break; }
+    if (words.length > 0) {
+        const last = words[words.length - 1];
+        const lastProduct = findProductKey(last);
+        const lastAction = findActionKey(last);
+
+        if (lastProduct) {
+            suggestions = CUTS_BY_PRODUCT[lastProduct];
+        } else if (CUT_TRIGGERS.includes(last)) {
+            for (let i = words.length - 2; i >= 0 && i >= words.length - 5; i--) {
+                const k = findProductKey(words[i]);
+                if (k) { suggestions = CUTS_BY_PRODUCT[k]; break; }
             }
-            if (suggestions.length) break;
-        }
-    } else if (last === DONE_TRIGGER) {
-        for (let i = words.length - 2; i >= 0 && i >= words.length - 5; i--) {
-            const w = words[i];
-            for (const key in DONENESS_BY_ACTION) {
-                if (w.startsWith(key)) { suggestions = DONENESS_BY_ACTION[key]; break; }
+        } else if (lastAction) {
+            suggestions = DONENESS_BY_ACTION[lastAction];
+        } else if (last === 'до') {
+            for (let i = words.length - 2; i >= 0 && i >= words.length - 5; i--) {
+                const k = findActionKey(words[i]);
+                if (k) { suggestions = DONENESS_BY_ACTION[k]; break; }
             }
-            if (suggestions.length) break;
         }
     }
 
@@ -1660,6 +1722,51 @@ function updateStepSuggestions(textarea) {
         `<button type="button" class="step-suggestion-btn" onclick="applyStepSuggestion(this, '${escapeHtml(s).replace(/'/g, "\\'")}')">${escapeHtml(s)}</button>`
     ).join('');
     box.classList.add('open');
+    positionStepSuggestions(textarea, box);
+}
+
+function positionStepSuggestions(textarea, box) {
+    const wrap = textarea.closest('.step-desc-wrap');
+    if (!wrap) return;
+    let mirror = wrap.querySelector('.step-mirror');
+    if (!mirror) {
+        mirror = document.createElement('div');
+        mirror.className = 'step-mirror';
+        wrap.appendChild(mirror);
+    }
+    const cs = window.getComputedStyle(textarea);
+    const props = ['fontFamily','fontSize','fontWeight','fontStyle','letterSpacing','lineHeight',
+                   'paddingTop','paddingRight','paddingBottom','paddingLeft',
+                   'borderTopWidth','borderRightWidth','borderBottomWidth','borderLeftWidth',
+                   'boxSizing','textAlign','textTransform','wordSpacing'];
+    props.forEach(p => { mirror.style[p] = cs[p]; });
+    mirror.style.width = textarea.offsetWidth + 'px';
+    mirror.style.height = textarea.offsetHeight + 'px';
+    mirror.style.top = textarea.offsetTop + 'px';
+    mirror.style.left = textarea.offsetLeft + 'px';
+
+    const pos = textarea.selectionStart ?? textarea.value.length;
+    const before = textarea.value.substring(0, pos);
+    mirror.textContent = before;
+    const marker = document.createElement('span');
+    marker.textContent = '\u200b';
+    mirror.appendChild(marker);
+
+    const wrapRect = wrap.getBoundingClientRect();
+    const markerRect = marker.getBoundingClientRect();
+    const lineHeight = parseFloat(cs.lineHeight) || (parseFloat(cs.fontSize) * 1.3) || 20;
+
+    let top = markerRect.top - wrapRect.top + lineHeight;
+    let left = markerRect.left - wrapRect.left;
+
+    const boxWidth = box.offsetWidth || 160;
+    if (left + boxWidth > wrap.clientWidth) {
+        left = Math.max(0, wrap.clientWidth - boxWidth);
+    }
+    if (left < 0) left = 0;
+
+    box.style.top = top + 'px';
+    box.style.left = left + 'px';
 }
 
 function applyStepSuggestion(btn, text) {
@@ -1668,15 +1775,14 @@ function applyStepSuggestion(btn, text) {
     const textarea = row.querySelector('.step-desc');
     if (!textarea) return;
 
-    const pos = parseInt(textarea.dataset.pos ?? textarea.value.length, 10);
-    const safePos = isNaN(pos) ? textarea.value.length : Math.min(pos, textarea.value.length);
+    const pos = textarea.selectionStart ?? textarea.value.length;
+    const safePos = Math.min(pos, textarea.value.length);
     const before = textarea.value.slice(0, safePos);
     const after = textarea.value.slice(safePos);
     const needsSpace = before.length > 0 && !/\s$/.test(before);
     const insert = (needsSpace ? ' ' : '') + text;
     textarea.value = before + insert + after;
     const newPos = before.length + insert.length;
-    textarea.dataset.pos = String(newPos);
     try { textarea.focus(); textarea.setSelectionRange(newPos, newPos); } catch(e) {}
     updateStepSuggestions(textarea);
 }
@@ -1706,8 +1812,10 @@ function addStepRow(data = {}) {
         }
     }
     div.innerHTML = `
-        <textarea placeholder="Описание шага..." rows="2" class="step-desc" oninput="onStepDescInput(this)">${escapeHtml(data.desc || '')}</textarea>
-        <div class="step-suggestions"></div>
+        <div class="step-desc-wrap">
+            <textarea placeholder="Описание шага..." rows="2" class="step-desc" oninput="onStepDescInput(this)">${escapeHtml(data.desc || '')}</textarea>
+            <div class="step-suggestions"></div>
+        </div>
         <label style="font-size: 11px; color: var(--hint-color);">Метод приготовления:</label>
         <div class="method-temp-row">
             <select class="step-method" onchange="onMethodChange(this)">${optH}</select>
@@ -2068,7 +2176,7 @@ function renderRecipes() {
         const header = document.createElement('div');
         header.className = 'accordion-header';
         header.onclick = () => toggleCategory(cat);
-        header.innerHTML = `<div class="accordion-title"><span class="accordion-arrow ${isOpen ? 'open' : ''}">▶</span><span>${cat}</span><span class="accordion-count">(${inCat.length})</span></div>`;
+        header.innerHTML = `<div class="accordion-title"><span class        header.innerHTML = `<div class="accordion-title"><span class="accordion-arrow ${isOpen ? 'open' : ''}">▶</span><span>${cat}</span><span class="accordion-count">(${inCat.length})</span></div>`;
         group.appendChild(header);
         const body = document.createElement('div');
         body.className = 'accordion-body' + (isOpen ? ' open' : '');
