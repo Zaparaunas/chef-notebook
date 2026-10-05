@@ -860,6 +860,7 @@ function getCurrentUserId() {
 async function loadUserRole() {
     const userId = getCurrentUserId();
     if (userId === OWNER_TELEGRAM_ID) { currentUserRole = 'chef'; return; }
+    if (userId === 'local') { currentUserRole = 'chef'; return; }
     try {
         const { data, error } = await supabaseClient
             .from('users').select('role').eq('telegram_id', userId).maybeSingle();
