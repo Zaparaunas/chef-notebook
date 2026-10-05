@@ -129,6 +129,11 @@
             border-color: var(--error-color) !important;
             background: rgba(255, 82, 82, 0.1) !important;
         }
+        input[readonly] {
+            background: #f0f0f0 !important;
+            color: #888 !important;
+            cursor: not-allowed;
+        }
         .field-warning {
             font-size: 11px; color: var(--error-color);
             margin-top: -4px; margin-bottom: 6px; display: none;
@@ -145,7 +150,7 @@
             cursor: pointer; white-space: nowrap;
         }
 
-        #portionsRange, #portionsInput, #viewPortionsInput, #viewOutputInput {
+        #portionsRange, #portionsInput, #portionSizeInput, #viewPortionsInput, #viewOutputInput {
             background: #ffffff !important; color: #000000 !important;
             border: 1px solid #cccccc !important; font-weight: 600;
         }
@@ -171,6 +176,22 @@
             color: #888 !important;
             cursor: not-allowed;
         }
+
+        .portions-row {
+            display: flex; gap: 6px; align-items: center; margin-bottom: 8px;
+        }
+        .portions-row.manual .portions-slider-wrap { display: none; }
+        .portions-slider-wrap { flex: 1; }
+        .portions-slider-wrap input[type="range"] { margin-bottom: 0; }
+        .portions-input-wrap { flex: 0 0 auto; width: 90px; }
+        .portions-input-wrap input { margin-bottom: 0; }
+        .portion-size-row {
+            display: flex; gap: 6px; align-items: center; margin-bottom: 8px;
+        }
+        .portion-size-row label {
+            font-size: 11px; color: var(--hint-color); white-space: nowrap; flex: 0 0 auto;
+        }
+        .portion-size-row input { margin-bottom: 0; flex: 1; }
 
         .output-summary {
             font-size: 12px; color: var(--hint-color);
@@ -209,11 +230,11 @@
             border: 1px solid var(--button-color);
             border-radius: 6px;
             padding: 4px;
-            max-height: 220px;
+            max-height: 260px;
             overflow-y: auto;
             box-shadow: 0 6px 16px rgba(0,0,0,0.4);
             z-index: 300;
-            min-width: 180px;
+            min-width: 200px;
         }
         .step-suggestions.open { display: flex; }
         .step-suggestion-btn {
@@ -231,6 +252,13 @@
         .step-suggestion-btn:hover, .step-suggestion-btn:active {
             background: rgba(36, 129, 204, 0.15);
             color: var(--button-color);
+        }
+        .step-suggestion-group-label {
+            font-size: 10px;
+            color: var(--hint-color);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            padding: 6px 10px 2px;
         }
         .step-mirror {
             position: absolute;
@@ -287,6 +315,7 @@
         }
         .summary-row { display: flex; justify-content: space-between; font-weight: bold; margin-bottom: 3px; }
         .summary-row:last-child { margin-bottom: 0; }
+        .summary-row.dim { font-weight: 400; color: var(--hint-color); font-size: 12px; }
 
         .cost-box {
             background: linear-gradient(135deg, rgba(76,175,80,0.1), rgba(76,175,80,0.05));
@@ -559,14 +588,18 @@
                 <option value="Другое">Другое</option>
             </select>
 
-            <div style="display: flex; gap: 8px; align-items: center; margin-bottom: 8px;">
-                <div style="flex: 1;">
-                    <label style="font-size: 11px; color: var(--hint-color);">Порций (до 20 / вручную):</label>
-                    <div style="display: flex; gap: 6px; align-items: center;">
-                        <input type="range" id="portionsRange" min="1" max="20" value="4" oninput="onRangeInput(this.value)">
-                        <input type="number" id="portionsInput" min="1" max="1000" value="4" oninput="onNumberInput(this.value)" style="margin-bottom:0;">
-                    </div>
+            <label style="font-size: 11px; color: var(--hint-color);">Порций:</label>
+            <div class="portions-row" id="portionsRow">
+                <div class="portions-slider-wrap" id="portionsSliderWrap">
+                    <input type="range" id="portionsRange" min="1" max="20" value="4" oninput="onRangeInput(this.value)">
                 </div>
+                <div class="portions-input-wrap">
+                    <input type="number" id="portionsInput" min="1" max="1000" value="4" oninput="onNumberInput(this.value)">
+                </div>
+            </div>
+            <div class="portion-size-row">
+                <label>Размер порции (г):</label>
+                <input type="number" id="portionSizeInput" min="1" step="1" placeholder="обязательно" value="">
             </div>
 
             <h4>Ингредиенты:</h4>
@@ -613,8 +646,12 @@
                     <span id="totalLoss">0 г</span>
                 </div>
                 <div class="summary-row">
-                    <span>Размер порции:</span>
+                    <span>Вес закладки:</span>
                     <span id="totalPortionSize">0 г</span>
+                </div>
+                <div class="summary-row dim">
+                    <span>Фактический выход (порций):</span>
+                    <span id="totalActualPortions">0</span>
                 </div>
             </div>
 
@@ -674,7 +711,7 @@
     </div>
 
     <script>
-        // ==========================================
+                // ==========================================
 // КОНСТАНТЫ И РОЛИ
 // ==========================================
 
@@ -697,76 +734,79 @@ const PRICE_UNITS = ['кг','л','шт','г','мл'];
 // СЛОВАРИ ПОДСКАЗОК
 // ==========================================
 
+// Продукт → список действий (в порядке приоритета)
 const PRODUCT_ACTIONS = {
-    'лук': ['почистить','нарезать','нашинковать','пассеровать','обжарить','замариновать'],
-    'лук репчатый': ['почистить','нарезать','нашинковать','пассеровать','обжарить','замариновать'],
-    'лук красный': ['почистить','нарезать','нашинковать','замариновать'],
-    'лук зелёный': ['перебрать','промыть','нарезать'],
-    'морковь': ['почистить','нарезать','натереть','пассеровать','обжарить','потушить','отварить'],
-    'картофель': ['почистить','нарезать','отварить','обжарить','запечь','потушить'],
-    'свёкла': ['почистить','нарезать','натереть','отварить','запечь'],
-    'свекла': ['почистить','нарезать','натереть','отварить','запечь'],
+    // Овощи
+    'лук': ['нарезать','почистить','пассеровать','обжарить','нашинковать','замариновать'],
+    'лук репчатый': ['нарезать','почистить','пассеровать','обжарить','нашинковать','замариновать'],
+    'лук красный': ['нарезать','почистить','нашинковать','замариновать'],
+    'лук зелёный': ['нарезать','перебрать','промыть'],
+    'морковь': ['нарезать','натереть','почистить','пассеровать','обжарить','потушить','отварить'],
+    'картофель': ['нарезать','почистить','отварить','обжарить','запечь','потушить'],
+    'картошка': ['нарезать','почистить','отварить','обжарить','запечь','потушить'],
+    'свёкла': ['нарезать','натереть','почистить','отварить','запечь'],
+    'свекла': ['нарезать','натереть','почистить','отварить','запечь'],
     'капуста': ['нарезать','нашинковать','потушить','засолить'],
     'помидор': ['нарезать','обжарить','потушить','запечь'],
+    'томат': ['нарезать','обжарить','потушить','запечь'],
     'огурец': ['нарезать','засолить','замариновать'],
-    'перец болгарский': ['почистить','нарезать','пассеровать','обжарить','запечь'],
-    'перец': ['почистить','нарезать','пассеровать','обжарить','запечь'],
+    'перец': ['нарезать','почистить','пассеровать','обжарить','запечь'],
+    'перец болгарский': ['нарезать','почистить','пассеровать','обжарить','запечь'],
     'кабачок': ['нарезать','обжарить','потушить','запечь'],
     'баклажан': ['нарезать','обжарить','потушить','запечь'],
-    'редис': ['нарезать'],
-    'репа': ['почистить','нарезать','отварить','потушить'],
-    'сельдерей': ['почистить','нарезать','пассеровать'],
-    'чеснок': ['почистить','нарезать','измельчить','обжарить'],
-    'имбирь': ['почистить','нарезать','натереть'],
-    'укроп': ['перебрать','промыть','обсушить','нарезать','нашинковать'],
-    'петрушка': ['перебрать','промыть','обсушить','нарезать','нашинковать'],
-    'кинза': ['перебрать','промыть','обсушить','нарезать','нашинковать'],
-    'базилик': ['промыть','обсушить','нашинковать'],
-    'мята': ['промыть','обсушить','нашинковать'],
-    'тархун': ['промыть','обсушить','нашинковать'],
-    'розмарин': ['промыть','обсушить','измельчить'],
-    'тимьян': ['промыть','обсушить','измельчить'],
-    'говядина': ['промыть','обсушить','нарезать','отбить','обжарить','потушить','запечь','отварить'],
-    'свинина': ['промыть','обсушить','нарезать','отбить','обжарить','потушить','запечь'],
-    'баранина': ['промыть','обсушить','нарезать','обжарить','потушить','запечь'],
-    'телятина': ['промыть','обсушить','нарезать','отбить','обжарить','потушить'],
-    'курица': ['промыть','обсушить','нарезать','обжарить','потушить','запечь','отварить'],
-    'куриц': ['промыть','обсушить','нарезать','обжарить','потушить','запечь','отварить'],
-    'индейка': ['промыть','обсушить','нарезать','обжарить','потушить','запечь'],
-    'утка': ['промыть','обсушить','нарезать','обжарить','запечь'],
-    'лосось': ['промыть','обсушить','разделать','нарезать','засолить','запечь','обжарить'],
-    'форель': ['промыть','обсушить','разделать','нарезать','запечь','обжарить'],
-    'треска': ['промыть','обсушить','разделать','нарезать','обжарить','запечь'],
-    'судак': ['промыть','обсушить','разделать','нарезать','обжарить','запечь'],
-    'тунец': ['промыть','обсушить','разделать','нарезать','обжарить'],
-    'сельдь': ['промыть','разделать','нарезать','засолить'],
-    'скумбрия': ['промыть','разделать','нарезать','запечь','засолить'],
+    'редис': ['нарезать','промыть'],
+    'репа': ['нарезать','почистить','отварить','потушить'],
+    'сельдерей': ['нарезать','почистить','пассеровать'],
+    'чеснок': ['измельчить','нарезать','почистить','обжарить'],
+    'имбирь': ['нарезать','натереть','почистить'],
+    // Зелень
+    'укроп': ['нарезать','нашинковать','перебрать','промыть'],
+    'петрушка': ['нарезать','нашинковать','перебрать','промыть'],
+    'кинза': ['нарезать','нашинковать','перебрать','промыть'],
+    'базилик': ['нашинковать','промыть'],
+    'мята': ['нашинковать','промыть'],
+    'тархун': ['нашинковать','промыть'],
+    'розмарин': ['измельчить','промыть'],
+    'тимьян': ['измельчить','промыть'],
+    // Мясо
+    'говядина': ['нарезать','отбить','обжарить','потушить','запечь','отварить'],
+    'свинина': ['нарезать','отбить','обжарить','потушить','запечь'],
+    'баранина': ['нарезать','обжарить','потушить','запечь'],
+    'телятина': ['нарезать','отбить','обжарить','потушить'],
+    'курица': ['нарезать','обжарить','потушить','запечь','отварить'],
+    'куриц': ['нарезать','обжарить','потушить','запечь','отварить'],
+    'индейка': ['нарезать','обжарить','потушить','запечь'],
+    'утка': ['нарезать','обжарить','запечь'],
+    'фарш': ['обжарить','потушить','запечь'],
+    // Рыба
+    'лосось': ['разделать','нарезать','засолить','запечь','обжарить'],
+    'форель': ['разделать','нарезать','запечь','обжарить'],
+    'треска': ['разделать','нарезать','обжарить','запечь'],
+    'судак': ['разделать','нарезать','обжарить','запечь'],
+    'тунец': ['разделать','нарезать','обжарить'],
+    'сельдь': ['разделать','нарезать','засолить'],
+    'скумбрия': ['разделать','нарезать','запечь','засолить'],
+    'рыба': ['разделать','нарезать','обжарить','запечь','отварить'],
+    // Тесто, хлеб
     'тесто': ['раскатать','нарезать'],
     'хлеб': ['нарезать','обжарить','запечь'],
-    'яблоко': ['промыть','нарезать','очистить'],
-    'груша': ['промыть','нарезать','очистить'],
-    'лимон': ['промыть','нарезать','отжать'],
-    'апельсин': ['промыть','нарезать','очистить','отжать'],
-    'банан': ['очистить','нарезать']
+    'батон': ['нарезать','обжарить'],
+    // Фрукты
+    'яблоко': ['нарезать','очистить','промыть'],
+    'груша': ['нарезать','очистить','промыть'],
+    'лимон': ['нарезать','отжать','промыть'],
+    'апельсин': ['нарезать','очистить','отжать','промыть'],
+    'банан': ['нарезать','очистить']
 };
 
+// Действие → подвиды (в творительном падеже для нарезок; для готовности — «до + род.»)
 const ACTION_VARIANTS = {
-    'почистить': [],
-    'промыть': [],
-    'обсушить': [],
-    'перебрать': [],
-    'разделать': [],
-    'раскатать': [],
-    'отжать': [],
-    'очистить': [],
-    'засолить': ['на 30 минут','на 2 часа','на сутки'],
-    'замариновать': ['на 30 минут','на 2 часа','на ночь'],
-    'нарезать': ['соломкой','брусочками','кубиком 0,5×0,5','кубиком 1×1','кубиком 1,5×1,5','кубиком 2×2','кубиком 3×3','кружочками','полукольцами','дольками'],
-    'нашинковать': ['тонко','мелко'],
+    'нарезать': ['соломкой','кубиком 0,5×0,5','кубиком 1×1','кубиком 1,5×1,5','кубиком 2×2','кубиком 3×3','брусочками','кружочками','полукольцами','дольками'],
+    'нашинковать': ['тонко','мелко','соломкой'],
     'натереть': ['на крупной тёрке','на средней тёрке','на мелкой тёрке'],
     'измельчить': ['мелко','крупно'],
     'отбить': ['до 5 мм','до 1 см'],
-    'обжарить': ['до золотистой корочки','до румяного цвета','до карамелизации'],
+    'обжарить': ['до золотистой корочки','до румяного цвета','до карамелизации','до готовности'],
     'пассеровать': ['до прозрачности','до золотистого цвета','до мягкости'],
     'жарить': ['до золотистой корочки','до румяного цвета','до готовности'],
     'запечь': ['до румяной корочки','до полной готовности','до хрустящей корочки'],
@@ -775,7 +815,17 @@ const ACTION_VARIANTS = {
     'варить': ['до готовности','до мягкости','до полуготовности','до al dente'],
     'припустить': ['до готовности','до мягкости'],
     'бланшировать': ['до полуготовности','до мягкости'],
-    'довести': ['до вкуса','до кипения','до готовности','до нужной консистенции']
+    'довести': ['до вкуса','до кипения','до готовности','до нужной консистенции'],
+    'засолить': ['на 30 минут','на 2 часа','на сутки'],
+    'замариновать': ['на 30 минут','на 2 часа','на ночь'],
+    'почистить': [],
+    'промыть': [],
+    'обсушить': [],
+    'перебрать': [],
+    'разделать': [],
+    'раскатать': [],
+    'отжать': [],
+    'очистить': []
 };
 
 const ALL_ACTIONS = Object.keys(ACTION_VARIANTS);
@@ -1006,10 +1056,7 @@ function updateConstructorCost() {
             if (subBatch > 0) total += unitToGrams(net, unit) * (subTotal / subBatch);
         }
     });
-    const portions = parseInt(document.getElementById('portionsInput')?.value) || 1;
-    const perPortion = portions > 0 ? total / portions : total;
     document.getElementById('totalRecipeCost').textContent = formatPrice(total);
-    document.getElementById('recipeCostPerPortion').textContent = formatPrice(perPortion);
 }
 
 // ==========================================
@@ -1075,6 +1122,7 @@ async function loadRecipesFromSupabase() {
         const result = recipesData.map(r => ({
             id: r.id, title: r.title || '', category: r.category || '',
             portions: r.base_portion || 4, output: r.output || 0,
+            portion_size: r.portion_size || 0,
             ingredients: map[r.id] || [],
             steps: typeof r.steps === 'string' ? JSON.parse(r.steps || '[]') : (r.steps || []),
             updated_at: r.updated_at || new Date().toISOString()
@@ -1093,6 +1141,7 @@ async function saveRecipeToSupabase(recipe) {
         const recipeRow = {
             id: recipe.id, user_id: userId, title: recipe.title, category: recipe.category,
             base_portion: recipe.portions || 4, output: recipe.output || 0,
+            portion_size: recipe.portion_size || 0,
             steps: recipe.steps || [], updated_at: new Date().toISOString()
         };
         const { error: upErr } = await supabaseClient.from('recipes').upsert(recipeRow, { onConflict: 'id' });
@@ -1274,8 +1323,13 @@ function openConstructor(recipe = null) {
         document.getElementById('recipeCategory').value = recipe.category || '';
         const p = recipe.portions || 4;
         document.getElementById('portionsInput').value = p;
-        if(p <= 20) { document.getElementById('portionsRange').value = p; document.getElementById('portionsRange').style.display = 'block'; }
-        else document.getElementById('portionsRange').style.display = 'none';
+        if (p <= 20) {
+            document.getElementById('portionsRange').value = p;
+            document.getElementById('portionsRow').classList.remove('manual');
+        } else {
+            document.getElementById('portionsRow').classList.add('manual');
+        }
+        document.getElementById('portionSizeInput').value = recipe.portion_size || '';
         (recipe.ingredients || []).forEach(i => addIngredientRow(i));
         (recipe.steps || []).forEach(s => addStepRow(s));
     } else {
@@ -1285,8 +1339,9 @@ function openConstructor(recipe = null) {
         toggleConstructorFields();
         document.getElementById('recipeCategory').selectedIndex = 0;
         document.getElementById('portionsRange').value = 4;
-        document.getElementById('portionsRange').style.display = 'block';
+        document.getElementById('portionsRow').classList.remove('manual');
         document.getElementById('portionsInput').value = 4;
+        document.getElementById('portionSizeInput').value = '';
         addIngredientRow();
         addStepRow();
     }
@@ -1310,8 +1365,12 @@ function onRangeInput(val) {
 }
 function onNumberInput(val) {
     const num = parseInt(val) || 1;
-    const r = document.getElementById('portionsRange');
-    if (num <= 20) { r.value = num; r.style.display = 'block'; } else r.style.display = 'none';
+    if (num <= 20) {
+        document.getElementById('portionsRange').value = num;
+        document.getElementById('portionsRow').classList.remove('manual');
+    } else {
+        document.getElementById('portionsRow').classList.add('manual');
+    }
     updateSummary(); updateOutputSummary();
 }
 
@@ -1644,12 +1703,13 @@ function updateOutputSummary() {
     el.innerHTML = `Результирующий вес: <b>${formatWeight(rw, 'г')}</b> · Уварка: <b>${ut}</b>`;
     const box = document.getElementById('constructorTotals');
     if (box) {
-        const p = parseInt(document.getElementById('portionsInput')?.value) || 0;
-        const ps = p > 0 ? rw / p : 0;
+        const ps = parseFloat(document.getElementById('portionSizeInput')?.value) || 0;
         document.getElementById('totalNet').textContent = formatWeight(tn, 'г');
         document.getElementById('totalResult').textContent = formatWeight(rw, 'г');
         document.getElementById('totalLoss').textContent = formatWeight(loss, 'г');
-        document.getElementById('totalPortionSize').textContent = formatWeight(ps, 'г');
+        document.getElementById('totalPortionSize').textContent = ps > 0 ? formatWeight(ps, 'г') : '—';
+        const actual = ps > 0 ? rw / ps : 0;
+        document.getElementById('totalActualPortions').textContent = actual > 0 ? actual.toFixed(2) : '—';
     }
 }
 
@@ -1693,7 +1753,7 @@ function updateStepSuggestions(textarea) {
             if (word === k) return k;
             if (word.startsWith(k)) {
                 const diff = word.length - k.length;
-                if (diff <= 2 && (!best || k.length > best.length)) best = k;
+                if (diff <= 3 && (!best || k.length > best.length)) best = k;
             }
         }
         return null;
@@ -1740,8 +1800,10 @@ function updateStepSuggestions(textarea) {
         return;
     }
 
-    const top = suggestions[0];
-    box.innerHTML = `<button type="button" class="step-suggestion-btn" onclick="applyStepSuggestion(this, '${escapeHtml(top).replace(/'/g, "\\'")}')">${escapeHtml(top)}</button>`;
+    const sliced = suggestions.slice(0, 7);
+    box.innerHTML = sliced.map(s =>
+        `<button type="button" class="step-suggestion-btn" onclick="applyStepSuggestion(this, '${escapeHtml(s).replace(/'/g, "\\'")}')">${escapeHtml(s)}</button>`
+    ).join('');
     box.classList.add('open');
     positionStepSuggestions(textarea, box);
 }
@@ -1780,7 +1842,7 @@ function positionStepSuggestions(textarea, box) {
     let top = markerRect.top - wrapRect.top + lineHeight;
     let left = markerRect.left - wrapRect.left;
 
-    const boxWidth = box.offsetWidth || 180;
+    const boxWidth = box.offsetWidth || 200;
     if (left + boxWidth > wrap.clientWidth) {
         left = Math.max(0, wrap.clientWidth - boxWidth);
     }
@@ -1872,8 +1934,15 @@ async function saveRecipe() {
     const title = document.getElementById('recipeTitle').value.trim();
     const category = document.getElementById('recipeCategory').value;
     const portions = parseInt(document.getElementById('portionsInput').value) || 4;
+    const portionSize = parseFloat(document.getElementById('portionSizeInput').value) || 0;
     if (!title) { alert('Введите название блюда!'); return; }
     if (!category) { alert('Выберите категорию!'); return; }
+    if (portionSize <= 0) {
+        alert('Введите размер порции (г). Без него карту сохранить нельзя.');
+        document.getElementById('portionSizeInput').focus();
+        if (navigator.vibrate) navigator.vibrate(200);
+        return;
+    }
     if (!validateAllIngredients()) { alert('Исправьте ошибки в ингредиентах.'); if (navigator.vibrate) navigator.vibrate(200); return; }
     if (!validateStepChain()) { alert('Исправьте ошибки в шагах.'); if (navigator.vibrate) navigator.vibrate(200); return; }
 
@@ -1896,17 +1965,15 @@ async function saveRecipe() {
         });
     });
 
-    const tn = getTotalNet(), lw = getLastStepWeight();
-    const rw = (lw !== null && lw > 0) ? lw : tn;
-    const output = portions > 0 ? rw / portions : 0;
+    const output = portionSize;
     const now = new Date().toISOString();
     let recipe;
     if (editingRecipeId) {
         const idx = recipes.findIndex(r => r.id === editingRecipeId);
-        recipe = { id: editingRecipeId, title, category, portions, output, ingredients, steps, updated_at: now };
+        recipe = { id: editingRecipeId, title, category, portions, output, portion_size: portionSize, ingredients, steps, updated_at: now };
         if (idx !== -1) recipes[idx] = recipe;
     } else {
-        recipe = { id: crypto.randomUUID(), title, category, portions, output, ingredients, steps, updated_at: now };
+        recipe = { id: crypto.randomUUID(), title, category, portions, output, portion_size: portionSize, ingredients, steps, updated_at: now };
         recipes.unshift(recipe);
     }
     saveRecipesToLocal();
@@ -1947,9 +2014,9 @@ function openRecipeView(id, context) {
     viewingRecipeId = id;
     viewContext = context || null;
     if (viewContext && viewContext.neededGrams) {
-        const baseResult = calculateTotalLoss(r).resultWeight;
-        if (baseResult > 0) {
-            viewPortions = (r.portions || 4) * (viewContext.neededGrams / baseResult);
+        const ps = r.portion_size || r.output || 0;
+        if (ps > 0) {
+            viewPortions = Math.ceil(viewContext.neededGrams / ps);
         } else {
             viewPortions = r.portions || 4;
         }
