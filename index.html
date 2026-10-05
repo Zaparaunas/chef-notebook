@@ -726,12 +726,9 @@ const PRICE_UNITS = ['кг','л','шт','г','мл'];
 // СЛОВАРИ ПОДСКАЗОК
 // ==========================================
 
-// Нарезки по именительному (когда продукт назван без действия)
-const CUTS_NAME = ['солом!ка','брусочки','кубик 0,5×0,5','кубик 1×1','кубик 1,5×1,5','кубик 2×2','кубик 3×3','кружочки','полукольца','дольки'];
-// Нарезки по творительному (когда перед ними действие: нарезать, нашинковать)
+const CUTS_NAME = ['соломка','брусочки','кубик 0,5×0,5','кубик 1×1','кубик 1,5×1,5','кубик 2×2','кубик 3×3','кружочки','полукольца','дольки'];
 const CUTS_INSTR = ['соломкой','брусочками','кубиком 0,5×0,5','кубиком 1×1','кубиком 1,5×1,5','кубиком 2×2','кубиком 3×3','кружочками','полукольцами','дольками'];
 
-// Ключи — корни (без окончаний), чтобы ловить все падежи и формы
 const PRODUCT_ACTIONS = {
     'лук': ['нарезать','почистить','пассеровать','обжарить','нашинковать','замариновать'],
     'лук репчат': ['нарезать','почистить','пассеровать','обжарить','нашинковать','замариновать'],
@@ -740,7 +737,6 @@ const PRODUCT_ACTIONS = {
     'морков': ['нарезать','натереть','почистить','пассеровать','обжарить','потушить','отварить'],
     'картоф': ['нарезать','почистить','отварить','обжарить','запечь','потушить'],
     'картошк': ['нарезать','почистить','отварить','обжарить','запечь','потушить'],
-    'свекл': ['нарезать','натереть','почистить','отварить','запечь'],
     'свекл': ['нарезать','натереть','почистить','отварить','запечь'],
     'капуст': ['нарезать','нашинковать','потушить','засолить'],
     'помидор': ['нарезать','обжарить','потушить','запечь'],
@@ -767,7 +763,6 @@ const PRODUCT_ACTIONS = {
     'баранин': ['нарезать','обжарить','потушить','запечь'],
     'телятин': ['нарезать','отбить','обжарить','потушить'],
     'куриц': ['нарезать','обжарить','потушить','запечь','отварить'],
-    'куриц': ['нарезать','обжарить','потушить','запечь','отварить'],
     'индейк': ['нарезать','обжарить','потушить','запечь'],
     'утк': ['нарезать','обжарить','запечь'],
     'фарш': ['обжарить','потушить','запечь'],
@@ -789,8 +784,6 @@ const PRODUCT_ACTIONS = {
     'банан': ['нарезать','очистить']
 };
 
-// Действие → подвиды (для готовности — цельные фразы с «до»)
-// Ключи — корни, чтобы ловить «нарезать», «нарезал», «нарежу»
 const ACTION_VARIANTS = {
     'нареза': CUTS_INSTR,
     'нашинков': ['тонко','мелко','соломкой'],
@@ -799,7 +792,7 @@ const ACTION_VARIANTS = {
     'отбива': ['до 5 мм','до 1 см'],
     'обжар': ['до золотистой корочки','до румяного цвета','до карамелизации','до готовности'],
     'пассер': ['до прозрачности','до золотистого цвета','до мягкости'],
-    'жар': ['до золотистой корочки','до румяного цвета','до готовности'],
+    'жари': ['до золотистой корочки','до румяного цвета','до готовности'],
     'запе': ['до румяной корочки','до полной готовности','до хрустящей корочки'],
     'потуш': ['до мягкости','до готовности','до размягчения'],
     'отвар': ['до готовности','до мягкости','до полуготовности'],
@@ -821,7 +814,6 @@ const ACTION_VARIANTS = {
 
 const ALL_ACTIONS = Object.keys(ACTION_VARIANTS);
 
-// Ищем продукт: возвращаем корень, если слово начинается с него
 function findProductKey(word) {
     if (!word) return null;
     let best = null;
@@ -833,7 +825,6 @@ function findProductKey(word) {
     return best;
 }
 
-// Ищем действие: возвращаем корень, если слово начинается с него
 function findActionKey(word) {
     if (!word) return null;
     let best = null;
@@ -847,7 +838,7 @@ function findActionKey(word) {
 
 const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-let currentUserRole = 'cook';
+let currentUserRole = 'chef';
 
 function getCurrentUserId() {
     try {
@@ -858,42 +849,28 @@ function getCurrentUserId() {
 }
 
 async function loadUserRole() {
-    const userId = getCurrentUserId();
-    if (userId === OWNER_TELEGRAM_ID) { currentUserRole = 'chef'; return; }
-    if (userId === 'local') { currentUserRole = 'chef'; return; }
-    try {
-        const { data, error } = await supabaseClient
-            .from('users').select('role').eq('telegram_id', userId).maybeSingle();
-        if (!error && data && data.role) currentUserRole = data.role;
-        else currentUserRole = 'cook';
-    } catch(e) { currentUserRole = 'cook'; }
+    currentUserRole = 'chef';
 }
 
 function isChef() {
-    return currentUserRole === 'chef' || currentUserRole === 'admin';
+    return true;
 }
 
 function isCook() {
-    return currentUserRole === 'cook';
+    return false;
 }
 
 function canSeeProducts() {
-    return currentUserRole === 'chef' || currentUserRole === 'admin' || currentUserRole === 'technolog';
+    return true;
 }
 
 function applyRoleUI() {
     const btnNew = document.getElementById('btnNewRecipe');
     const btnImport = document.getElementById('btnImportMenu');
     const tabProducts = document.getElementById('tabBtnProducts');
-    if (!isChef()) {
-        if (btnNew) btnNew.style.display = 'none';
-        if (btnImport) btnImport.style.display = 'none';
-    }
-    if (!canSeeProducts()) {
-        if (tabProducts) tabProducts.style.display = 'none';
-    } else {
-        if (tabProducts) tabProducts.style.display = 'flex';
-    }
+    if (btnNew) btnNew.style.display = 'block';
+    if (btnImport) btnImport.style.display = 'block';
+    if (tabProducts) tabProducts.style.display = 'flex';
 }
 
 // ==========================================
@@ -1262,7 +1239,7 @@ window.addEventListener('DOMContentLoaded', async () => {
     const cloudRecipes = await loadRecipesFromSupabase();
     if (cloudRecipes !== null) {
         if (cloudRecipes.length > 0) recipes = cloudRecipes;
-        else if (localRecipes.length > 0 && isChef()) {
+        else if (localRecipes.length > 0) {
             for (const r of localRecipes) await saveRecipeToSupabase(r);
             recipes = localRecipes;
         }
@@ -1270,12 +1247,10 @@ window.addEventListener('DOMContentLoaded', async () => {
         renderRecipes();
     }
 
-    if (canSeeProducts()) {
-        const cloudProducts = await loadProductsFromSupabase();
-        if (cloudProducts !== null) {
-            products = cloudProducts;
-            saveProductsToLocal();
-        }
+    const cloudProducts = await loadProductsFromSupabase();
+    if (cloudProducts !== null) {
+        products = cloudProducts;
+        saveProductsToLocal();
     }
 
     document.addEventListener('click', function(e) {
@@ -1324,7 +1299,6 @@ function toggleConstructorFields() {
 }
 
 function openConstructor(recipe = null) {
-    if (!isChef()) return;
     document.getElementById('tabRecipesContent').style.display = 'none';
     document.getElementById('selectionPanel').classList.remove('active');
     document.getElementById('recipeView').style.display = 'none';
@@ -1748,12 +1722,6 @@ function updateStepSuggestions(textarea) {
     const beforeCursor = raw.substring(0, pos);
     const lastChar = beforeCursor.slice(-1);
 
-    if (lastChar === ' ' || lastChar === '\n' || lastChar === '') {
-        box.classList.remove('open');
-        box.innerHTML = '';
-        return;
-    }
-
     const lower = beforeCursor.toLowerCase().replace(/ё/g, 'е');
     const words = lower.split(/[\s,.;:!?()\[\]{}"'«»]+/).filter(w => w.length > 0);
     if (!words.length) {
@@ -1761,8 +1729,15 @@ function updateStepSuggestions(textarea) {
         box.innerHTML = '';
         return;
     }
-    const last = words[words.length - 1];
+    const lastWord = words[words.length - 1];
+    const isCutLast = CUTS_NAME.includes(lastWord) || CUTS_INSTR.includes(lastWord);
+    if ((lastChar === ' ' || lastChar === '\n') && !isCutLast) {
+        box.classList.remove('open');
+        box.innerHTML = '';
+        return;
+    }
 
+    const last = words[words.length - 1];
     const lastProduct = findProductKey(last);
     const lastAction = findActionKey(last);
     const lastIsCutName = CUTS_NAME.includes(last);
@@ -1771,7 +1746,6 @@ function updateStepSuggestions(textarea) {
     let suggestions = [];
 
     if (lastIsCutName) {
-        // Тапнул нарезку — предлагаем действия для продукта, который перед ней
         let product = null;
         for (let i = words.length - 2; i >= 0 && i >= words.length - 5; i--) {
             const p = findProductKey(words[i]);
@@ -1779,13 +1753,10 @@ function updateStepSuggestions(textarea) {
         }
         if (product) suggestions = PRODUCT_ACTIONS[product] || [];
     } else if (lastIsCutInstr) {
-        // Написано «нарезать соломкой» — цепочка завершена, молчим
         suggestions = [];
     } else if (lastProduct) {
-        // Продукт — предлагаем нарезки в именительном
         suggestions = CUTS_NAME;
     } else if (lastAction) {
-        // Действие — предлагаем подвиды
         suggestions = ACTION_VARIANTS[lastAction] || [];
     }
 
@@ -1927,7 +1898,6 @@ function onMethodChange(selectEl) {
 // ==========================================
 
 async function saveRecipe() {
-    if (!isChef()) return;
     const title = document.getElementById('recipeTitle').value.trim();
     const category = document.getElementById('recipeCategory').value;
     const portions = parseInt(document.getElementById('portionsInput').value) || 4;
@@ -1980,7 +1950,6 @@ async function saveRecipe() {
 }
 
 async function deleteRecipe(id) {
-    if (!isChef()) return;
     if (!confirm('Точно удалить?')) return;
     recipes = recipes.filter(r => r.id !== id);
     saveRecipesToLocal();
@@ -1988,7 +1957,6 @@ async function deleteRecipe(id) {
     renderRecipes();
 }
 function editRecipe(id) {
-    if (!isChef()) return;
     const r = recipes.find(x => x.id === id);
     if (r) openConstructor(r);
 }
@@ -2067,7 +2035,6 @@ function onViewPortionsChange(v) {
     viewPortions = p; updateViewNumbers();
 }
 function onViewOutputChange(v) {
-    if (isCook()) return;
     let o = parseFloat(v); if (isNaN(o) || o < 0) o = 0;
     viewOutput = o; updateViewNumbers();
 }
@@ -2159,7 +2126,7 @@ function renderRecipeView() {
         const wl = (s.weight !== null && s.weight !== undefined && s.weight > 0) ? ` | Вес: ${formatWeight(s.weight, 'г')}` : '';
         stepsHtml += `<div class="view-step"><div><span class="view-step-num">${idx+1}</span>${escapeHtml(s.desc || '')}</div><div class="view-step-meta">Метод: ${escapeHtml(s.method)}${tl2}${hl}${wl}</div></div>`;
     });
-    const actionsHtml = isChef() ? `<div class="view-actions"><button class="mode-btn" style="flex: 1;" onclick="editRecipe('${r.id}')">Редактировать</button><button class="mode-btn danger" style="flex: 1;" onclick="deleteRecipeFromView('${r.id}')">Удалить</button></div>` : '';
+    const actionsHtml = `<div class="view-actions"><button class="mode-btn" style="flex: 1;" onclick="editRecipe('${r.id}')">Редактировать</button><button class="mode-btn danger" style="flex: 1;" onclick="deleteRecipeFromView('${r.id}')">Удалить</button></div>`;
     let costBlockHtml = '';
     if (canSeeProducts()) {
         const totalCostBase = calcRecipeCost(r);
@@ -2180,13 +2147,11 @@ function renderRecipeView() {
             <div class="ctx-sub">Требуется партия: ${formatWeight(viewContext.neededGrams, 'г')}</div>
         </div>`;
     } else {
-        const outputReadonly = isCook() ? 'readonly' : '';
-        const outputClass = isCook() ? 'input-readonly' : '';
         paramsBlockHtml = `<div class="view-section">
             <h4>Параметры</h4>
             <div class="view-fields-grid">
                 <div><label>Порций</label><input type="number" id="viewPortionsInput" min="0.01" step="1" value="${cp}" oninput="onViewPortionsChange(this.value)"></div>
-                <div><label>Размер порции (г)</label><input type="number" id="viewOutputInput" min="0" step="1" value="${co}" ${outputReadonly} class="${outputClass}" oninput="onViewOutputChange(this.value)"></div>
+                <div><label>Размер порции (г)</label><input type="number" id="viewOutputInput" min="0" step="1" value="${co}" oninput="onViewOutputChange(this.value)"></div>
             </div>
             <button class="mode-btn" style="width: 100%; margin-top: 6px;" onclick="resetViewValues()">Сбросить к базовым</button>
         </div>`;
@@ -2645,7 +2610,6 @@ function toggleExportMenu() {
     document.getElementById('exportMenu').classList.toggle('active');
 }
 function toggleImportMenu() {
-    if (!isChef()) return;
     document.getElementById('exportMenu').classList.remove('active');
     document.getElementById('importMenu').classList.toggle('active');
 }
@@ -2685,7 +2649,6 @@ async function exportSelectedToClipboard() {
     else alert('Не удалось скопировать.');
 }
 function importFromFilePrompt() {
-    if (!isChef()) return;
     document.getElementById('importMenu').classList.remove('active');
     const input = document.createElement('input');
     input.type = 'file'; input.accept = '.json,application/json';
@@ -2704,7 +2667,6 @@ function importFromFilePrompt() {
     input.click();
 }
 async function importFromClipboardPrompt() {
-    if (!isChef()) return;
     document.getElementById('importMenu').classList.remove('active');
     try {
         const text = await navigator.clipboard.readText();
@@ -2714,7 +2676,6 @@ async function importFromClipboardPrompt() {
     } catch(err) { alert('Не удалось прочитать буфер.'); }
 }
 async function handleImport(data) {
-    if (!isChef()) return;
     const incoming = Array.isArray(data) ? data : [data];
     const ok = confirm(`Импортировать рецептов: ${incoming.length}?`);
     if (!ok) return;
