@@ -216,6 +216,27 @@
         }
         .portion-size-row input { margin-bottom: 0; flex: 1; }
 
+        .kind-row {
+            display: flex; gap: 6px; margin-bottom: 8px;
+        }
+        .kind-btn {
+            flex: 1; padding: 10px; border-radius: 8px; font-size: 14px;
+            font-weight: 600; cursor: pointer; font-family: inherit;
+            border: 2px solid var(--border-color); background: transparent;
+            color: var(--hint-color);
+        }
+        .kind-btn.active {
+            border-color: var(--button-color); background: rgba(36, 129, 204, 0.1);
+            color: var(--button-color);
+        }
+
+        .batch-info {
+            font-size: 12px; color: var(--hint-color);
+            padding: 6px 10px; background: rgba(36, 129, 204, 0.06);
+            border-radius: 6px; margin-bottom: 8px;
+        }
+        .batch-info b { color: var(--text-color); }
+
         .output-summary {
             font-size: 12px; color: var(--hint-color);
             margin-top: -4px; margin-bottom: 12px; padding-left: 2px;
@@ -396,6 +417,7 @@
         .view-section h4.with-right .right .chev {
             color: var(--hint-color); font-weight: 400; margin-left: 6px;
         }
+        .view-section.clickable-block { cursor: pointer; }
         .view-ing-table { width: 100%; border-collapse: collapse; font-size: 13px; }
         .view-ing-table th, .view-ing-table td {
             text-align: left; padding: 6px 4px; border-bottom: 1px solid var(--border-color);
@@ -521,7 +543,6 @@
         }
         @keyframes spin { to { transform: rotate(360deg); } }
 
-        /* Крупный просмотр ингредиентов / шагов */
         .detail-view-header {
             display: flex; align-items: center; gap: 8px; margin-bottom: 12px;
         }
@@ -556,7 +577,8 @@
         }
         .detail-step-text { font-size: 16px; line-height: 1.5; }
         .detail-step-meta {
-            font-size: 13px; color: var(--hint-color); margin-top: 8px; padding-left: 36px;
+            font-size: 14px; color: var(--text-color); margin-top: 10px; padding-left: 36px;
+            line-height: 1.4;
         }
         .detail-total-row {
             margin-top: 16px; padding: 14px;
@@ -656,6 +678,12 @@
         </div>
 
         <div id="hiddenFieldsContainer" style="display: none;">
+            <label style="font-size: 11px; color: var(--hint-color);">Тип карты:</label>
+            <div class="kind-row">
+                <button type="button" class="kind-btn active" data-kind="dish" onclick="setKind('dish')">🍽 Блюдо</button>
+                <button type="button" class="kind-btn" data-kind="preparation" onclick="setKind('preparation')">🥣 Полуфабрикат</button>
+            </div>
+
             <select id="recipeCategory">
                 <option value="" disabled selected>Выберите категорию...</option>
                 <option value="Мясо и птица">Мясо и птица</option>
@@ -671,13 +699,15 @@
                 <option value="Другое">Другое</option>
             </select>
 
-            <label style="font-size: 11px; color: var(--hint-color);">Порций:</label>
-            <div class="portions-row" id="portionsRow">
-                <div class="portions-slider-wrap" id="portionsSliderWrap">
-                    <input type="range" id="portionsRange" min="1" max="20" value="4" oninput="onRangeInput(this.value)">
-                </div>
-                <div class="portions-input-wrap">
-                    <input type="number" id="portionsInput" min="1" max="1000" value="4" oninput="onNumberInput(this.value)" onblur="onPortionsBlur(this)">
+            <div id="portionsBlock">
+                <label style="font-size: 11px; color: var(--hint-color);">Порций:</label>
+                <div class="portions-row" id="portionsRow">
+                    <div class="portions-slider-wrap" id="portionsSliderWrap">
+                        <input type="range" id="portionsRange" min="1" max="20" value="4" oninput="onRangeInput(this.value)">
+                    </div>
+                    <div class="portions-input-wrap">
+                        <input type="number" id="portionsInput" min="1" max="1000" value="4" oninput="onNumberInput(this.value)" onblur="onPortionsBlur(this)">
+                    </div>
                 </div>
             </div>
             <div class="portion-size-row">
@@ -698,10 +728,10 @@
 
             <div class="cost-box" id="constructorCostBox" style="display:none;">
                 <div class="summary-row">
-                    <span>Себестоимость блюда:</span>
+                    <span>Себестоимость:</span>
                     <b id="totalRecipeCost">0 ₽</b>
                 </div>
-                <div class="summary-row">
+                <div class="summary-row" id="costPerPortionRow">
                     <span>Себестоимость порции:</span>
                     <b id="recipeCostPerPortion">0 ₽</b>
                 </div>
@@ -728,13 +758,17 @@
                     <span>Потери:</span>
                     <span id="totalLoss">0 г</span>
                 </div>
-                <div class="summary-row">
+                <div class="summary-row" id="portionSizeTotalRow">
                     <span>Вес 1 порции:</span>
                     <span id="totalPortionSize">—</span>
                 </div>
-                <div class="summary-row">
+                <div class="summary-row" id="actualPortionsRow">
                     <span>Количество порций:</span>
                     <span id="totalActualPortions">—</span>
+                </div>
+                <div class="summary-row" id="batchRow" style="display:none;">
+                    <span>Выход партии:</span>
+                    <span id="totalBatch">—</span>
                 </div>
             </div>
 
@@ -957,11 +991,9 @@ function applyTestRole() {
 function isChef() {
     return currentUserRole === 'chef' || currentUserRole === 'admin';
 }
-
 function isCook() {
     return currentUserRole === 'cook';
 }
-
 function canSeeProducts() {
     return currentUserRole === 'chef' || currentUserRole === 'admin' || currentUserRole === 'technolog';
 }
@@ -1009,14 +1041,8 @@ function setTestRole(role) {
     const dd = document.getElementById('roleDropdown');
     if (dd) dd.classList.remove('open');
     applyRoleUI();
-    // Перерисовать текущий экран
-    if (document.getElementById('recipeView').style.display === 'block') {
-        renderRecipeView();
-    }
-    if (document.getElementById('recipeDetail').style.display === 'block') {
-        // Перерисовать детальный экран без изменений — просто обновить заголовки
-        renderRecipeDetail();
-    }
+    if (document.getElementById('recipeView').style.display === 'block') renderRecipeView();
+    if (document.getElementById('recipeDetail').style.display === 'block') renderRecipeDetail();
     if (document.getElementById('recipeConstructor').style.display === 'block') {
         updateSummary();
         updateOutputSummary();
@@ -1031,20 +1057,15 @@ function clearTestRole() {
     const dd = document.getElementById('roleDropdown');
     if (dd) dd.classList.remove('open');
     applyRoleUI();
-    if (document.getElementById('recipeView').style.display === 'block') {
-        renderRecipeView();
-    }
-    if (document.getElementById('recipeDetail').style.display === 'block') {
-        renderRecipeDetail();
-    }
+    if (document.getElementById('recipeView').style.display === 'block') renderRecipeView();
+    if (document.getElementById('recipeDetail').style.display === 'block') renderRecipeDetail();
     renderRecipes();
     renderProducts();
 }
 
 document.addEventListener('click', function(e) {
     const dd = document.getElementById('roleDropdown');
-    const btn = document.getElementById('roleToggleBtn');
-    if (!dd || !btn) return;
+    if (!dd) return;
     if (!e.target.closest('#headerRight')) dd.classList.remove('open');
 });
 
@@ -1059,26 +1080,22 @@ function formatWeight(value, unit) {
     if (unit === 'мл' && num >= 1000) return formatNum(num / 1000) + ' л';
     return formatNum(num) + ' ' + (unit || 'г');
 }
-
 function formatNum(n) {
     if (n === undefined || n === null) return '0';
     const num = Number(n);
     if (Number.isInteger(num)) return String(num);
     return num.toFixed(1);
 }
-
 function formatPrice(n) {
     if (n === undefined || n === null || isNaN(n)) return '0 ₽';
     const num = Number(n);
     if (Number.isInteger(num)) return num.toLocaleString('ru-RU') + ' ₽';
     return num.toLocaleString('ru-RU', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' ₽';
 }
-
 function unitToGrams(value, unit) {
     if (unit === 'кг' || unit === 'л') return value * 1000;
     return value;
 }
-
 function escapeHtml(str) {
     if (str === undefined || str === null) return '';
     return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
@@ -1118,6 +1135,36 @@ function getAvailableRecipesForIngredient() {
 }
 
 // ==========================================
+// ВЕС ПАРТИИ
+// ==========================================
+// Вес партии = сумма нетто минус потери шагов.
+// Считается из ингредиентов и последнего непустого шага.
+// Используется вместо выдуманного «порций × вес порции».
+
+function getRecipeBatchWeight(recipe) {
+    if (!recipe) return 0;
+    let totalNet = 0;
+    (recipe.ingredients || []).forEach(i => {
+        const f = (i.unit === 'кг' || i.unit === 'л') ? 1000 : 1;
+        totalNet += (i.net || 0) * f;
+    });
+    let lastWeight = null;
+    (recipe.steps || []).forEach(s => {
+        if (s.weight !== null && s.weight !== undefined && s.weight > 0) lastWeight = s.weight;
+    });
+    return (lastWeight !== null && lastWeight > 0) ? lastWeight : totalNet;
+}
+
+// Сколько готовых порций выйдет из партии
+function getRecipeBatchPortions(recipe) {
+    if (!recipe) return 0;
+    const ps = recipe.portion_size || 0;
+    if (ps <= 0) return 0;
+    const bw = getRecipeBatchWeight(recipe);
+    return Math.floor(bw / ps);
+}
+
+// ==========================================
 // СЕБЕСТОИМОСТЬ
 // ==========================================
 
@@ -1137,6 +1184,8 @@ function calcProductCost(net, unit, product) {
     return amt * product.price_per_unit;
 }
 
+// Себестоимость всей партии рецепта.
+// Для ПФ-полуфабрикатов берём реальный вес партии (batch_weight), а не порций × выход.
 function calcRecipeCost(recipe, visited) {
     if (!recipe) return 0;
     visited = visited || new Set();
@@ -1151,7 +1200,7 @@ function calcRecipeCost(recipe, visited) {
             const sub = recipes.find(r => r.id === ing.linked_recipe_id);
             if (sub) {
                 const subTotal = calcRecipeCost(sub, visited);
-                const subBatch = (sub.portions || 1) * (sub.output || 0);
+                const subBatch = getRecipeBatchWeight(sub);
                 if (subBatch > 0) {
                     const netGrams = unitToGrams(ing.net || 0, ing.unit || 'г');
                     total += netGrams * (subTotal / subBatch);
@@ -1189,7 +1238,7 @@ function updateIngredientCostInfo(row) {
         const sub = recipes.find(r => r.id === linkedId);
         if (!sub) { info.classList.remove('show'); return; }
         const subTotal = calcRecipeCost(sub);
-        const subBatch = (sub.portions || 1) * (sub.output || 0);
+        const subBatch = getRecipeBatchWeight(sub);
         if (subBatch <= 0) { info.classList.remove('show'); return; }
         const netGrams = unitToGrams(net, unit);
         const cost = netGrams * (subTotal / subBatch);
@@ -1220,11 +1269,19 @@ function updateConstructorCost() {
             const sub = recipes.find(r => r.id === linkedId);
             if (!sub) return;
             const subTotal = calcRecipeCost(sub);
-            const subBatch = (sub.portions || 1) * (sub.output || 0);
+            const subBatch = getRecipeBatchWeight(sub);
             if (subBatch > 0) total += unitToGrams(net, unit) * (subTotal / subBatch);
         }
     });
     document.getElementById('totalRecipeCost').textContent = formatPrice(total);
+    const kind = getCurrentKind();
+    if (kind === 'preparation') {
+        document.getElementById('costPerPortionRow').style.display = 'none';
+    } else {
+        document.getElementById('costPerPortionRow').style.display = 'flex';
+        const portions = parseInt(document.getElementById('portionsInput')?.value) || 1;
+        document.getElementById('recipeCostPerPortion').textContent = formatPrice(total / portions);
+    }
 }
 
 // ==========================================
@@ -1260,12 +1317,29 @@ let viewStack = [];
 let expandedCategories = new Set();
 let searchQuery = '';
 let priceImportState = { items: [], processing: false };
-let detailViewType = null; // 'ingredients' | 'steps'
+let detailViewType = null;
 let detailViewReturnContext = null;
 
 // ==========================================
 // ЗАГРУЗКА
 // ==========================================
+
+function normalizeRecipe(r) {
+    let kind = r.kind || '';
+    if (!kind) {
+        // Автомиграция: старые карты без kind определяем по категории
+        kind = (r.category === 'Полуфабрикаты и заготовки') ? 'preparation' : 'dish';
+    }
+    return {
+        id: r.id, title: r.title || '', category: r.category || '',
+        kind: kind,
+        portions: r.base_portion || 4, output: r.output || 0,
+        portion_size: r.portion_size || 0,
+        ingredients: [],
+        steps: typeof r.steps === 'string' ? JSON.parse(r.steps || '[]') : (r.steps || []),
+        updated_at: r.updated_at || new Date().toISOString()
+    };
+}
 
 async function loadRecipesFromSupabase() {
     setSyncStatus('progress');
@@ -1289,14 +1363,11 @@ async function loadRecipesFromSupabase() {
                 type: ing.type || 'product', linked_recipe_id: ing.linked_recipe_id || null
             });
         });
-        const result = recipesData.map(r => ({
-            id: r.id, title: r.title || '', category: r.category || '',
-            portions: r.base_portion || 4, output: r.output || 0,
-            portion_size: r.portion_size || 0,
-            ingredients: map[r.id] || [],
-            steps: typeof r.steps === 'string' ? JSON.parse(r.steps || '[]') : (r.steps || []),
-            updated_at: r.updated_at || new Date().toISOString()
-        }));
+        const result = recipesData.map(r => {
+            const rec = normalizeRecipe(r);
+            rec.ingredients = map[r.id] || [];
+            return rec;
+        });
         setSyncStatus('ok');
         return result;
     } catch(e) {
@@ -1310,6 +1381,7 @@ async function saveRecipeToSupabase(recipe) {
         const userId = getCurrentUserId();
         const recipeRow = {
             id: recipe.id, user_id: userId, title: recipe.title, category: recipe.category,
+            kind: recipe.kind || 'dish',
             base_portion: recipe.portions || 4, output: recipe.output || 0,
             portion_size: recipe.portion_size || 0,
             steps: recipe.steps || [], updated_at: new Date().toISOString()
@@ -1407,7 +1479,11 @@ window.addEventListener('DOMContentLoaded', async () => {
     applyTestRole();
     applyRoleUI();
 
-    const localRecipes = loadRecipesFromLocal();
+    const localRecipes = loadRecipesFromLocal().map(r => {
+        const rec = normalizeRecipe(r);
+        rec.ingredients = r.ingredients || [];
+        return rec;
+    });
     recipes = localRecipes;
     renderRecipes();
 
@@ -1474,6 +1550,40 @@ function updateTabBarVisibility() {
 // КОНСТРУКТОР
 // ==========================================
 
+function getCurrentKind() {
+    const active = document.querySelector('.kind-btn.active');
+    return active ? active.getAttribute('data-kind') : 'dish';
+}
+
+function setKind(kind) {
+    document.querySelectorAll('.kind-btn').forEach(b => {
+        b.classList.toggle('active', b.getAttribute('data-kind') === kind);
+    });
+    updateKindVisibility();
+    updateSummary();
+    updateOutputSummary();
+    updateConstructorCost();
+}
+
+function updateKindVisibility() {
+    const kind = getCurrentKind();
+    const portionsBlock = document.getElementById('portionsBlock');
+    const portionSizeTotalRow = document.getElementById('portionSizeTotalRow');
+    const actualPortionsRow = document.getElementById('actualPortionsRow');
+    const batchRow = document.getElementById('batchRow');
+    if (kind === 'preparation') {
+        portionsBlock.style.display = 'none';
+        portionSizeTotalRow.style.display = 'flex';
+        actualPortionsRow.style.display = 'flex';
+        batchRow.style.display = 'flex';
+    } else {
+        portionsBlock.style.display = 'block';
+        portionSizeTotalRow.style.display = 'flex';
+        actualPortionsRow.style.display = 'flex';
+        batchRow.style.display = 'none';
+    }
+}
+
 function toggleConstructorFields() {
     const titleVal = document.getElementById('recipeTitle').value.trim();
     document.getElementById('hiddenFieldsContainer').style.display = titleVal.length > 0 ? 'block' : 'none';
@@ -1493,6 +1603,7 @@ function openConstructor(recipe = null) {
         document.getElementById('constructorTitle').textContent = '✏️ Редактирование техкарты';
         document.getElementById('recipeTitle').value = recipe.title || '';
         toggleConstructorFields();
+        setKind(recipe.kind || 'dish');
         document.getElementById('recipeCategory').value = recipe.category || '';
         const p = recipe.portions || 4;
         document.getElementById('portionsInput').value = p;
@@ -1510,6 +1621,7 @@ function openConstructor(recipe = null) {
         document.getElementById('constructorTitle').textContent = '➕ Новая техкарта';
         document.getElementById('recipeTitle').value = '';
         toggleConstructorFields();
+        setKind('dish');
         document.getElementById('recipeCategory').selectedIndex = 0;
         document.getElementById('portionsRange').value = 4;
         document.getElementById('portionsRow').classList.remove('manual');
@@ -1518,6 +1630,7 @@ function openConstructor(recipe = null) {
         addIngredientRow();
         addStepRow();
     }
+    updateKindVisibility();
     updateSummary();
     updateOutputSummary();
     validateStepChain();
@@ -1679,8 +1792,9 @@ function renderRecipePickerResults(input, showAllOnFocus) {
     }
     let html = '';
     available.slice(0, 50).forEach(r => {
+        const badge = r.kind === 'preparation' ? ' · ПФ' : '';
         html += `<div class="recipe-search-item" onclick="selectRecipeForIngredient(this, '${r.id}', '${escapeHtml(r.title).replace(/'/g, "\\'")}')">
-            <div>${escapeHtml(r.title)}</div>
+            <div>${escapeHtml(r.title)}${badge}</div>
             <div class="recipe-search-item-cat">${escapeHtml(r.category)}</div>
         </div>`;
     });
@@ -1777,7 +1891,7 @@ function validateAllIngredients() {
 }
 
 // ==========================================
-// ИТОГИ
+// ИТОГИ (конструктор)
 // ==========================================
 
 function getTotalNet() {
@@ -1881,17 +1995,22 @@ function updateOutputSummary() {
     el.innerHTML = `Результирующий вес: <b>${formatWeight(rw, 'г')}</b> · Уварка: <b>${ut}</b>`;
     const box = document.getElementById('constructorTotals');
     if (box) {
+        const kind = getCurrentKind();
         const ps = parseFloat(document.getElementById('portionSizeInput')?.value) || 0;
         document.getElementById('totalNet').textContent = formatWeight(tn, 'г');
         document.getElementById('totalResult').textContent = formatWeight(rw, 'г');
         document.getElementById('totalLoss').textContent = formatWeight(loss, 'г');
         document.getElementById('totalPortionSize').textContent = ps > 0 ? formatWeight(ps, 'г') : '—';
         const actual = ps > 0 ? Math.floor(rw / ps) : 0;
-        document.getElementById('totalActualPortions').textContent = actual > 0 ? actual + ' шт.' : '—';
+        if (kind === 'preparation') {
+            document.getElementById('totalActualPortions').textContent = actual > 0 ? actual + ' шт.' : '—';
+            document.getElementById('totalBatch').textContent = formatWeight(rw, 'г');
+        } else {
+            document.getElementById('totalActualPortions').textContent = actual > 0 ? actual + ' шт.' : '—';
+        }
     }
 }
-
-// ==========================================
+        // ==========================================
 // ШАГИ
 // ==========================================
 
@@ -2113,10 +2232,11 @@ async function saveRecipe() {
     if (!isChef()) return;
     const title = document.getElementById('recipeTitle').value.trim();
     const category = document.getElementById('recipeCategory').value;
+    const kind = getCurrentKind();
     let portions = parseInt(document.getElementById('portionsInput').value);
     if (isNaN(portions) || portions < 1) portions = 1;
     const portionSize = parseFloat(document.getElementById('portionSizeInput').value) || 0;
-    if (!title) { alert('Введите название блюда!'); return; }
+    if (!title) { alert('Введите название!'); return; }
     if (!category) { alert('Выберите категорию!'); return; }
     if (portionSize <= 0) {
         alert('Введите вес 1 порции (г). Без него карту сохранить нельзя.');
@@ -2151,10 +2271,10 @@ async function saveRecipe() {
     let recipe;
     if (editingRecipeId) {
         const idx = recipes.findIndex(r => r.id === editingRecipeId);
-        recipe = { id: editingRecipeId, title, category, portions, output, portion_size: portionSize, ingredients, steps, updated_at: now };
+        recipe = { id: editingRecipeId, title, category, kind, portions, output, portion_size: portionSize, ingredients, steps, updated_at: now };
         if (idx !== -1) recipes[idx] = recipe;
     } else {
-        recipe = { id: crypto.randomUUID(), title, category, portions, output, portion_size: portionSize, ingredients, steps, updated_at: now };
+        recipe = { id: crypto.randomUUID(), title, category, kind, portions, output, portion_size: portionSize, ingredients, steps, updated_at: now };
         recipes.unshift(recipe);
     }
     saveRecipesToLocal();
@@ -2352,7 +2472,7 @@ function renderRecipeView() {
             nc += ` <span class="linked-badge">полуфаб.</span>`;
             if (hl) {
                 const nG = unitToGrams(n, u);
-                nc += ` <button class="open-link-btn" onclick="openLinkedFromView('${i.linked_recipe_id}', ${nG}, '${r.id}', ${cp})">Открыть</button>`;
+                nc += ` <button class="open-link-btn" onclick="event.stopPropagation(); openLinkedFromView('${i.linked_recipe_id}', ${nG}, '${r.id}', ${cp})">Открыть</button>`;
             }
         }
         ingRows += `<tr class="view-ing-row"><td>${nc}</td><td class="num">${formatWeight(g, u)}</td><td class="num">${formatWeight(n, u)}</td></tr>`;
@@ -2389,14 +2509,26 @@ function renderRecipeView() {
     } else {
         const outputReadonly = isCook() ? 'readonly' : '';
         const outputClass = isCook() ? 'input-readonly' : '';
-        paramsBlockHtml = `<div class="view-section">
-            <h4>Параметры</h4>
-            <div class="view-fields-grid">
-                <div><label>Порций</label><input type="number" id="viewPortionsInput" min="1" step="1" value="${cp}" oninput="onViewPortionsChange(this.value)" onblur="onViewPortionsBlur(this)"></div>
-                <div><label>Вес 1 порции (г)</label><input type="number" id="viewOutputInput" min="0" step="1" value="${co}" ${outputReadonly} class="${outputClass}" oninput="onViewOutputChange(this.value)"></div>
-            </div>
-            <button class="mode-btn" style="width: 100%; margin-top: 6px;" onclick="resetViewValues()">Сбросить к базовым</button>
-        </div>`;
+        const kind = r.kind || 'dish';
+        if (kind === 'preparation') {
+            const batchWeight = getRecipeBatchWeight(r);
+            paramsBlockHtml = `<div class="view-section">
+                <h4>Параметры</h4>
+                <div class="batch-info">Выход партии: <b>${formatWeight(batchWeight, 'г')}</b></div>
+                <div class="view-fields-grid" style="grid-template-columns: 1fr;">
+                    <div><label>Вес 1 порции (г)</label><input type="number" id="viewOutputInput" min="0" step="1" value="${co}" ${outputReadonly} class="${outputClass}" oninput="onViewOutputChange(this.value)"></div>
+                </div>
+            </div>`;
+        } else {
+            paramsBlockHtml = `<div class="view-section">
+                <h4>Параметры</h4>
+                <div class="view-fields-grid">
+                    <div><label>Порций</label><input type="number" id="viewPortionsInput" min="1" step="1" value="${cp}" oninput="onViewPortionsChange(this.value)" onblur="onViewPortionsBlur(this)"></div>
+                    <div><label>Вес 1 порции (г)</label><input type="number" id="viewOutputInput" min="0" step="1" value="${co}" ${outputReadonly} class="${outputClass}" oninput="onViewOutputChange(this.value)"></div>
+                </div>
+                <button class="mode-btn" style="width: 100%; margin-top: 6px;" onclick="resetViewValues()">Сбросить к базовым</button>
+            </div>`;
+        }
     }
     const ps = r.portion_size || 0;
     let ingHeaderRight = '';
@@ -2404,15 +2536,23 @@ function renderRecipeView() {
         const actual = Math.floor(currentResult / ps);
         ingHeaderRight = 'на ' + actual + ' ' + pluralPortions(actual);
     }
+    const kind = r.kind || 'dish';
+    let subtitle;
+    if (kind === 'preparation') {
+        const batchWeight = getRecipeBatchWeight(r);
+        subtitle = `${escapeHtml(r.category)} · партия ${formatWeight(batchWeight, 'г')} · вес 1 порции ${formatWeight(bo, 'г')}`;
+    } else {
+        subtitle = `${escapeHtml(r.category)} · базово: ${bp} порц. по ${formatWeight(bo, 'г')}`;
+    }
     view.innerHTML = `
         <div class="view-header"><button class="back-btn" onclick="closeRecipeView()">←</button></div>
-        <div style="margin-bottom: 8px;"><div class="view-title">${escapeHtml(r.title)}</div><div style="font-size: 12px; color: var(--hint-color);">${escapeHtml(r.category)} · базово: ${bp} порц. по ${formatWeight(bo, 'г')}</div></div>
+        <div style="margin-bottom: 8px;"><div class="view-title">${escapeHtml(r.title)}</div><div style="font-size: 12px; color: var(--hint-color);">${subtitle}</div></div>
         ${contextBannerHtml}
         ${actionsHtml}
         ${paramsBlockHtml}
         ${costBlockHtml}
-        <div class="view-section">
-            <h4 class="with-right" onclick="openRecipeDetail('ingredients')">
+        <div class="view-section clickable-block" onclick="openRecipeDetail('ingredients')">
+            <h4 class="with-right">
                 <span>Ингредиенты</span>
                 <span class="right"><span id="viewIngHeaderRight">${ingHeaderRight}</span><span class="chev">›</span></span>
             </h4>
@@ -2429,8 +2569,8 @@ function renderRecipeView() {
                 <span class="value" id="viewTotalResult">${formatWeight(currentResult, 'г')}</span>
             </div>
         </div>
-        <div class="view-section">
-            <h4 class="with-right" onclick="openRecipeDetail('steps')">
+        <div class="view-section clickable-block" onclick="openRecipeDetail('steps')">
+            <h4 class="with-right">
                 <span>Приготовление</span>
                 <span class="right"><span class="chev">›</span></span>
             </h4>
@@ -2445,7 +2585,7 @@ async function deleteRecipeFromView(id) {
 }
 
 // ==========================================
-// ДЕТАЛЬНЫЙ ПРОСМОТР (крупно)
+// ДЕТАЛЬНЫЙ ПРОСМОТР
 // ==========================================
 
 function openRecipeDetail(type) {
@@ -2483,21 +2623,18 @@ function renderRecipeDetail() {
 
     if (detailViewType === 'ingredients') {
         let rows = '';
-        let totalGross = 0, totalNet = 0;
         (r.ingredients || []).forEach(i => {
             const u = i.unit || 'г';
             const f = (u === 'кг' || u === 'л') ? 1000 : 1;
             const g = (i.gross || 0) * f * ratio / f;
             const n = (i.net || 0) * f * ratio / f;
-            totalGross += (i.gross || 0) * f * ratio;
-            totalNet += (i.net || 0) * f * ratio;
             let nc = escapeHtml(i.name || '');
             if (i.type === 'preparation') {
                 const hl = i.linked_recipe_id && recipes.find(r2 => r2.id === i.linked_recipe_id);
                 nc += ` <span class="linked-badge">полуфаб.</span>`;
                 if (hl) {
                     const nG = unitToGrams(n, u);
-                    nc += ` <button class="open-link-btn" onclick="openLinkedFromView('${i.linked_recipe_id}', ${nG}, '${r.id}', ${viewPortions})">Открыть</button>`;
+                    nc += ` <button class="open-link-btn" onclick="event.stopPropagation(); openLinkedFromView('${i.linked_recipe_id}', ${nG}, '${r.id}', ${viewPortions})">Открыть</button>`;
                 }
             }
             rows += `<tr><td>${nc}</td><td class="num">${formatWeight(g, u)}</td><td class="num">${formatWeight(n, u)}</td></tr>`;
@@ -2541,7 +2678,7 @@ function renderRecipeDetail() {
             if (s.weight !== null && s.weight !== undefined && s.weight > 0) parts.push('Вес: ' + formatWeight(s.weight, 'г'));
             stepsHtml += `<div class="detail-step">
                 <div><span class="detail-step-num">${idx+1}</span><span class="detail-step-text">${escapeHtml(s.desc || '')}</span></div>
-                ${parts.length ? `<div class="detail-step-meta">${parts.join(' | ')}</div>` : ''}
+                ${parts.length ? `<div class="detail-step-meta">${parts.join(' · ')}</div>` : ''}
             </div>`;
         });
         el.innerHTML = `
@@ -2558,6 +2695,29 @@ function renderRecipeDetail() {
         closeRecipeDetail();
     }
 }
+
+// Свайп слева направо = назад из детального просмотра
+(function attachSwipeBack() {
+    let startX = 0, startY = 0, tracking = false;
+    document.addEventListener('touchstart', function(e) {
+        if (document.getElementById('recipeDetail').style.display !== 'block') return;
+        const t = e.touches[0];
+        if (t.clientX > 60) { tracking = false; return; }
+        startX = t.clientX;
+        startY = t.clientY;
+        tracking = true;
+    }, { passive: true });
+    document.addEventListener('touchend', function(e) {
+        if (!tracking) return;
+        tracking = false;
+        const t = e.changedTouches[0];
+        const dx = t.clientX - startX;
+        const dy = Math.abs(t.clientY - startY);
+        if (dx > 80 && dy < 60) {
+            closeRecipeDetail();
+        }
+    }, { passive: true });
+})();
 
 // ==========================================
 // СПИСОК РЕЦЕПТОВ
@@ -2615,9 +2775,13 @@ function buildCompactRow(r) {
     if (selectionMode) row.classList.add('selectable');
     if (selectedIds.has(r.id)) row.style.background = 'rgba(36, 129, 204, 0.15)';
     const ol = r.output ? ` · ${formatWeight(r.output, 'г')}/порц` : '';
-    const meta = `${r.portions || 4} порц${ol}`;
+    const kind = r.kind || 'dish';
+    const meta = (kind === 'preparation')
+        ? `партия · ${formatWeight(getRecipeBatchWeight(r), 'г')}`
+        : `${r.portions || 4} порц${ol}`;
+    const kindBadge = (kind === 'preparation') ? '<span class="linked-badge">полуфаб.</span> ' : '';
     const cbH = selectionMode ? `<input type="checkbox" class="card-checkbox" ${selectedIds.has(r.id) ? 'checked' : ''} onchange="event.stopPropagation(); toggleCardSelection('${r.id}', this)">` : '';
-    row.innerHTML = `${cbH}<div class="recipe-compact-title">${escapeHtml(r.title)}</div><div class="recipe-compact-meta">${meta}</div>`;
+    row.innerHTML = `${cbH}<div class="recipe-compact-title">${kindBadge}${escapeHtml(r.title)}</div><div class="recipe-compact-meta">${meta}</div>`;
     if (selectionMode) {
         row.onclick = () => {
             const cb = row.querySelector('.card-checkbox');
