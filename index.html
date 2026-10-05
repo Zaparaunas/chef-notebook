@@ -363,6 +363,12 @@
             margin-bottom: 8px; color: var(--hint-color);
             font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px;
         }
+        .view-section h4.with-right {
+            display: flex; justify-content: space-between; align-items: center;
+        }
+        .view-section h4.with-right .right {
+            color: var(--button-color); font-weight: 600;
+        }
         .view-ing-table { width: 100%; border-collapse: collapse; font-size: 13px; }
         .view-ing-table th, .view-ing-table td {
             text-align: left; padding: 6px 4px; border-bottom: 1px solid var(--border-color);
@@ -414,14 +420,14 @@
 
         .linked-badge {
             display: inline-block; background: var(--button-color); color: white;
-            font-size: 9px; padding: 1px 5px; border-radius: 8px;
+            font-size: 10px; padding: 2px 7px; border-radius: 9px;
             margin-left: 4px; vertical-align: middle;
             text-transform: uppercase; letter-spacing: 0.3px;
         }
         .open-link-btn {
             display: inline-block; background: transparent;
             border: 1px solid var(--button-color); color: var(--button-color);
-            font-size: 10px; padding: 2px 6px; border-radius: 4px;
+            font-size: 11px; padding: 3px 8px; border-radius: 5px;
             cursor: pointer; margin-left: 4px; vertical-align: middle;
         }
 
@@ -586,11 +592,11 @@
                     <input type="range" id="portionsRange" min="1" max="20" value="4" oninput="onRangeInput(this.value)">
                 </div>
                 <div class="portions-input-wrap">
-                    <input type="number" id="portionsInput" min="1" max="1000" value="4" oninput="onNumberInput(this.value)">
+                    <input type="number" id="portionsInput" min="1" max="1000" value="4" oninput="onNumberInput(this.value)" onblur="onPortionsBlur(this)">
                 </div>
             </div>
             <div class="portion-size-row">
-                <label>Размер порции (г):</label>
+                <label>Вес 1 порции (г):</label>
                 <input type="number" id="portionSizeInput" min="1" step="1" placeholder="обязательно" value="">
             </div>
 
@@ -638,7 +644,7 @@
                     <span id="totalLoss">0 г</span>
                 </div>
                 <div class="summary-row">
-                    <span>Вес закладки:</span>
+                    <span>Вес 1 порции:</span>
                     <span id="totalPortionSize">—</span>
                 </div>
                 <div class="summary-row">
@@ -726,14 +732,10 @@ const PRICE_UNITS = ['кг','л','шт','г','мл'];
 // СЛОВАРИ ПОДСКАЗОК
 // ==========================================
 
-// Нарезки по именительному (когда продукт назван без действия)
 const CUTS_NAME = ['соломка','брусочки','кубик 0,5×0,5','кубик 1×1','кубик 1,5×1,5','кубик 2×2','кубик 3×3','кружочки','полукольца','дольки'];
-// Нарезки по творительному (когда перед ними действие: нарезать, нашинковать)
 const CUTS_INSTR = ['соломкой','брусочками','кубиком 0,5×0,5','кубиком 1×1','кубиком 1,5×1,5','кубиком 2×2','кубиком 3×3','кружочками','полукольцами','дольками'];
 
-// Действия над продуктом (в именительном — что сделать)
 const PRODUCT_ACTIONS = {
-    // Овощи
     'лук': ['нарезать','почистить','пассеровать','обжарить','нашинковать','замариновать'],
     'лук репчатый': ['нарезать','почистить','пассеровать','обжарить','нашинковать','замариновать'],
     'лук красный': ['нарезать','почистить','нашинковать','замариновать'],
@@ -756,7 +758,6 @@ const PRODUCT_ACTIONS = {
     'сельдерей': ['нарезать','почистить','пассеровать'],
     'чеснок': ['измельчить','нарезать','почистить','обжарить'],
     'имбирь': ['нарезать','натереть','почистить'],
-    // Зелень
     'укроп': ['нарезать','нашинковать','перебрать','промыть'],
     'петрушка': ['нарезать','нашинковать','перебрать','промыть'],
     'кинза': ['нарезать','нашинковать','перебрать','промыть'],
@@ -765,7 +766,6 @@ const PRODUCT_ACTIONS = {
     'тархун': ['нашинковать','промыть'],
     'розмарин': ['измельчить','промыть'],
     'тимьян': ['измельчить','промыть'],
-    // Мясо и птица
     'говядина': ['нарезать','отбить','обжарить','потушить','запечь','отварить'],
     'свинина': ['нарезать','отбить','обжарить','потушить','запечь'],
     'баранина': ['нарезать','обжарить','потушить','запечь'],
@@ -775,7 +775,6 @@ const PRODUCT_ACTIONS = {
     'индейка': ['нарезать','обжарить','потушить','запечь'],
     'утка': ['нарезать','обжарить','запечь'],
     'фарш': ['обжарить','потушить','запечь'],
-    // Рыба
     'лосось': ['разделать','нарезать','засолить','запечь','обжарить'],
     'форель': ['разделать','нарезать','запечь','обжарить'],
     'треска': ['разделать','нарезать','обжарить','запечь'],
@@ -784,11 +783,9 @@ const PRODUCT_ACTIONS = {
     'сельдь': ['разделать','нарезать','засолить'],
     'скумбрия': ['разделать','нарезать','запечь','засолить'],
     'рыба': ['разделать','нарезать','обжарить','запечь','отварить'],
-    // Тесто, хлеб
     'тесто': ['раскатать','нарезать'],
     'хлеб': ['нарезать','обжарить','запечь'],
     'батон': ['нарезать','обжарить'],
-    // Фрукты
     'яблоко': ['нарезать','очистить','промыть'],
     'груша': ['нарезать','очистить','промыть'],
     'лимон': ['нарезать','отжать','промыть'],
@@ -796,7 +793,6 @@ const PRODUCT_ACTIONS = {
     'банан': ['нарезать','очистить']
 };
 
-// Действие → подвиды (для готовности — цельные фразы с «до»)
 const ACTION_VARIANTS = {
     'нарезать': CUTS_INSTR,
     'нашинковать': ['тонко','мелко','соломкой'],
@@ -826,6 +822,16 @@ const ACTION_VARIANTS = {
 };
 
 const ALL_ACTIONS = Object.keys(ACTION_VARIANTS);
+
+// Правильное склонение: порция / порции / порций
+function pluralPortions(n) {
+    const num = Math.floor(Math.abs(Number(n) || 0));
+    const mod10 = num % 10;
+    const mod100 = num % 100;
+    if (mod10 === 1 && mod100 !== 11) return 'порция';
+    if (mod10 >= 2 && mod10 <= 4 && (mod100 < 10 || mod100 >= 20)) return 'порции';
+    return 'порций';
+}
 
 const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
@@ -1370,6 +1376,18 @@ function onNumberInput(val) {
     }
     updateSummary(); updateOutputSummary();
 }
+function onPortionsBlur(input) {
+    let num = parseInt(input.value);
+    if (isNaN(num) || num < 1) num = 1;
+    input.value = num;
+    if (num <= 20) {
+        document.getElementById('portionsRange').value = num;
+        document.getElementById('portionsRow').classList.remove('manual');
+    } else {
+        document.getElementById('portionsRow').classList.add('manual');
+    }
+    updateSummary(); updateOutputSummary();
+}
 
 // ==========================================
 // ИНГРЕДИЕНТ
@@ -1705,8 +1723,8 @@ function updateOutputSummary() {
         document.getElementById('totalResult').textContent = formatWeight(rw, 'г');
         document.getElementById('totalLoss').textContent = formatWeight(loss, 'г');
         document.getElementById('totalPortionSize').textContent = ps > 0 ? formatWeight(ps, 'г') : '—';
-        const actual = ps > 0 ? rw / ps : 0;
-        document.getElementById('totalActualPortions').textContent = actual > 0 ? formatNum(actual) : '—';
+        const actual = ps > 0 ? Math.floor(rw / ps) : 0;
+        document.getElementById('totalActualPortions').textContent = actual > 0 ? actual + ' шт.' : '—';
     }
 }
 
@@ -1718,12 +1736,8 @@ function onStepDescInput(textarea) {
     updateStepSuggestions(textarea);
 }
 
-function isCutInName(w) {
-    return CUTS_NAME.includes(w);
-}
-function isCutInInstr(w) {
-    return CUTS_INSTR.includes(w);
-}
+function isCutInName(w) { return CUTS_NAME.includes(w); }
+function isCutInInstr(w) { return CUTS_INSTR.includes(w); }
 
 function updateStepSuggestions(textarea) {
     const row = textarea.closest('.step-row');
@@ -1781,8 +1795,6 @@ function updateStepSuggestions(textarea) {
     const lastIsCutInstr = isCutInInstr(last);
 
     if (lastIsCutName) {
-        // Тапнул нарезку в именительном — сразу предлагаем действия
-        // Ищем продукт перед нарезкой
         let product = null;
         for (let i = words.length - 2; i >= 0 && i >= words.length - 5; i--) {
             const p = findProduct(words[i]);
@@ -1790,13 +1802,10 @@ function updateStepSuggestions(textarea) {
         }
         if (product) suggestions = PRODUCT_ACTIONS[product] || [];
     } else if (lastIsCutInstr) {
-        // Написано «нарезать соломкой» — молчим, цепочка завершена
         suggestions = [];
     } else if (lastIsProduct) {
-        // Продукт — предлагаем нарезки в именительном
         suggestions = CUTS_NAME;
     } else if (lastIsAction) {
-        // Действие — предлагаем подвиды (для нарезать — творительный)
         suggestions = ACTION_VARIANTS[lastIsAction] || [];
     }
 
@@ -1876,7 +1885,6 @@ function applyStepSuggestion(btn, text) {
     try { textarea.focus(); textarea.setSelectionRange(newPos, newPos); } catch(e) {}
     if (box) { box.classList.remove('open'); box.innerHTML = ''; }
 
-    // Сразу же запускаем обновление подсказок для следующего слова
     updateStepSuggestions(textarea);
 }
 
@@ -1942,12 +1950,13 @@ async function saveRecipe() {
     if (!isChef()) return;
     const title = document.getElementById('recipeTitle').value.trim();
     const category = document.getElementById('recipeCategory').value;
-    const portions = parseInt(document.getElementById('portionsInput').value) || 4;
+    let portions = parseInt(document.getElementById('portionsInput').value);
+    if (isNaN(portions) || portions < 1) portions = 1;
     const portionSize = parseFloat(document.getElementById('portionSizeInput').value) || 0;
     if (!title) { alert('Введите название блюда!'); return; }
     if (!category) { alert('Выберите категорию!'); return; }
     if (portionSize <= 0) {
-        alert('Введите размер порции (г). Без него карту сохранить нельзя.');
+        alert('Введите вес 1 порции (г). Без него карту сохранить нельзя.');
         document.getElementById('portionSizeInput').focus();
         if (navigator.vibrate) navigator.vibrate(200);
         return;
@@ -2075,13 +2084,21 @@ function openLinkedFromView(id, neededGrams, parentId, parentPortions) {
     });
 }
 function onViewPortionsChange(v) {
-    let p = parseFloat(v); if (isNaN(p) || p < 0.01) p = 0.01;
+    let p = parseFloat(v);
+    if (isNaN(p) || p < 1) p = 1;
+    p = Math.floor(p);
     viewPortions = p; updateViewNumbers();
 }
 function onViewOutputChange(v) {
     if (isCook()) return;
     let o = parseFloat(v); if (isNaN(o) || o < 0) o = 0;
     viewOutput = o; updateViewNumbers();
+}
+function onViewPortionsBlur(input) {
+    let p = parseInt(input.value);
+    if (isNaN(p) || p < 1) p = 1;
+    input.value = p;
+    viewPortions = p; updateViewNumbers();
 }
 function resetViewValues() {
     const r = recipes.find(x => x.id === viewingRecipeId);
@@ -2130,6 +2147,18 @@ function updateViewNumbers() {
     const baseResult = calculateTotalLoss(r).resultWeight;
     const totalResultEl = document.getElementById('viewTotalResult');
     if (totalResultEl) totalResultEl.textContent = formatWeight(baseResult * ratio, 'г');
+    // Обновляем «на X порций» в заголовке ингредиентов
+    const ingHeaderRight = document.getElementById('viewIngHeaderRight');
+    if (ingHeaderRight) {
+        const rw = baseResult * ratio;
+        const ps = r.portion_size || 0;
+        if (ps > 0 && rw > 0) {
+            const actual = Math.floor(rw / ps);
+            ingHeaderRight.textContent = 'на ' + actual + ' ' + pluralPortions(actual);
+        } else {
+            ingHeaderRight.textContent = '';
+        }
+    }
     if (canSeeProducts()) {
         const totalCost = calcRecipeCost(r);
         const costBox = document.getElementById('viewCostTotal');
@@ -2197,11 +2226,18 @@ function renderRecipeView() {
         paramsBlockHtml = `<div class="view-section">
             <h4>Параметры</h4>
             <div class="view-fields-grid">
-                <div><label>Порций</label><input type="number" id="viewPortionsInput" min="0.01" step="1" value="${cp}" oninput="onViewPortionsChange(this.value)"></div>
-                <div><label>Размер порции (г)</label><input type="number" id="viewOutputInput" min="0" step="1" value="${co}" ${outputReadonly} class="${outputClass}" oninput="onViewOutputChange(this.value)"></div>
+                <div><label>Порций</label><input type="number" id="viewPortionsInput" min="1" step="1" value="${cp}" oninput="onViewPortionsChange(this.value)" onblur="onViewPortionsBlur(this)"></div>
+                <div><label>Вес 1 порции (г)</label><input type="number" id="viewOutputInput" min="0" step="1" value="${co}" ${outputReadonly} class="${outputClass}" oninput="onViewOutputChange(this.value)"></div>
             </div>
             <button class="mode-btn" style="width: 100%; margin-top: 6px;" onclick="resetViewValues()">Сбросить к базовым</button>
         </div>`;
+    }
+    // Заголовок ингредиентов с правой частью «на X порций»
+    const ps = r.portion_size || 0;
+    let ingHeaderRight = '';
+    if (ps > 0 && currentResult > 0) {
+        const actual = Math.floor(currentResult / ps);
+        ingHeaderRight = 'на ' + actual + ' ' + pluralPortions(actual);
     }
     view.innerHTML = `
         <div class="view-header"><button class="back-btn" onclick="closeRecipeView()">←</button></div>
@@ -2211,7 +2247,7 @@ function renderRecipeView() {
         ${paramsBlockHtml}
         ${costBlockHtml}
         <div class="view-section">
-            <h4>Ингредиенты</h4>
+            <h4 class="with-right"><span>Ингредиенты</span><span class="right" id="viewIngHeaderRight">${ingHeaderRight}</span></h4>
             <table class="view-ing-table">
                 <thead>
                     <tr><th>Продукт</th><th class="num">Нужно</th><th class="num">Получится</th></tr>
