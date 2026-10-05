@@ -230,7 +230,7 @@
             border: 1px solid var(--button-color);
             border-radius: 6px;
             padding: 4px;
-            max-height: 260px;
+            max-height: 280px;
             overflow-y: auto;
             box-shadow: 0 6px 16px rgba(0,0,0,0.4);
             z-index: 300;
@@ -252,13 +252,6 @@
         .step-suggestion-btn:hover, .step-suggestion-btn:active {
             background: rgba(36, 129, 204, 0.15);
             color: var(--button-color);
-        }
-        .step-suggestion-group-label {
-            font-size: 10px;
-            color: var(--hint-color);
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            padding: 6px 10px 2px;
         }
         .step-mirror {
             position: absolute;
@@ -315,7 +308,6 @@
         }
         .summary-row { display: flex; justify-content: space-between; font-weight: bold; margin-bottom: 3px; }
         .summary-row:last-child { margin-bottom: 0; }
-        .summary-row.dim { font-weight: 400; color: var(--hint-color); font-size: 12px; }
 
         .cost-box {
             background: linear-gradient(135deg, rgba(76,175,80,0.1), rgba(76,175,80,0.05));
@@ -647,11 +639,11 @@
                 </div>
                 <div class="summary-row">
                     <span>Вес закладки:</span>
-                    <span id="totalPortionSize">0 г</span>
+                    <span id="totalPortionSize">—</span>
                 </div>
-                <div class="summary-row dim">
-                    <span>Фактический выход (порций):</span>
-                    <span id="totalActualPortions">0</span>
+                <div class="summary-row">
+                    <span>Количество порций:</span>
+                    <span id="totalActualPortions">—</span>
                 </div>
             </div>
 
@@ -734,7 +726,12 @@ const PRICE_UNITS = ['кг','л','шт','г','мл'];
 // СЛОВАРИ ПОДСКАЗОК
 // ==========================================
 
-// Продукт → список действий (в порядке приоритета)
+// Нарезки по именительному (когда продукт назван без действия)
+const CUTS_NAME = ['соломка','брусочки','кубик 0,5×0,5','кубик 1×1','кубик 1,5×1,5','кубик 2×2','кубик 3×3','кружочки','полукольца','дольки'];
+// Нарезки по творительному (когда перед ними действие: нарезать, нашинковать)
+const CUTS_INSTR = ['соломкой','брусочками','кубиком 0,5×0,5','кубиком 1×1','кубиком 1,5×1,5','кубиком 2×2','кубиком 3×3','кружочками','полукольцами','дольками'];
+
+// Действия над продуктом (в именительном — что сделать)
 const PRODUCT_ACTIONS = {
     // Овощи
     'лук': ['нарезать','почистить','пассеровать','обжарить','нашинковать','замариновать'],
@@ -768,7 +765,7 @@ const PRODUCT_ACTIONS = {
     'тархун': ['нашинковать','промыть'],
     'розмарин': ['измельчить','промыть'],
     'тимьян': ['измельчить','промыть'],
-    // Мясо
+    // Мясо и птица
     'говядина': ['нарезать','отбить','обжарить','потушить','запечь','отварить'],
     'свинина': ['нарезать','отбить','обжарить','потушить','запечь'],
     'баранина': ['нарезать','обжарить','потушить','запечь'],
@@ -799,9 +796,9 @@ const PRODUCT_ACTIONS = {
     'банан': ['нарезать','очистить']
 };
 
-// Действие → подвиды (в творительном падеже для нарезок; для готовности — «до + род.»)
+// Действие → подвиды (для готовности — цельные фразы с «до»)
 const ACTION_VARIANTS = {
-    'нарезать': ['соломкой','кубиком 0,5×0,5','кубиком 1×1','кубиком 1,5×1,5','кубиком 2×2','кубиком 3×3','брусочками','кружочками','полукольцами','дольками'],
+    'нарезать': CUTS_INSTR,
     'нашинковать': ['тонко','мелко','соломкой'],
     'натереть': ['на крупной тёрке','на средней тёрке','на мелкой тёрке'],
     'измельчить': ['мелко','крупно'],
@@ -1709,7 +1706,7 @@ function updateOutputSummary() {
         document.getElementById('totalLoss').textContent = formatWeight(loss, 'г');
         document.getElementById('totalPortionSize').textContent = ps > 0 ? formatWeight(ps, 'г') : '—';
         const actual = ps > 0 ? rw / ps : 0;
-        document.getElementById('totalActualPortions').textContent = actual > 0 ? actual.toFixed(2) : '—';
+        document.getElementById('totalActualPortions').textContent = actual > 0 ? formatNum(actual) : '—';
     }
 }
 
@@ -1719,6 +1716,13 @@ function updateOutputSummary() {
 
 function onStepDescInput(textarea) {
     updateStepSuggestions(textarea);
+}
+
+function isCutInName(w) {
+    return CUTS_NAME.includes(w);
+}
+function isCutInInstr(w) {
+    return CUTS_INSTR.includes(w);
 }
 
 function updateStepSuggestions(textarea) {
@@ -1771,27 +1775,29 @@ function updateStepSuggestions(textarea) {
     }
 
     let suggestions = [];
-    let product = null;
-    let action = null;
-
-    for (let i = words.length - 1; i >= 0 && i >= words.length - 5; i--) {
-        const p = findProduct(words[i]);
-        if (p) { product = p; break; }
-    }
-    for (let i = words.length - 1; i >= 0 && i >= words.length - 5; i--) {
-        const a = findAction(words[i]);
-        if (a) { action = a; break; }
-    }
-
     const lastIsProduct = findProduct(last);
     const lastIsAction = findAction(last);
+    const lastIsCutName = isCutInName(last);
+    const lastIsCutInstr = isCutInInstr(last);
 
-    if (lastIsProduct) {
-        suggestions = PRODUCT_ACTIONS[lastIsProduct] || [];
+    if (lastIsCutName) {
+        // Тапнул нарезку в именительном — сразу предлагаем действия
+        // Ищем продукт перед нарезкой
+        let product = null;
+        for (let i = words.length - 2; i >= 0 && i >= words.length - 5; i--) {
+            const p = findProduct(words[i]);
+            if (p) { product = p; break; }
+        }
+        if (product) suggestions = PRODUCT_ACTIONS[product] || [];
+    } else if (lastIsCutInstr) {
+        // Написано «нарезать соломкой» — молчим, цепочка завершена
+        suggestions = [];
+    } else if (lastIsProduct) {
+        // Продукт — предлагаем нарезки в именительном
+        suggestions = CUTS_NAME;
     } else if (lastIsAction) {
+        // Действие — предлагаем подвиды (для нарезать — творительный)
         suggestions = ACTION_VARIANTS[lastIsAction] || [];
-    } else if (product && !action) {
-        suggestions = PRODUCT_ACTIONS[product] || [];
     }
 
     if (!suggestions.length) {
@@ -1869,6 +1875,9 @@ function applyStepSuggestion(btn, text) {
     const newPos = before.length + insert.length;
     try { textarea.focus(); textarea.setSelectionRange(newPos, newPos); } catch(e) {}
     if (box) { box.classList.remove('open'); box.innerHTML = ''; }
+
+    // Сразу же запускаем обновление подсказок для следующего слова
+    updateStepSuggestions(textarea);
 }
 
 function addStepRow(data = {}) {
