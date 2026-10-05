@@ -32,6 +32,29 @@
         h2, h3, h4 { margin-top: 0; }
         .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
         .header-left { display: flex; align-items: center; }
+        .header-right { display: flex; align-items: center; gap: 6px; position: relative; }
+        .role-toggle-btn {
+            background: transparent; border: 1px solid var(--border-color);
+            color: var(--text-color); border-radius: 6px; padding: 4px 8px;
+            font-size: 18px; cursor: pointer; line-height: 1;
+        }
+        .role-toggle-btn:hover { border-color: var(--button-color); }
+        .role-dropdown {
+            position: absolute; top: calc(100% + 4px); right: 0;
+            background: var(--secondary-bg-color); border: 1px solid var(--button-color);
+            border-radius: 8px; padding: 4px; min-width: 180px;
+            box-shadow: 0 6px 16px rgba(0,0,0,0.4); z-index: 1000; display: none;
+        }
+        .role-dropdown.open { display: block; }
+        .role-dropdown button {
+            display: block; width: 100%; text-align: left;
+            padding: 8px 10px; font-size: 13px; background: transparent;
+            border: none; color: var(--text-color); border-radius: 4px;
+            cursor: pointer; font-family: inherit;
+        }
+        .role-dropdown button:hover { background: rgba(36, 129, 204, 0.15); color: var(--button-color); }
+        .role-dropdown button.active { color: var(--button-color); font-weight: 700; }
+        .role-dropdown .divider { height: 1px; background: var(--border-color); margin: 4px 0; }
         .mode-btn {
             padding: 6px 12px; border: 1px solid var(--button-color);
             background: transparent; color: var(--button-color); border-radius: 6px;
@@ -365,9 +388,13 @@
         }
         .view-section h4.with-right {
             display: flex; justify-content: space-between; align-items: center;
+            cursor: pointer;
         }
         .view-section h4.with-right .right {
             color: var(--button-color); font-weight: 600;
+        }
+        .view-section h4.with-right .right .chev {
+            color: var(--hint-color); font-weight: 400; margin-left: 6px;
         }
         .view-ing-table { width: 100%; border-collapse: collapse; font-size: 13px; }
         .view-ing-table th, .view-ing-table td {
@@ -493,6 +520,53 @@
             animation: spin 0.8s linear infinite; margin-bottom: 10px;
         }
         @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* Крупный просмотр ингредиентов / шагов */
+        .detail-view-header {
+            display: flex; align-items: center; gap: 8px; margin-bottom: 12px;
+        }
+        .detail-view-title {
+            font-size: 18px; font-weight: 700; flex: 1;
+        }
+        .detail-view-subtitle {
+            font-size: 12px; color: var(--hint-color);
+        }
+        .detail-ing-table {
+            width: 100%; border-collapse: collapse; font-size: 16px;
+            background: var(--secondary-bg-color); border-radius: 10px;
+            overflow: hidden;
+        }
+        .detail-ing-table th, .detail-ing-table td {
+            text-align: left; padding: 12px 14px; border-bottom: 1px solid var(--border-color);
+        }
+        .detail-ing-table th {
+            color: var(--hint-color); font-weight: 600;
+            font-size: 12px; text-transform: uppercase;
+        }
+        .detail-ing-table tr:last-child td { border-bottom: none; }
+        .detail-ing-table .num { text-align: right; font-variant-numeric: tabular-nums; }
+        .detail-step {
+            background: var(--secondary-bg-color); border-radius: 10px;
+            padding: 16px; margin-bottom: 12px; border: 1px solid var(--border-color);
+        }
+        .detail-step-num {
+            display: inline-block; background: var(--button-color); color: var(--button-text-color);
+            width: 28px; height: 28px; line-height: 28px; text-align: center; border-radius: 50%;
+            font-size: 14px; font-weight: 700; margin-right: 8px;
+        }
+        .detail-step-text { font-size: 16px; line-height: 1.5; }
+        .detail-step-meta {
+            font-size: 13px; color: var(--hint-color); margin-top: 8px; padding-left: 36px;
+        }
+        .detail-total-row {
+            margin-top: 16px; padding: 14px;
+            background: var(--secondary-bg-color); border-radius: 10px;
+            display: flex; justify-content: space-between; align-items: center;
+        }
+        .detail-total-row .label {
+            font-size: 16px; font-weight: 800; letter-spacing: 1px; text-transform: uppercase;
+        }
+        .detail-total-row .value { font-size: 22px; font-weight: 800; color: var(--money-color); }
     </style>
 </head>
 <body>
@@ -501,6 +575,17 @@
         <div class="header-left">
             <h2 style="margin-bottom: 0;">Запара</h2>
             <span id="syncStatus" style="font-size: 18px; margin-left: 8px; cursor: help;" title="Состояние синхронизации">☁️</span>
+        </div>
+        <div class="header-right" id="headerRight">
+            <button class="role-toggle-btn" id="roleToggleBtn" onclick="toggleRoleDropdown()" style="display: none;" title="Тест ролей">🎭</button>
+            <div class="role-dropdown" id="roleDropdown">
+                <button data-role="chef" onclick="setTestRole('chef')">Шеф</button>
+                <button data-role="technolog" onclick="setTestRole('technolog')">Технолог</button>
+                <button data-role="sous_chef" onclick="setTestRole('sous_chef')">Су-шеф</button>
+                <button data-role="cook" onclick="setTestRole('cook')">Повар</button>
+                <div class="divider"></div>
+                <button onclick="clearTestRole()">Вернуть мою роль</button>
+            </div>
         </div>
     </div>
 
@@ -661,6 +746,7 @@
     </div>
 
     <div id="recipeView" style="display: none;"></div>
+    <div id="recipeDetail" style="display: none;"></div>
 
     <div id="productForm" class="card" style="display: none;">
         <h3 id="productFormTitle">Новый продукт</h3>
@@ -823,7 +909,6 @@ const ACTION_VARIANTS = {
 
 const ALL_ACTIONS = Object.keys(ACTION_VARIANTS);
 
-// Правильное склонение: порция / порции / порций
 function pluralPortions(n) {
     const num = Math.floor(Math.abs(Number(n) || 0));
     const mod10 = num % 10;
@@ -836,6 +921,8 @@ function pluralPortions(n) {
 const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 let currentUserRole = 'cook';
+let realUserRole = 'cook';
+let testRole = null;
 
 function getCurrentUserId() {
     try {
@@ -845,15 +932,26 @@ function getCurrentUserId() {
     return 'local';
 }
 
+function isOwner() {
+    const userId = getCurrentUserId();
+    return userId === OWNER_TELEGRAM_ID || userId === 'local';
+}
+
 async function loadUserRole() {
     const userId = getCurrentUserId();
-    if (userId === OWNER_TELEGRAM_ID) { currentUserRole = 'chef'; return; }
+    if (userId === OWNER_TELEGRAM_ID) { realUserRole = 'chef'; return; }
+    if (userId === 'local') { realUserRole = 'chef'; return; }
     try {
         const { data, error } = await supabaseClient
             .from('users').select('role').eq('telegram_id', userId).maybeSingle();
-        if (!error && data && data.role) currentUserRole = data.role;
-        else currentUserRole = 'cook';
-    } catch(e) { currentUserRole = 'cook'; }
+        if (!error && data && data.role) realUserRole = data.role;
+        else realUserRole = 'cook';
+    } catch(e) { realUserRole = 'cook'; }
+}
+
+function applyTestRole() {
+    if (isOwner() && testRole) currentUserRole = testRole;
+    else currentUserRole = realUserRole;
 }
 
 function isChef() {
@@ -875,13 +973,80 @@ function applyRoleUI() {
     if (!isChef()) {
         if (btnNew) btnNew.style.display = 'none';
         if (btnImport) btnImport.style.display = 'none';
+    } else {
+        if (btnNew) btnNew.style.display = 'block';
+        if (btnImport) btnImport.style.display = 'block';
     }
     if (!canSeeProducts()) {
         if (tabProducts) tabProducts.style.display = 'none';
     } else {
         if (tabProducts) tabProducts.style.display = 'flex';
     }
+    applyRoleToggleUI();
 }
+
+function applyRoleToggleUI() {
+    const btn = document.getElementById('roleToggleBtn');
+    const dd = document.getElementById('roleDropdown');
+    if (!btn || !dd) return;
+    if (!isOwner()) { btn.style.display = 'none'; return; }
+    btn.style.display = 'block';
+    dd.querySelectorAll('button[data-role]').forEach(b => {
+        const r = b.getAttribute('data-role');
+        b.classList.toggle('active', r === currentUserRole);
+    });
+}
+
+function toggleRoleDropdown() {
+    const dd = document.getElementById('roleDropdown');
+    if (!dd) return;
+    dd.classList.toggle('open');
+}
+
+function setTestRole(role) {
+    testRole = role;
+    currentUserRole = role;
+    const dd = document.getElementById('roleDropdown');
+    if (dd) dd.classList.remove('open');
+    applyRoleUI();
+    // Перерисовать текущий экран
+    if (document.getElementById('recipeView').style.display === 'block') {
+        renderRecipeView();
+    }
+    if (document.getElementById('recipeDetail').style.display === 'block') {
+        // Перерисовать детальный экран без изменений — просто обновить заголовки
+        renderRecipeDetail();
+    }
+    if (document.getElementById('recipeConstructor').style.display === 'block') {
+        updateSummary();
+        updateOutputSummary();
+    }
+    renderRecipes();
+    renderProducts();
+}
+
+function clearTestRole() {
+    testRole = null;
+    currentUserRole = realUserRole;
+    const dd = document.getElementById('roleDropdown');
+    if (dd) dd.classList.remove('open');
+    applyRoleUI();
+    if (document.getElementById('recipeView').style.display === 'block') {
+        renderRecipeView();
+    }
+    if (document.getElementById('recipeDetail').style.display === 'block') {
+        renderRecipeDetail();
+    }
+    renderRecipes();
+    renderProducts();
+}
+
+document.addEventListener('click', function(e) {
+    const dd = document.getElementById('roleDropdown');
+    const btn = document.getElementById('roleToggleBtn');
+    if (!dd || !btn) return;
+    if (!e.target.closest('#headerRight')) dd.classList.remove('open');
+});
 
 // ==========================================
 // ФОРМАТИРОВАНИЕ
@@ -1095,6 +1260,8 @@ let viewStack = [];
 let expandedCategories = new Set();
 let searchQuery = '';
 let priceImportState = { items: [], processing: false };
+let detailViewType = null; // 'ingredients' | 'steps'
+let detailViewReturnContext = null;
 
 // ==========================================
 // ЗАГРУЗКА
@@ -1237,6 +1404,7 @@ function saveProductsToLocal() {
 
 window.addEventListener('DOMContentLoaded', async () => {
     await loadUserRole();
+    applyTestRole();
     applyRoleUI();
 
     const localRecipes = loadRecipesFromLocal();
@@ -1295,9 +1463,10 @@ function switchTab(tab) {
 function updateTabBarVisibility() {
     const constructorOpen = document.getElementById('recipeConstructor').style.display === 'block';
     const viewOpen = document.getElementById('recipeView').style.display === 'block';
+    const detailOpen = document.getElementById('recipeDetail').style.display === 'block';
     const productFormOpen = document.getElementById('productForm').style.display === 'block';
     const importOpen = document.getElementById('priceImportScreen').style.display === 'block';
-    const hide = constructorOpen || viewOpen || productFormOpen || importOpen || selectionMode;
+    const hide = constructorOpen || viewOpen || detailOpen || productFormOpen || importOpen || selectionMode;
     document.getElementById('tabBar').style.display = hide ? 'none' : 'flex';
 }
 
@@ -1315,6 +1484,7 @@ function openConstructor(recipe = null) {
     document.getElementById('tabRecipesContent').style.display = 'none';
     document.getElementById('selectionPanel').classList.remove('active');
     document.getElementById('recipeView').style.display = 'none';
+    document.getElementById('recipeDetail').style.display = 'none';
     document.getElementById('recipeConstructor').style.display = 'block';
     document.getElementById('ingredientsList').innerHTML = '';
     document.getElementById('stepsList').innerHTML = '';
@@ -1452,12 +1622,8 @@ function addIngredientRow(data = {}) {
     updateSummary();
 }
 
-function onProductPickerFocus(input) {
-    renderProductPickerResults(input, true);
-}
-function onProductPickerInput(input) {
-    renderProductPickerResults(input, false);
-}
+function onProductPickerFocus(input) { renderProductPickerResults(input, true); }
+function onProductPickerInput(input) { renderProductPickerResults(input, false); }
 function renderProductPickerResults(input, showAllOnFocus) {
     if (!canSeeProducts()) return;
     const picker = input.closest('.product-picker');
@@ -1487,10 +1653,7 @@ function selectProductForIngredient(el, name) {
     if (!picker) return;
     const input = picker.querySelector('.ing-name');
     const results = picker.querySelector('.recipe-search-results');
-    if (input) {
-        input.value = name;
-        input.classList.add('selected');
-    }
+    if (input) { input.value = name; input.classList.add('selected'); }
     if (results) results.classList.remove('open');
     const row = picker.closest('.ingredient-row');
     if (row) { updateIngredientCostInfo(row); updateConstructorCost(); }
@@ -2045,6 +2208,7 @@ function openRecipeView(id, context) {
     }
     document.getElementById('tabRecipesContent').style.display = 'none';
     document.getElementById('recipeConstructor').style.display = 'none';
+    document.getElementById('recipeDetail').style.display = 'none';
     document.getElementById('recipeView').style.display = 'block';
     renderRecipeView();
     updateTabBarVisibility();
@@ -2122,12 +2286,15 @@ function calculateTotalLoss(recipe) {
     const rw = (lw !== null) ? lw : tn;
     return { totalNet: tn, resultWeight: rw, loss: Math.max(0, tn - rw) };
 }
+function getCurrentRatio(recipe) {
+    const bp = recipe.portions || 4, bo = recipe.output || 0;
+    const cp = viewPortions, co = viewOutput;
+    return (cp / bp) * (bo > 0 ? co / bo : 1);
+}
 function updateViewNumbers() {
     const r = recipes.find(x => x.id === viewingRecipeId);
     if (!r) return;
-    const bp = r.portions || 4, bo = r.output || 0;
-    const cp = viewPortions, co = viewOutput;
-    const ratio = (cp / bp) * (bo > 0 ? co / bo : 1);
+    const ratio = getCurrentRatio(r);
     let tg = 0, tn = 0;
     const rows = document.querySelectorAll('.view-ing-row');
     (r.ingredients || []).forEach((i, idx) => {
@@ -2147,7 +2314,6 @@ function updateViewNumbers() {
     const baseResult = calculateTotalLoss(r).resultWeight;
     const totalResultEl = document.getElementById('viewTotalResult');
     if (totalResultEl) totalResultEl.textContent = formatWeight(baseResult * ratio, 'г');
-    // Обновляем «на X порций» в заголовке ингредиентов
     const ingHeaderRight = document.getElementById('viewIngHeaderRight');
     if (ingHeaderRight) {
         const rw = baseResult * ratio;
@@ -2163,8 +2329,8 @@ function updateViewNumbers() {
         const totalCost = calcRecipeCost(r);
         const costBox = document.getElementById('viewCostTotal');
         const costPerPortionEl = document.getElementById('viewCostPerPortion');
-        if (costBox) costBox.textContent = formatPrice(totalCost * (cp / bp));
-        if (costPerPortionEl) costPerPortionEl.textContent = formatPrice(totalCost / bp);
+        if (costBox) costBox.textContent = formatPrice(totalCost * (viewPortions / (r.portions || 4)));
+        if (costPerPortionEl) costPerPortionEl.textContent = formatPrice(totalCost / (r.portions || 4));
     }
 }
 function renderRecipeView() {
@@ -2173,7 +2339,7 @@ function renderRecipeView() {
     const view = document.getElementById('recipeView');
     const bp = r.portions || 4, bo = r.output || 0;
     const cp = viewPortions, co = viewOutput;
-    const ratio = (cp / bp) * (bo > 0 ? co / bo : 1);
+    const ratio = getCurrentRatio(r);
     let ingRows = '';
     (r.ingredients || []).forEach(i => {
         const u = i.unit || 'г';
@@ -2232,7 +2398,6 @@ function renderRecipeView() {
             <button class="mode-btn" style="width: 100%; margin-top: 6px;" onclick="resetViewValues()">Сбросить к базовым</button>
         </div>`;
     }
-    // Заголовок ингредиентов с правой частью «на X порций»
     const ps = r.portion_size || 0;
     let ingHeaderRight = '';
     if (ps > 0 && currentResult > 0) {
@@ -2247,7 +2412,10 @@ function renderRecipeView() {
         ${paramsBlockHtml}
         ${costBlockHtml}
         <div class="view-section">
-            <h4 class="with-right"><span>Ингредиенты</span><span class="right" id="viewIngHeaderRight">${ingHeaderRight}</span></h4>
+            <h4 class="with-right" onclick="openRecipeDetail('ingredients')">
+                <span>Ингредиенты</span>
+                <span class="right"><span id="viewIngHeaderRight">${ingHeaderRight}</span><span class="chev">›</span></span>
+            </h4>
             <table class="view-ing-table">
                 <thead>
                     <tr><th>Продукт</th><th class="num">Нужно</th><th class="num">Получится</th></tr>
@@ -2261,13 +2429,134 @@ function renderRecipeView() {
                 <span class="value" id="viewTotalResult">${formatWeight(currentResult, 'г')}</span>
             </div>
         </div>
-        <div class="view-section"><h4>Приготовление</h4>${stepsHtml || '<p style="color: var(--hint-color);">Нет шагов</p>'}</div>
+        <div class="view-section">
+            <h4 class="with-right" onclick="openRecipeDetail('steps')">
+                <span>Приготовление</span>
+                <span class="right"><span class="chev">›</span></span>
+            </h4>
+            ${stepsHtml || '<p style="color: var(--hint-color);">Нет шагов</p>'}
+        </div>
     `;
 }
 async function deleteRecipeFromView(id) {
     await deleteRecipe(id);
     viewStack = [];
     closeRecipeView();
+}
+
+// ==========================================
+// ДЕТАЛЬНЫЙ ПРОСМОТР (крупно)
+// ==========================================
+
+function openRecipeDetail(type) {
+    const r = recipes.find(x => x.id === viewingRecipeId);
+    if (!r) return;
+    detailViewType = type;
+    detailViewReturnContext = {
+        viewingRecipeId: viewingRecipeId,
+        viewPortions: viewPortions,
+        viewOutput: viewOutput,
+        viewContext: viewContext
+    };
+    document.getElementById('recipeView').style.display = 'none';
+    document.getElementById('recipeDetail').style.display = 'block';
+    renderRecipeDetail();
+    updateTabBarVisibility();
+}
+
+function closeRecipeDetail() {
+    document.getElementById('recipeDetail').style.display = 'none';
+    document.getElementById('recipeView').style.display = 'block';
+    detailViewType = null;
+    detailViewReturnContext = null;
+    renderRecipeView();
+    updateTabBarVisibility();
+}
+
+function renderRecipeDetail() {
+    const el = document.getElementById('recipeDetail');
+    if (!el) return;
+    const r = recipes.find(x => x.id === viewingRecipeId);
+    if (!r) { closeRecipeDetail(); return; }
+    const ratio = getCurrentRatio(r);
+    const bp = r.portions || 4;
+
+    if (detailViewType === 'ingredients') {
+        let rows = '';
+        let totalGross = 0, totalNet = 0;
+        (r.ingredients || []).forEach(i => {
+            const u = i.unit || 'г';
+            const f = (u === 'кг' || u === 'л') ? 1000 : 1;
+            const g = (i.gross || 0) * f * ratio / f;
+            const n = (i.net || 0) * f * ratio / f;
+            totalGross += (i.gross || 0) * f * ratio;
+            totalNet += (i.net || 0) * f * ratio;
+            let nc = escapeHtml(i.name || '');
+            if (i.type === 'preparation') {
+                const hl = i.linked_recipe_id && recipes.find(r2 => r2.id === i.linked_recipe_id);
+                nc += ` <span class="linked-badge">полуфаб.</span>`;
+                if (hl) {
+                    const nG = unitToGrams(n, u);
+                    nc += ` <button class="open-link-btn" onclick="openLinkedFromView('${i.linked_recipe_id}', ${nG}, '${r.id}', ${viewPortions})">Открыть</button>`;
+                }
+            }
+            rows += `<tr><td>${nc}</td><td class="num">${formatWeight(g, u)}</td><td class="num">${formatWeight(n, u)}</td></tr>`;
+        });
+        const baseResult = calculateTotalLoss(r).resultWeight;
+        const currentResult = baseResult * ratio;
+        const ps = r.portion_size || 0;
+        let subtitle = 'базово: ' + bp + ' ' + pluralPortions(bp);
+        if (ps > 0 && currentResult > 0) {
+            const actual = Math.floor(currentResult / ps);
+            subtitle = 'на ' + actual + ' ' + pluralPortions(actual);
+        }
+        el.innerHTML = `
+            <div class="detail-view-header">
+                <button class="back-btn" onclick="closeRecipeDetail()">←</button>
+                <div style="flex: 1;">
+                    <div class="detail-view-title">Ингредиенты</div>
+                    <div class="detail-view-subtitle">${escapeHtml(r.title)} · ${subtitle}</div>
+                </div>
+            </div>
+            <table class="detail-ing-table">
+                <thead>
+                    <tr><th>Продукт</th><th class="num">Нужно</th><th class="num">Получится</th></tr>
+                </thead>
+                <tbody>
+                    ${rows || '<tr><td colspan="3" style="text-align:center; color: var(--hint-color);">Нет ингредиентов</td></tr>'}
+                </tbody>
+            </table>
+            <div class="detail-total-row">
+                <span class="label">Итого</span>
+                <span class="value">${formatWeight(currentResult, 'г')}</span>
+            </div>
+        `;
+    } else if (detailViewType === 'steps') {
+        let stepsHtml = '';
+        (r.steps || []).forEach((s, idx) => {
+            const parts = [];
+            if (s.method) parts.push('Метод: ' + escapeHtml(s.method));
+            if (s.temp) parts.push('Темп: ' + s.temp + ' °C');
+            if (s.method === 'жар/пар' && s.humidity) parts.push('Влажн: ' + s.humidity + ' %');
+            if (s.weight !== null && s.weight !== undefined && s.weight > 0) parts.push('Вес: ' + formatWeight(s.weight, 'г'));
+            stepsHtml += `<div class="detail-step">
+                <div><span class="detail-step-num">${idx+1}</span><span class="detail-step-text">${escapeHtml(s.desc || '')}</span></div>
+                ${parts.length ? `<div class="detail-step-meta">${parts.join(' | ')}</div>` : ''}
+            </div>`;
+        });
+        el.innerHTML = `
+            <div class="detail-view-header">
+                <button class="back-btn" onclick="closeRecipeDetail()">←</button>
+                <div style="flex: 1;">
+                    <div class="detail-view-title">Приготовление</div>
+                    <div class="detail-view-subtitle">${escapeHtml(r.title)}</div>
+                </div>
+            </div>
+            ${stepsHtml || '<p style="color: var(--hint-color);">Нет шагов</p>'}
+        `;
+    } else {
+        closeRecipeDetail();
+    }
 }
 
 // ==========================================
